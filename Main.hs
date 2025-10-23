@@ -1,40 +1,41 @@
+-- stack ghci --ghci-options '-fno-ghci-sandbox' Main.hs
+-- :set -package lens
 {-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use <$>" #-}
 
 module Main where
 
 import SDL hiding (trace)
 import Foreign.C
-import Data.Word
-import Debug.Trace
 import Control.Monad
+import System.Random
 
-ly :: Show a => a -> a
-ly x = trace (show x) x
-
-bint :: Bool -> CInt
-bint = fromIntegral.fromEnum
-
-white :: V4 Word8
-white = V4 255 255 255 255
-
-green :: V4 Word8
-green = V4 0 255 0 255
+import Mean
+import Light
+import World
 
 main :: IO ()
 main = initializeAll
   >> createWindow "monads" defaultWindow
-  >>= (\x -> createRenderer x (-1) defaultRenderer
-    >>= flip (flip loop 0) (0, 0)
-    >> destroyWindow x)
-  >> quit
+  >>= (\w -> createRenderer w (-1) defaultRenderer
+    >>= (\r -> live r (randoms $ mkStdGen 0 :: Seed) 0 navel)
+    >> die w
+  ) >> quit
 
-loop :: Renderer -> Int -> (CInt, CInt) -> IO ()
-loop renderer n xy = pollEvents
-  >>= (\events -> getKeyboardState
-    >>= (\keys -> (rendererDrawColor renderer $= white
-      >> clear renderer >> rendererDrawColor renderer $= green
-      >> fillRect renderer (Just (Rectangle (P $ uncurry V2 xy) (V2 64 64)))
-      >> present renderer
-      >> unless (keys ScancodeQ) (loop renderer (succ n)
-        (fst xy + (bint.keys) ScancodeRight - (bint.keys) ScancodeLeft,
-         snd xy + (bint.keys) ScancodeDown  - (bint.keys) ScancodeUp)))))
+die :: Window -> IO ()
+die w = destroyWindow w >> pollEvents >> return ()
+
+live :: Renderer -> Seed -> Int -> V2 CFloat -> IO ()
+live rend rands t z = print t
+  >> pollEvents
+  >>= (\es -> getKeyboardState
+    >>= (\ks -> (
+        rendererDrawColor rend $= black
+        >> clear rend
+      >> rendererDrawColor rend $= green
+        >> fillRect rend (Just $ Rectangle (P $ fmap round z) (fmap round $ girth glee))
+    ) >> present rend
+      >> unless (ks ScancodeQ) (live rend rands (succ t) (z + wayward ks))
+    )
+  )
