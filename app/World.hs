@@ -11,8 +11,8 @@ import Mean
 world :: V2 CInt
 world = windowInitialSize defaultWindow
 
-navel :: V2 CFloat
-navel = fmap ((/ 2) . fromIntegral) world
+center :: V2 CFloat
+center = fmap ((/ 2) . fromIntegral) world
 
 nought :: V2 CFloat
 nought = V2 0 0
@@ -64,12 +64,12 @@ instance Wending Athem where
 --athem = Athem glee might
 
 data Glee = Glee {
-  girth :: V2 CFloat
+  size :: V2 CFloat
 , wealth :: Int
 }
 
 instance Wending Glee where
-  wend g = Glee (girth g) (succ $ wealth g)
+  wend g = Glee (size g) (succ $ wealth g)
 
 glee :: Glee
 glee = Glee (V2 64 64) 0
