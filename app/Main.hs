@@ -3,12 +3,12 @@
 
 module Main where
 
-import SDL hiding (trace)
+import SDL
 import Foreign.C
-import Control.Monad
-import System.Random
 import Control.Lens
+import Control.Monad
 
+import Test
 import Mean
 import Random
 import Light
@@ -21,17 +21,17 @@ data GameOptions = GameOptions {
 }
 
 data GameState = GameState {
-  _frame :: Int
-, _seed :: Seed
+  _seed :: Seed
 , _options :: GameOptions
 , _position :: V2 CFloat
+, _keys :: Keys
 }
 
 defaultOptions :: GameOptions
-defaultOptions = GameOptions True False
+defaultOptions = GameOptions False False
 
 defaultState :: GameState
-defaultState = GameState 0 defaultSeed defaultOptions (lower center)
+defaultState = GameState defaultSeed defaultOptions (lower center) unkeys
 
 openGLWindow :: WindowConfig
 openGLWindow = defaultWindow { windowGraphicsContext = OpenGLContext defaultOpenGL }
@@ -40,19 +40,17 @@ instance Show GameOptions where
   show go = concatMap ($ go) [show._meting, show._paused]
 
 instance Show GameState where
-  show gs = concatMap ($ gs) [show._frame, show._options]
+  show = show . _options
 
 makeLenses ''GameOptions
 makeLenses ''GameState
-
-tick :: GameState -> GameState
-tick gs = set frame (succ $ gs^.frame) gs
 
 toggle :: GameState -> (GameOptions -> Bool) -> GameState
 toggle gs go = set (options.meting) (not $ gs^.options.to go) gs
 
 main :: IO ()
 main = do
+  runTests
   initializeAll
   window <- createWindow "frog universe" openGLWindow
   renderer <- createRenderer window (-1) defaultRenderer
@@ -68,7 +66,7 @@ die window = do
 
 live :: Renderer -> GameState -> IO ()
 live renderer state = do
-  when (state^.options.meting) (print $ state^.frame)
+  when (state^.options.meting) $ ticks >>= print
 
   es <- pollEvents
   ks <- getKeyboardState
@@ -80,7 +78,7 @@ live renderer state = do
 
   present renderer
 
-  unless (ks ScancodeQ) (live renderer (tick state))
+  unless (ks ScancodeQ) (live renderer state)
 
 understand :: (Scancode -> Bool) -> GameState -> IO GameState
 understand ks gs = do

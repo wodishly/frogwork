@@ -15,6 +15,7 @@ executable gleework
       Light
       Mean
       Random
+      Test
       World
       Paths_gleework
   hs-source-dirs:
@@ -22,6 +23,7 @@ executable gleework
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base
+    , containers
     , lens
     , random
     , sdl2

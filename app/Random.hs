@@ -1,12 +1,16 @@
 module Random where
 
-import Mean
-import Foreign.C
 import SDL
-import System.Random
 import Data.Bifunctor
-import World
+import System.Random
 import Control.Lens
+import Foreign.C
+
+import Mean
+import World
+
+type Seed = [CFloat]
+type Rand = CFloat
 
 defaultSeed :: Seed
 defaultSeed = randoms $ mkStdGen 0
@@ -19,14 +23,18 @@ rand = randomIO
 rangle :: IO CFloat
 rangle = fmap ((2 * pi) *) rand
 
+-- random 2d unit vector
 rdir :: IO (V2 CFloat)
 rdir = (uncurry V2 . bimap cos sin) . twin <$> rangle
 
-rx :: Rand -> CFloat
-rx = (*) (view _x $ cast <$> world)
+-- random x in [0, world.x)
+rx :: IO CFloat
+rx = fmap ((world^._x) *) rand
 
-ry :: Rand -> CFloat
-ry = (*) (view _y $ cast <$> world)
+-- random y in [0, world.y)
+ry :: IO CFloat
+ry = fmap ((world^._y) *) rand
 
-rz :: Rand -> CFloat
-rz = (*) (view _z $ cast <$> world)
+-- random z in [0, world.z)
+rz :: IO CFloat
+rz = fmap ((world^._z) *) rand

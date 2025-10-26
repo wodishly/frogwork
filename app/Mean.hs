@@ -1,21 +1,23 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use <$>" #-}
+
 module Mean where
 
 import SDL hiding (trace)
-import Foreign.C
-import Debug.Trace
 import Data.Bifunctor
+import Debug.Trace
+import Foreign.C
 import System.Random
-
-type Seed = [CFloat]
-type Rand = CFloat
+import Data.Function
 
 ly' :: Show b => (a -> b) -> a -> a
 ly' f x = trace (show (f x)) x
 
 ly :: Show a => a -> a
 ly = ly' id
+
+average :: (Fractional a) => [a] -> a
+average xs = sum xs / fromIntegral (length xs)
 
 twin :: a -> (a, a)
 twin x = (x, x)

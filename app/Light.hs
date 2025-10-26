@@ -1,16 +1,20 @@
 module Light where
 
+import SDL
 import Data.Ord
 import Data.Word
 import Foreign.C
+
 import Mean
-import SDL
 
 white :: V4 Word8
 white = V4 255 255 255 255
 
 black :: V4 Word8
 black = V4 0 0 0 0
+
+red :: V4 Word8
+red = V4 255 0 0 255
 
 green :: V4 Word8
 green = V4 0 255 0 255
