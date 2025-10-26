@@ -11,8 +11,10 @@ build-type:     Simple
 executable gleework
   main-is: Main.hs
   other-modules:
+      Key
       Light
       Mean
+      Random
       World
       Paths_gleework
   hs-source-dirs:

@@ -15,8 +15,13 @@ black = V4 0 0 0 0
 green :: V4 Word8
 green = V4 0 255 0 255
 
-green' :: CFloat -> V4 Word8
-green' = hue green
+blue :: V4 Word8
+blue = V4 0 0 255 255
 
-hue :: V4 Word8 -> CFloat -> V4 Word8
-hue c n = fmap (cast . (*) (clamp (0, 1) n) . cast) c
+-- interpolates a shade of green
+green' :: CFloat -> V4 Word8
+green' = clerp green
+
+-- interpolates a color `c` by fraction `n`
+clerp :: V4 Word8 -> CFloat -> V4 Word8
+clerp c n = fmap (cast . (*) (clamp (0, 1) n) . cast) c
