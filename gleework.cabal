@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.38.1.
+-- This file has been generated from package.yaml by hpack version 0.37.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -11,10 +11,12 @@ build-type:     Simple
 executable gleework
   main-is: Main.hs
   other-modules:
+      Frog
       Key
       Light
       Mean
       Random
+      State
       Test
       World
       Paths_gleework
@@ -23,7 +25,6 @@ executable gleework
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base
-    , containers
     , lens
     , random
     , sdl2

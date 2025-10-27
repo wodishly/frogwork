@@ -5,7 +5,6 @@ dependencies:
   - sdl2
   - random
   - lens
-  - containers
 executables:
   gleework:
     main: Main.hs

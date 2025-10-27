@@ -7,25 +7,23 @@ import Foreign.C
 
 import Mean
 
-white :: V4 Word8
+type Color = V4 Word8
+
+white :: Color
 white = V4 255 255 255 255
 
-black :: V4 Word8
+black :: Color
 black = V4 0 0 0 0
 
-red :: V4 Word8
+red :: Color
 red = V4 255 0 0 255
 
-green :: V4 Word8
+green :: Color
 green = V4 0 255 0 255
 
-blue :: V4 Word8
+blue :: Color
 blue = V4 0 0 255 255
 
--- interpolates a shade of green
-green' :: CFloat -> V4 Word8
-green' = clerp green
-
 -- interpolates a color `c` by fraction `n`
-clerp :: V4 Word8 -> CFloat -> V4 Word8
-clerp c n = fmap (cast . (*) (clamp (0, 1) n) . cast) c
+clerp :: CFloat -> Color -> Color
+clerp n = fmap (cast . (*) (clamp (0, 1) n) . cast)

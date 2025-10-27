@@ -16,6 +16,9 @@ ly' f x = trace (show (f x)) x
 ly :: Show a => a -> a
 ly = ly' id
 
+weep :: IO ()
+weep = print "wah"
+
 average :: (Fractional a) => [a] -> a
 average xs = sum xs / fromIntegral (length xs)
 
@@ -47,5 +50,13 @@ trimap f g h (x,y,z) = (f x, g y, h z)
 cast :: (Enum a, Num b) => a -> b
 cast = fromIntegral.fromEnum
 
-lif :: a -> a -> Bool -> a
-lif q p condition = if condition then p else q
+lif :: Bool -> a -> a -> a
+lif condition p q = if condition then p else q
+
+-- whether `x` gladdens all in `fs`
+allIn :: (Foldable t) => t (a -> Bool) -> a -> Bool
+allIn fs x = all ($ x) fs
+
+-- whether `x` gladdens any in `fs`
+anyIn :: (Foldable t) => t (a -> Bool) -> a -> Bool
+anyIn fs x = any ($ x) fs
