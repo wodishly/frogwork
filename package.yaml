@@ -5,6 +5,7 @@ dependencies:
   - sdl2
   - random
   - lens
+  - text
 executables:
   gleework:
     main: Main.hs

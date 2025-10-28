@@ -9,4 +9,4 @@ data Frog = Frog {
 }
 
 frog :: Frog
-frog = Frog (V3 64 64 64) 0
+frog = Frog 64 0

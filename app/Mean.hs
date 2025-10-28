@@ -10,6 +10,8 @@ import Foreign.C
 import System.Random
 import Data.Function
 
+type Pair a = (a, a)
+
 ly' :: Show b => (a -> b) -> a -> a
 ly' f x = trace (show (f x)) x
 
@@ -20,7 +22,10 @@ weep :: IO ()
 weep = print "wah"
 
 average :: (Fractional a) => [a] -> a
-average xs = sum xs / fromIntegral (length xs)
+average = uncurry (/) . bothly sum (fromIntegral.length)
+
+bothly :: (a -> b) -> (a -> c) -> a -> (b, c)
+bothly f g = bimap f g . twin
 
 twin :: a -> (a, a)
 twin x = (x, x)
@@ -60,3 +65,6 @@ allIn fs x = all ($ x) fs
 -- whether `x` gladdens any in `fs`
 anyIn :: (Foldable t) => t (a -> Bool) -> a -> Bool
 anyIn fs x = any ($ x) fs
+
+flight :: Int -> [Int]
+flight = enumFromTo 0 . pred

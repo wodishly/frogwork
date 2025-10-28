@@ -18,6 +18,7 @@ import Mean
 import World
 import Frog
 import Data.Word
+import Stave
 
 data OptionsInfo = OptionsInfo {
   _isShowingTicks :: Bool
@@ -117,9 +118,12 @@ menuState :: GameState
 menuState renderer keys events stateInfo = do
   bg renderer (clerp (1/4) white)
   rendererDrawColor renderer $= lif (even $ stateInfo^.menuFinger) blue green
-  fillRect renderer (safeRect (V2 100 100) (V2 100 100))
+  fillRect renderer (safeRect 100 100)
   rendererDrawColor renderer $= lif (odd $ stateInfo^.menuFinger) blue green
-  fillRect renderer (safeRect (V2 100 300) (V2 100 100))
+  fillRect renderer (safeRect (V2 100 300) 100)
+  rendererDrawColor renderer $= yellow
+  drawWord renderer 20 50 "abcdefghijklm"
+  drawWord renderer (V2 20 130) 100 "nopqrstuvwxyz"
   return stateInfo
 
 navigateMenu :: StateInfo -> IO StateInfo
