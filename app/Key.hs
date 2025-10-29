@@ -1,6 +1,4 @@
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# HLINT ignore "Use infix" #-}
 
 module Key where
 
@@ -37,13 +35,13 @@ unkeys :: KeySet
 unkeys = KeySet [] [] []
 
 keyBegun :: KeySet -> Scancode -> Bool
-keyBegun keyset key = elem key (keyset^.keysBegin)
+keyBegun keyset = flip elem (keyset^.keysBegin)
 
 keyContinuing :: KeySet -> Scancode -> Bool
-keyContinuing keyset key = elem key (keyset^.keysBegin ++ keyset^.keysContinue)
+keyContinuing keyset = flip elem (keyset^.keysBegin ++ keyset^.keysContinue)
 
 keyEnded :: KeySet -> Scancode -> Bool
-keyEnded keyset key = elem key (keyset^.keysEnd)
+keyEnded keyset = flip elem (keyset^.keysEnd)
 
 listen :: KeySet -> (Scancode -> Bool) -> KeySet
 listen keySet keyboardState = KeySet

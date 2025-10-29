@@ -1,12 +1,8 @@
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-{-# HLINT ignore "Use <$>" #-}
 module World where
 
 import SDL
 import Foreign.C
 import Control.Lens
-
-import Mean
 
 zfully :: (R1 v, R2 v, Num a) => v a -> V3 a
 zfully z = V3 (z^._x) (z^._y) 0

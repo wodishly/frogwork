@@ -2,7 +2,7 @@ module Random where
 
 import SDL
 import Data.Bifunctor
-import System.Random
+import System.Random hiding (Seed)
 import Control.Lens
 import Foreign.C
 

@@ -1,19 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS_GHC -Wno-name-shadowing #-}
 
 module Main where
 
 import SDL
-import Foreign.C
 import Control.Lens
 import Control.Monad
 
 import Test
-import Mean
-import Random
-import Light
 import Key
 import State
-import World
 
 openGLWindow :: WindowConfig
 openGLWindow = defaultWindow {
@@ -34,7 +30,7 @@ main = do
 die :: Window -> IO ()
 die window = do
   destroyWindow window
-  pollEvents
+  _ <- pollEvents
   return ()
 
 live :: Renderer -> StateInfo -> IO ()

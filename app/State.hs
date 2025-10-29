@@ -1,8 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE ImpredicativeTypes #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-{-# HLINT ignore "Redundant pure" #-}
-{-# HLINT ignore "Redundant return" #-}
+{-# OPTIONS_GHC -Wno-name-shadowing #-}
 
 module State where
 
@@ -17,7 +15,6 @@ import Light
 import Mean
 import World
 import Frog
-import Data.Word
 import Stave
 
 data OptionsInfo = OptionsInfo {
@@ -36,6 +33,7 @@ data StateInfo = StateInfo {
 , _position :: V2 CFloat
 , _keyset :: KeySet
 , _menuFinger :: Int
+, _feather :: Feather
 }
 makeLenses ''StateInfo
 
@@ -58,6 +56,7 @@ defaultState = StateInfo {
 , _position = zlessly center
 , _keyset = unkeys
 , _menuFinger = 0
+, _feather = defaultFeather
 }
 
 move :: StateInfo -> IO StateInfo
@@ -65,18 +64,17 @@ move stateInfo = pure $
   set position ((stateInfo^.position) + (zlessly.wayward) (stateInfo^.keyset)) stateInfo
 
 understand :: KeySet -> Response
-understand keys events stateInfo = do
+understand keys _events stateInfo = do
   stateInfo <- pure $ set keyset keys stateInfo
   stateInfo <- toggleOption ScancodeK isShowingKeys stateInfo
   stateInfo <- toggleOption ScancodeT isShowingTicks stateInfo
-  stateInfo <- decideState stateInfo
-  return stateInfo
+  decideState stateInfo
 
 decideState :: StateInfo -> IO StateInfo
 decideState stateInfo = case stateInfo^.currentState of
   Menu -> do
     stateInfo <- navigateMenu stateInfo
-    return $ if even (stateInfo^.menuFinger) && keyBegun (stateInfo^.keyset) ScancodeReturn
+    return $ if (mod (stateInfo^.menuFinger) 3 /= 2) && keyBegun (stateInfo^.keyset) ScancodeReturn
       then set currentState Play stateInfo
       else stateInfo
   _ -> do
@@ -88,6 +86,7 @@ togglePause :: StateInfo -> StateInfo
 togglePause stateInfo = set currentState (case stateInfo^.currentState of
     Play -> Pause
     Pause -> Play
+    _ -> error "bad state"
   ) stateInfo
 
 toggleOption :: Scancode -> Lens' OptionsInfo Bool -> StateInfo -> IO StateInfo
@@ -100,9 +99,10 @@ stateByName name = case name of
   Play -> playState
   Pause -> pauseState
   Menu -> menuState
+  _ -> error "bad state"
 
 playState :: GameState
-playState renderer keys events stateInfo = do
+playState renderer _keys _events stateInfo = do
   stateInfo <- move stateInfo
   bg renderer black
   rendererDrawColor renderer $= green
@@ -110,27 +110,27 @@ playState renderer keys events stateInfo = do
   return stateInfo
 
 pauseState :: GameState
-pauseState renderer keys events stateInfo = do
+pauseState renderer _keys _events stateInfo = do
   bg renderer blue
   return stateInfo
 
+quitState :: GameState
+quitState renderer _keys _events stateInfo = do
+  bg renderer black
+  return stateInfo
+
 menuState :: GameState
-menuState renderer keys events stateInfo = do
+menuState renderer _keys _events stateInfo = do
   bg renderer (clerp (1/4) white)
-  rendererDrawColor renderer $= lif (even $ stateInfo^.menuFinger) blue green
-  fillRect renderer (safeRect 100 100)
-  rendererDrawColor renderer $= lif (odd $ stateInfo^.menuFinger) blue green
-  fillRect renderer (safeRect (V2 100 300) 100)
-  rendererDrawColor renderer $= yellow
-  drawWord renderer 20 50 "abcdefghijklm"
-  drawWord renderer (V2 20 130) 100 "nopqrstuvwxyz"
+  forM_ (zip [0..] ["play", "frog", "quit"]) (\(i, choice) -> do
+    rendererDrawColor renderer $= if mod (stateInfo^.menuFinger) 3 == i then blue else green
+    drawWord renderer (stateInfo^.feather) (V2 100 $ 100*(cast.succ) i) choice)
   return stateInfo
 
 navigateMenu :: StateInfo -> IO StateInfo
 navigateMenu stateInfo = do
   let gainfinger = fromEnum $ any (keyBegun (stateInfo^.keyset)) [ScancodeUp, ScancodeDown]
-  stateInfo <- pure $ set menuFinger (stateInfo^.menuFinger + gainfinger) stateInfo
-  return stateInfo
+  return $ set menuFinger (stateInfo^.menuFinger + gainfinger) stateInfo
 
 bg :: Renderer -> Color -> IO ()
 bg renderer color = do
