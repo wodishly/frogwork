@@ -12,6 +12,7 @@ import SDL
 
 import Mean
 import Light
+import World
 
 data Feather = Feather {
   _featherSize :: CFloat
@@ -26,6 +27,13 @@ defaultFeather = Feather {
 , _featherThick = 4
 , _featherColor = yellow
 }
+
+-- todo: efficiency
+wordWidth :: Feather -> String -> CFloat
+wordWidth feather word = (cast.length) word * (3/5*(feather^.featherSize + feather^.featherThick))
+
+centeredX :: Feather -> String -> CFloat
+centeredX feather word = (center^._x) - (wordWidth feather word / 2)
 
 featherGrid :: Feather -> [V2 CFloat]
 featherGrid feather =
@@ -43,8 +51,11 @@ drawWord renderer feather topLeft word = forM_ (flight $ length word)
     (word!!i)
 
 drawStave :: Renderer -> Feather -> V2 CFloat -> Char -> IO ()
-drawStave renderer feather topLeft c = forM_ (stave feather topLeft c)
-  $ uncurry (drawLine renderer) . twimap (fmap cast)
+drawStave renderer feather topLeft c = do
+  color <- get (rendererDrawColor renderer)
+  rendererDrawColor renderer $= feather^.featherColor
+  forM_ (stave feather topLeft c) $ uncurry (drawLine renderer) . twimap (fmap cast)
+  rendererDrawColor renderer $= color
 
 stave :: Feather -> V2 CFloat -> Char -> [Twain (Point V2 CFloat)]
 stave feather topLeft c = map (stave' feather topLeft . stavedeal) $ case toLower c of

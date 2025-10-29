@@ -21,7 +21,7 @@ rand = randomIO
 
 -- returns a random angle in [0, 2π)
 rangle :: IO CFloat
-rangle = fmap ((2 * pi) *) rand
+rangle = fmap ((2*pi) *) rand
 
 -- random 2d unit vector
 rdir :: IO (V2 CFloat)

@@ -3,13 +3,14 @@
 
 module Main where
 
-import SDL
+import SDL hiding (Pause, Play)
 import Control.Lens
 import Control.Monad
 
 import Test
 import Key
 import State
+import MenuState
 
 openGLWindow :: WindowConfig
 openGLWindow = defaultWindow {
@@ -32,6 +33,13 @@ die window = do
   destroyWindow window
   _ <- pollEvents
   return ()
+
+stateByName :: StateName -> GameState
+stateByName name = case name of
+  Play -> playState
+  Pause -> pauseState
+  Menu -> menuState
+  _ -> error "bad state"
 
 live :: Renderer -> StateInfo -> IO ()
 live renderer stateInfo = do

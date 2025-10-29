@@ -27,6 +27,9 @@ blue = V4 0 0 255 255
 yellow :: Color
 yellow = V4 255 255 0 255
 
+magenta :: Color
+magenta = V4 255 0 255 255
+
 -- interpolates a color `c` by fraction `n`
 clerp :: CFloat -> Color -> Color
 clerp n = fmap (cast . (*) (clamp (0, 1) n) . cast)

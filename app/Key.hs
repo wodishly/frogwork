@@ -35,13 +35,13 @@ unkeys :: KeySet
 unkeys = KeySet [] [] []
 
 keyBegun :: KeySet -> Scancode -> Bool
-keyBegun keyset = flip elem (keyset^.keysBegin)
+keyBegun keySet = flip elem (keySet^.keysBegin)
 
 keyContinuing :: KeySet -> Scancode -> Bool
-keyContinuing keyset = flip elem (keyset^.keysBegin ++ keyset^.keysContinue)
+keyContinuing keySet = flip elem (keySet^.keysBegin ++ keySet^.keysContinue)
 
 keyEnded :: KeySet -> Scancode -> Bool
-keyEnded keyset = flip elem (keyset^.keysEnd)
+keyEnded keySet = flip elem (keySet^.keysEnd)
 
 listen :: KeySet -> (Scancode -> Bool) -> KeySet
 listen keySet keyboardState = KeySet
@@ -49,8 +49,17 @@ listen keySet keyboardState = KeySet
   (filter (allIn [keyboardState, keyContinuing keySet]) hearableKeys)
   (filter (allIn [not.keyboardState, keyContinuing keySet]) hearableKeys)
 
-wayward :: KeySet -> V3 CFloat
-wayward ks = normalize $ V3
-  ((cast.keyContinuing ks) ScancodeRight - (cast.keyContinuing ks) ScancodeLeft)
-  ((cast.keyContinuing ks) ScancodeDown  - (cast.keyContinuing ks) ScancodeUp  )
-  0
+wayUpDown :: KeySet -> (KeySet -> Scancode -> Bool) -> CFloat
+wayUpDown = way' (ScancodeUp, ScancodeDown)
+
+wayLeftRight :: KeySet -> (KeySet -> Scancode -> Bool) -> CFloat
+wayLeftRight = way' (ScancodeLeft, ScancodeRight)
+
+way' :: (Scancode, Scancode) -> KeySet -> (KeySet -> Scancode -> Bool) -> CFloat
+way' (lower, higher) keySet keyListener
+  | keyListener keySet lower = -1
+  | keyListener keySet higher = 1
+  | otherwise = 0
+
+wayward :: KeySet -> V2 CFloat
+wayward keySet = normalize $ V2 (wayLeftRight keySet keyContinuing) (wayUpDown keySet keyContinuing)

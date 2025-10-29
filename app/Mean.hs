@@ -6,6 +6,7 @@ import Data.Function
 
 type Twain a = (a, a)
 type Shed a = [a] -> a
+type Shell a = a -> [a]
 
 ly' :: Show b => (a -> b) -> a -> a
 -- ly' f x = trace (show (f x)) x
@@ -18,10 +19,10 @@ weep :: IO ()
 weep = print "wah"
 
 average :: (Fractional a) => Shed a
-average = uncurry (/) . bothly sum (fromIntegral.length)
+average = uncurry (/) . applyBoth sum (fromIntegral.length)
 
-bothly :: (a -> b) -> (a -> c) -> a -> (b, c)
-bothly f g = bimap f g . twin
+applyBoth :: (a -> b) -> (a -> c) -> a -> (b, c)
+applyBoth f g = bimap f g . twin
 
 twin :: a -> Twain a
 twin x = (x, x)
@@ -45,5 +46,5 @@ allIn = flip (.) (&) . flip all
 anyIn :: (Foldable t) => t (a -> Bool) -> a -> Bool
 anyIn fs x = any ($ x) fs
 
-flight :: Int -> [Int]
+flight :: Shell Int
 flight = enumFromTo 0 . pred
