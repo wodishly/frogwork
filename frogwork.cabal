@@ -65,6 +65,7 @@ executable frogwork
     Mean
     Random
     State
+    Shade
     Stave
     Test
     World

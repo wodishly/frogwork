@@ -4,17 +4,18 @@
 
 module State where
 
-import SDL hiding (Pause, Play)
-import Foreign.C
-import Control.Lens
+import Control.Lens (makeLenses, Lens', set, (^.))
+
+import SDL.Event (Event)
+import SDL.Video.OpenGL (GLContext)
+import SDL.Input.Keyboard.Codes
 
 import Key
 import Random
 import Light
-import World
 import Frog
-import Stave
 import Mean
+import Shade
 
 data OptionsInfo = OptionsInfo {
   _isShowingTicks :: Bool
@@ -26,7 +27,7 @@ makeLenses ''OptionsInfo
 defaultOptions :: OptionsInfo
 defaultOptions = OptionsInfo {
   _isShowingTicks = False
-, _isShowingKeys = True
+, _isShowingKeys = False
 , _isRunningTests = False
 }
 
@@ -37,10 +38,10 @@ data StateInfo = StateInfo {
 , _currentState :: StateName
 , _states :: [StateName]
 , _options :: OptionsInfo
-, _position :: V2 CFloat
+, _frog :: Polygon
 , _keyset :: KeySet
 , _menuFinger :: Int
-, _feather :: Feather
+--, _feather :: Feather
 }
 makeLenses ''StateInfo
 
@@ -50,18 +51,14 @@ defaultState = StateInfo {
 , _currentState = Menu
 , _states = [Play, Pause, Menu, Quit]
 , _options = defaultOptions
-, _position = zlessly center
+, _frog = makeFrog
 , _keyset = unkeys
 , _menuFinger = 0
-, _feather = defaultFeather
+--, _feather = defaultFeather
 }
 
 type Response = [Event] -> StateInfo -> IO StateInfo
-type GameState = Renderer -> KeySet -> Response
-
-move :: StateInfo -> IO StateInfo
-move stateInfo = pure $
-  set position ((stateInfo^.position) + (zlessly.wayward) (stateInfo^.keyset)) stateInfo
+type GameState = GLContext -> KeySet -> Response
 
 understand :: KeySet -> Response
 understand keys _events stateInfo = do
@@ -98,24 +95,22 @@ toggleOption keycode lens stateInfo = pure $ if keyBegun (stateInfo^.keyset) key
   else stateInfo
 
 playState :: GameState
-playState renderer _keys _events stateInfo = do
+playState _ctx _keys _events stateInfo = do
   stateInfo <- move stateInfo
-  bg renderer black
-  rendererDrawColor renderer $= green
-  fillRect renderer (safeRect (stateInfo^.position) (zlessly $ size frog))
+  bg black
+  shade $ defaultState^.frog
+  drawTriangle (stateInfo^.frog)
   return stateInfo
 
+move :: StateInfo -> IO StateInfo
+move stateInfo = pure $ set frog (map (liftA2 (+) (wayward (stateInfo^.keyset))) (stateInfo^.frog)) stateInfo
+
 pauseState :: GameState
-pauseState renderer _keys _events stateInfo = do
-  bg renderer blue
+pauseState _ctx _keys _events stateInfo = do
+  bg blue
   return stateInfo
 
 quitState :: GameState
-quitState renderer _keys _events stateInfo = do
-  bg renderer black
+quitState _ctx _keys _events stateInfo = do
+  bg black
   return stateInfo
-
-bg :: Renderer -> Color -> IO ()
-bg renderer color = do
-  rendererDrawColor renderer $= color
-  clear renderer
