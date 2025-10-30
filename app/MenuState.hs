@@ -3,8 +3,6 @@ module MenuState where
 
 import State
 import Light
-import Control.Lens.Operators ((^.))
-import Graphics.Rendering.OpenGL (renderPrimitive, PrimitiveMode (Triangles))
 
 menuOptions :: [String]
 menuOptions = ["play", "frog", "quit"]

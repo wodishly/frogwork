@@ -9,6 +9,8 @@ import Control.Lens (makeLenses, Lens', set, (^.))
 import SDL.Event (Event)
 import SDL.Video.OpenGL (GLContext)
 import SDL.Input.Keyboard.Codes
+import Graphics.Rendering.OpenGL as GL
+import Foreign
 
 import Key
 import Random
@@ -38,6 +40,8 @@ data StateInfo = StateInfo {
 , _states :: [StateName]
 , _options :: OptionsInfo
 , _frog :: Polygon
+, _lily :: Point
+, _uloc :: UniformLocation
 , _keyset :: KeySet
 , _menuFinger :: Int
 --, _feather :: Feather
@@ -51,6 +55,8 @@ defaultState = StateInfo {
 , _states = [Play, Pause, Menu, Quit]
 , _options = defaultOptions
 , _frog = makeFrog
+, _lily = Vertex2 0 0
+, _uloc = UniformLocation 0
 , _keyset = unkeys
 , _menuFinger = 0
 --, _feather = defaultFeather
@@ -97,11 +103,15 @@ playState :: GameState
 playState _ctx _keys _events stateInfo = do
   stateInfo <- move stateInfo
   bg black
+
+  lilyPtr <- new (stateInfo^.lily)
+  uniformv (stateInfo^.uloc) 1 lilyPtr
+
   drawTriangle (stateInfo^.frog)
   return stateInfo
 
 move :: StateInfo -> IO StateInfo
-move stateInfo = pure $ set frog (map (liftA2 (+) (wayward (stateInfo^.keyset))) (stateInfo^.frog)) stateInfo
+move stateInfo = pure $ set lily (liftA2 (+) (wayward (stateInfo^.keyset)) (stateInfo^.lily)) stateInfo
 
 pauseState :: GameState
 pauseState _ctx _keys _events stateInfo = do

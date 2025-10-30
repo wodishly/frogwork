@@ -4,13 +4,18 @@ module Shade where
 import Data.ByteString as BS (readFile)
 import Foreign (Ptr, nullPtr, plusPtr, withArray, sizeOf)
 import Control.Monad (unless)
-import Graphics.Rendering.OpenGL
+import Graphics.Rendering.OpenGL as GL
+import State
+import Control.Lens ((^.))
+import Control.Lens.Combinators (set)
 
 bufferOffset :: Int -> Ptr Int
 bufferOffset = plusPtr nullPtr . fromIntegral
 
-shade :: [Vertex2 GLfloat] -> IO ()
-shade vertices = do
+shade :: StateInfo -> IO StateInfo
+shade stateInfo = do
+  let vertices = stateInfo^.frog
+
   vertexShader <- createShader VertexShader
   vertexSource <- BS.readFile "app/shaders/vertex.glsl"
   shaderSourceBS vertexShader $= vertexSource
@@ -42,6 +47,8 @@ shade vertices = do
   bindVertexArrayObject $= Just vao
   vbo <- genObjectName
   bindBuffer ArrayBuffer $= Just vbo
+  location <- uniformLocation program "u_position"
+  stateInfo <- return $ set uloc location stateInfo
 
   let size = fromIntegral $ length vertices * sizeOf (head vertices)
   withArray vertices $ \ptr -> bufferData ArrayBuffer $= (size, ptr, StaticDraw)
@@ -49,3 +56,11 @@ shade vertices = do
   vertexAttribPointer (AttribLocation 0) $= (ToFloat, VertexArrayDescriptor 2 Float 0 (bufferOffset 0))
   vertexAttribArray (AttribLocation 0) $= Enabled
   currentProgram $= Just program
+
+  print program
+  auniforms <- GL.get $ activeUniforms program
+  print auniforms
+
+  return stateInfo
+
+
