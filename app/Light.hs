@@ -1,35 +1,48 @@
 module Light where
 
-import SDL
-import Data.Ord
-import Data.Word
-import Foreign.C
+import Data.Bifunctor (Bifunctor(bimap))
+
+import Graphics.Rendering.OpenGL (ClearBuffer (ColorBuffer), Color4 (Color4), GLfloat, HasSetter (($=)), PrimitiveMode (Quads, Triangles), Vertex2 (Vertex2), clear, clearColor, drawArrays)
 
 import Mean
 
-type Color = V4 Word8
+type FrogColor = Color4 GLfloat
+type Point = Vertex2 GLfloat
+type Polygon = [Vertex2 GLfloat]
 
-white :: Color
-white = 255
+drawTriangle :: Polygon -> IO ()
+drawTriangle triangle = do drawArrays Triangles 0 (fromIntegral $ length triangle)
 
-black :: Color
-black = 0
+drawFournook :: Polygon -> IO ()
+drawFournook fournook = do drawArrays Quads 0 (fromIntegral $ length fournook)
 
-red :: Color
-red = V4 255 0 0 255
+dir :: GLfloat -> Point
+dir = uncurry Vertex2 . bimap cos sin . twin
 
-green :: Color
-green = V4 0 255 0 255
+black :: FrogColor
+black = Color4 0 0 0 1
 
-blue :: Color
-blue = V4 0 0 255 255
+white :: FrogColor
+white = Color4 255 255 255 1
 
-yellow :: Color
-yellow = V4 255 255 0 255
+red :: FrogColor
+red = Color4 255 0 0 1
 
-magenta :: Color
-magenta = V4 255 0 255 255
+green :: FrogColor
+green = Color4 0 255 0 1
+
+blue :: FrogColor
+blue = Color4 0 0 255 1
+
+yellow :: FrogColor
+yellow = Color4 255 255 0 1
+
+magenta :: FrogColor
+magenta = Color4 255 0 255 1
 
 -- interpolates a color `c` by fraction `n`
-clerp :: CFloat -> Color -> Color
+clerp :: GLfloat -> FrogColor -> FrogColor
 clerp n = fmap (cast . (*) (clamp (0, 1) n) . cast)
+
+bg :: FrogColor -> IO ()
+bg c = clearColor $= c >> clear [ColorBuffer]

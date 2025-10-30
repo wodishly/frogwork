@@ -1,10 +1,9 @@
 module Mean where
 
-import Data.Bifunctor
-import Debug.Trace
-import Data.Function
+import Debug.Trace (trace)
+import Data.Function ((&))
+import Data.Bifunctor (Bifunctor(first, bimap))
 
-type Twain a = (a, a)
 type Shed a = [a] -> a
 type Shell a = a -> [a]
 
@@ -18,13 +17,16 @@ ly = ly' id
 weep :: IO ()
 weep = print "wah"
 
+clamp :: Ord a => (a, a) -> a -> a
+clamp (low, high) x = min high (max low x)
+
 average :: (Fractional a) => Shed a
 average = uncurry (/) . applyBoth sum (fromIntegral.length)
 
 applyBoth :: (a -> b) -> (a -> c) -> a -> (b, c)
 applyBoth f g = bimap f g . twin
 
-twin :: a -> Twain a
+twin :: a -> (a, a)
 twin x = (x, x)
 
 -- given a dyadic function `f`, applies `x` to both arguments
@@ -32,7 +34,7 @@ untwin :: (a -> a -> b) -> a -> b
 untwin f x = f x x
 
 -- applies a function to both arguments of a pair
-twimap :: (a -> b) -> Twain a -> Twain b
+twimap :: (a -> b) -> (a, a) -> (b, b)
 twimap = untwin bimap
 
 cast :: (Enum a, Num b) => a -> b

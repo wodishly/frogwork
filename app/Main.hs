@@ -3,33 +3,72 @@
 
 module Main where
 
-import SDL hiding (Pause, Play)
-import Control.Lens
-import Control.Monad
+import Control.Monad (unless, when)
+import Control.Lens ((^.))
 
-import Test
+import SDL.Video
+import SDL.Event (pollEvents)
+import SDL.Input.Keyboard.Codes
+import SDL.Vect (V4(V4))
+import SDL (initializeAll, quit, getKeyboardState, ticks)
+import Graphics.Rendering.OpenGL (finish)
+
 import Key
 import State
+import Test
 import MenuState
+
+openGLConfig :: OpenGLConfig
+openGLConfig = OpenGLConfig {
+    glColorPrecision = V4 8 8 8 0
+  , glDepthPrecision = 24
+  , glStencilPrecision = 8
+  , glMultisampleSamples = 1
+  , glProfile = Core Normal 2 1
+}
 
 openGLWindow :: WindowConfig
 openGLWindow = defaultWindow {
-  windowGraphicsContext = OpenGLContext defaultOpenGL
+  windowGraphicsContext = OpenGLContext openGLConfig
 }
 
 main :: IO ()
 main = do
-  when (defaultState^.options.isRunningTests) allfand
+  when (defaultState^.options.isRunningTests) someFand
 
   initializeAll
+
   window <- createWindow "frog universe" openGLWindow
-  renderer <- createRenderer window (-1) defaultRenderer
-  live renderer defaultState
-  die window
+  ctx <- glCreateContext window
+
+  -- V2 winWidth winHeight <- get (windowSize window)
+  -- viewport $= (Position 0 0, Size (fromIntegral winWidth) (fromIntegral winHeight))
+
+  live window ctx defaultState
+
+  die window ctx
   quit
 
-die :: Window -> IO ()
-die window = do
+
+live :: Window -> GLContext -> StateInfo -> IO ()
+live window ctx stateInfo = do
+  events <- pollEvents
+  keys <- listen (stateInfo^.keyset) <$> getKeyboardState
+
+  when (stateInfo^.options.isShowingKeys) (print keys)
+  when (stateInfo^.options.isShowingTicks) (ticks >>= print)
+
+  stateInfo <- understand keys events stateInfo
+  stateInfo <- (stateByName $ stateInfo^.currentState) ctx keys events stateInfo
+
+  glSwapWindow window
+
+  unless (keyBegun keys ScancodeQ) (live window ctx stateInfo)
+
+die :: Window -> GLContext -> IO ()
+die window ctx = do
+  finish
+  glDeleteContext ctx
   destroyWindow window
   _ <- pollEvents
   return ()
@@ -40,18 +79,3 @@ stateByName name = case name of
   Pause -> pauseState
   Menu -> menuState
   _ -> error "bad state"
-
-live :: Renderer -> StateInfo -> IO ()
-live renderer stateInfo = do
-  events <- pollEvents
-  keys <- listen (stateInfo^.keyset) <$> getKeyboardState
-
-  when (stateInfo^.options.isShowingKeys) (print keys)
-  when (stateInfo^.options.isShowingTicks) (ticks >>= print)
-
-  stateInfo <- understand keys events stateInfo
-  stateInfo <- (stateByName $ stateInfo^.currentState) renderer keys events stateInfo
-
-  present renderer
-
-  unless (keyBegun keys ScancodeQ) (live renderer stateInfo)

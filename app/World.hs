@@ -1,20 +1,3 @@
 module World where
 
-import SDL
-import Foreign.C
-import Control.Lens
-
-zfully :: (R1 v, R2 v, Num a) => v a -> V3 a
-zfully z = V3 (z^._x) (z^._y) 0
-
-zlessly :: (R1 v, R2 v, Num a) => v a -> V2 a
-zlessly z = V2 (z^._x) (z^._y)
-
-world :: V3 CFloat
-world = fromIntegral <$> zfully (windowInitialSize defaultWindow)
-
-center :: V3 CFloat
-center = world ^/ 2
-
-safeRect :: RealFrac a => V2 a -> V2 a -> Maybe (Rectangle CInt)
-safeRect topLeft size = Just $ Rectangle (P $ round <$> topLeft) (round <$> size)
+-- Hier ist die Welt still.

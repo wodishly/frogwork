@@ -1,12 +1,6 @@
 module Frog where
 
-import SDL
-import Foreign.C
+import Light
 
-data Frog = Frog {
-  size :: V3 CFloat
-, wealth :: Int
-}
-
-frog :: Frog
-frog = Frog 64 0
+makeFrog :: Polygon
+makeFrog = map (fmap (/8) . dir) [pi/2, 7*pi/6, 11*pi/6]

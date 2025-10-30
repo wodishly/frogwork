@@ -65,6 +65,7 @@ executable frogwork
     Mean
     Random
     State
+    Shade
     Stave
     Test
     World
@@ -77,6 +78,8 @@ executable frogwork
   build-depends:
     base ^>=4.18.3.0,
     sdl2,
+    OpenGL,
+    bytestring,
     random,
     lens,
 
