@@ -17,6 +17,7 @@ import Key
 import State
 import Test
 import MenuState
+import Shade
 
 openGLConfig :: OpenGLConfig
 openGLConfig = OpenGLConfig {
@@ -44,11 +45,16 @@ main = do
   -- V2 winWidth winHeight <- get (windowSize window)
   -- viewport $= (Position 0 0, Size (fromIntegral winWidth) (fromIntegral winHeight))
 
-  live window ctx defaultState
+  let stateInfo = defaultState
+  stateInfo <- birth stateInfo
+  live window ctx stateInfo
 
   die window ctx
   quit
 
+birth :: StateInfo -> IO StateInfo
+birth stateInfo = do
+  shade stateInfo
 
 live :: Window -> GLContext -> StateInfo -> IO ()
 live window ctx stateInfo = do
