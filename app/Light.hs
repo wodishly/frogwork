@@ -1,20 +1,41 @@
 module Light where
 
 import Data.Bifunctor (Bifunctor(bimap))
-
-import Graphics.Rendering.OpenGL (ClearBuffer (ColorBuffer), Color4 (Color4), GLfloat, HasSetter (($=)), PrimitiveMode (Quads, Triangles), Vertex2 (Vertex2), clear, clearColor, drawArrays)
+import Graphics.Rendering.OpenGL (
+    ClearBuffer (ColorBuffer, DepthBuffer),
+    Color4 (Color4),
+    GLfloat,
+    HasSetter (($=)),
+    PrimitiveMode (Quads, Triangles),
+    Vertex2 (Vertex2),
+    Vertex3,
+    clear,
+    clearColor,
+    drawArrays,
+    drawElements,
+    DataType (UnsignedInt))
 
 import Mean
+import Foreign
 
 type FrogColor = Color4 GLfloat
 type Point = Vertex2 GLfloat
 type Polygon = [Vertex2 GLfloat]
+type Polyhedron = [Vertex3 GLfloat]
+type Faces = [Int]
+
+
+bufferOffset :: Int -> Ptr Int
+bufferOffset = plusPtr nullPtr . fromIntegral
 
 drawTriangle :: Polygon -> IO ()
 drawTriangle triangle = do drawArrays Triangles 0 (fromIntegral $ length triangle)
 
 drawFournook :: Polygon -> IO ()
 drawFournook fournook = do drawArrays Quads 0 (fromIntegral $ length fournook)
+
+drawFaces :: Int32 -> IO ()
+drawFaces count = do drawElements Triangles count UnsignedInt (bufferOffset 0)
 
 dir :: GLfloat -> Point
 dir = uncurry Vertex2 . bimap cos sin . twin
@@ -45,4 +66,4 @@ clerp :: GLfloat -> FrogColor -> FrogColor
 clerp n = fmap (cast . (*) (clamp (0, 1) n) . cast)
 
 bg :: FrogColor -> IO ()
-bg c = clearColor $= c >> clear [ColorBuffer]
+bg c = clearColor $= c >> clear [ColorBuffer, DepthBuffer]

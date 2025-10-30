@@ -1,8 +1,12 @@
 #version 410
 
+precision highp sampler2D;
+
 in vec2 v_uv;
-out vec4 fColor;
+out vec4 pc_fragColor;
+
+uniform sampler2D u_frog;
 
 void main() {
-    fColor = vec4(vec2(0.48, 0.27) * v_uv, 0.48, 1.0);
+    pc_fragColor = texture(u_frog, v_uv);
 }
