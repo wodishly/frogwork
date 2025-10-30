@@ -4,6 +4,7 @@ module MenuState where
 import State
 import Light
 import Control.Lens.Operators ((^.))
+import Graphics.Rendering.OpenGL (renderPrimitive, PrimitiveMode (Triangles))
 
 menuOptions :: [String]
 menuOptions = ["play", "frog", "quit"]
@@ -17,7 +18,7 @@ menuOptions = ["play", "frog", "quit"]
 menuState :: GameState
 menuState _ctx _keys _events stateInfo = do
   bg (clerp (1/4) white)
-  print $ menuOptions!!(stateInfo^.menuFinger)
+  -- print $ menuOptions!!(stateInfo^.menuFinger)
   -- drawTitle renderer (stateInfo^.feather)
   -- forM_ (zip [0..] menuOptions) (\(i, choice) -> do
   --   drawWord renderer (

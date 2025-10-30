@@ -9,14 +9,15 @@ import Control.Lens ((^.))
 import SDL.Video
 import SDL.Event (pollEvents)
 import SDL.Input.Keyboard.Codes
-import SDL.Vect (V4(V4))
+import SDL.Vect ( V4(V4), V2(V2) )
 import SDL (initializeAll, quit, getKeyboardState, ticks)
-import Graphics.Rendering.OpenGL (finish)
+import Graphics.Rendering.OpenGL
 
 import Key
 import State
 import Test
 import MenuState
+import Shade
 
 openGLConfig :: OpenGLConfig
 openGLConfig = OpenGLConfig {
@@ -41,14 +42,15 @@ main = do
   window <- createWindow "frog universe" openGLWindow
   ctx <- glCreateContext window
 
-  -- V2 winWidth winHeight <- get (windowSize window)
-  -- viewport $= (Position 0 0, Size (fromIntegral winWidth) (fromIntegral winHeight))
+  shade $ defaultState^.frog
+
+  V2 winWidth winHeight <- get (windowSize window)
+  viewport $= (Position 0 0, Size (fromIntegral winWidth) (fromIntegral winHeight))
 
   live window ctx defaultState
 
   die window ctx
   quit
-
 
 live :: Window -> GLContext -> StateInfo -> IO ()
 live window ctx stateInfo = do

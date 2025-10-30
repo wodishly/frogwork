@@ -13,6 +13,16 @@ import SDL
 import Mean
 import Light
 import World
+import Graphics.Rendering.OpenGL (TextureObject)
+
+-- loadCharacter :: FilePath -> Char -> Int -> IO TextureObject
+-- loadCharacter path char px = undefined
+-- 
+-- runFreeType :: IO FT_Error -> IO ()
+-- runFreeType m = do
+--     r <- m
+--     unless (r == 0) $ fail $ "FreeType Error:" ++ show r
+
 
 -- data Feather = Feather {
 --   _featherSize :: CFloat

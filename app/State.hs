@@ -15,7 +15,6 @@ import Random
 import Light
 import Frog
 import Mean
-import Shade
 
 data OptionsInfo = OptionsInfo {
   _isShowingTicks :: Bool
@@ -98,7 +97,6 @@ playState :: GameState
 playState _ctx _keys _events stateInfo = do
   stateInfo <- move stateInfo
   bg black
-  shade $ defaultState^.frog
   drawTriangle (stateInfo^.frog)
   return stateInfo
 
