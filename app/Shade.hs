@@ -85,6 +85,10 @@ shade stateInfo = do
   -- position attribute
   vao <- genObjectName
   bindVertexArrayObject $= Just vao
+
+  vbo <- genObjectName
+  bindBuffer ArrayBuffer $= Just vbo
+
   let vbufferSize = fromIntegral $ length vbuffer * sizeOf (head vbuffer)
   withArray vbuffer $ \ptr -> bufferData ArrayBuffer $= (vbufferSize, ptr, StaticDraw)
 
@@ -95,6 +99,7 @@ shade stateInfo = do
   -- uv attribute
   uvbo <- genObjectName
   bindBuffer ArrayBuffer $= Just uvbo
+
   let ubufferSize = fromIntegral (length ubuffer * sizeOf (head ubuffer))
   withArray ubuffer $ \ptr ->
     bufferData ArrayBuffer $= (ubufferSize, ptr, StaticDraw)
@@ -110,8 +115,6 @@ shade stateInfo = do
   withArray ibuffer $ \ptr -> bufferData ElementArrayBuffer $= (indicesSize, ptr, StaticDraw)
 
   -- uniform buffers
-  vbo <- genObjectName
-  bindBuffer ArrayBuffer $= Just vbo
   location <- uniformLocation program "u_input2d"
   stateInfo <- return $ set uloc location stateInfo
 
