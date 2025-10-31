@@ -13,7 +13,7 @@ data Time = Time Word32 [Word32]
 
 instance Show Time where
   show time@(Time t _)
-    = show ((pad 2 . Left . fromMaybe 0 . meanGap) time) ++ "fps"
+    = (pad 2 . Left . fromMaybe 0 . meanGap) time ++ "fps"
     ++ " (Lifetime: " ++ show t ++ " ms)"
 
 startTime :: Time
