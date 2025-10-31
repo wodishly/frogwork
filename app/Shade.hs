@@ -30,8 +30,6 @@ shade stateInfo = do
 
   vsLog <- get $ shaderInfoLog vertexShader
   putStrLn vsLog
-  print vertexSource
-  print vertexStatus
   fsLog <- get $ shaderInfoLog fragmentShader
   putStrLn fsLog
 
@@ -43,8 +41,6 @@ shade stateInfo = do
   let bitmap = bitmapBuffer mesh
   let tw = texWidth mesh
   let th = texHeight mesh
-  print tw
-  print bitmap
 
   unless vertexStatus (error "vertex shader failed to compile :(")
   unless fragmentStatus (error "fragment shader failed to compile :(")
