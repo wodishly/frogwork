@@ -39,7 +39,7 @@ data StateInfo = StateInfo {
 , _currentState :: StateName
 , _states :: [StateName]
 , _options :: OptionsInfo
-, _frog :: Polyhedron
+, _frog :: Polygon
 , _lily :: Point
 -- locations could be moved to their own data type?
 , _uloc :: UniformLocation
@@ -57,7 +57,7 @@ defaultState = StateInfo {
 , _currentState = Menu
 , _states = [Play, Pause, Menu, Quit]
 , _options = defaultOptions
-, _frog = make3dFrog
+, _frog = makeFrog
 , _lily = Vertex2 0 0
 , _uloc = UniformLocation 0
 , _tloc = UniformLocation 0
