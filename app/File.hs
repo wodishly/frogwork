@@ -6,17 +6,22 @@ import qualified Data.ByteString.Lazy as BL
 import Graphics.Rendering.OpenGL
 import Control.Monad
 
-getFrogBytes :: IO BL.ByteString
-getFrogBytes = BL.readFile "assets/test.frog"
+getFrogBytes :: String -> IO BL.ByteString
+getFrogBytes = BL.readFile
 
 data FrogFile = FrogFile
-  { vertexCount :: Int32,
+  { 
+    -- header
+    vertexCount :: Int32,
     indexCount :: Int32,
     texWidth :: Int16,
     texHeight :: Int16,
+    -- vertex attributes
     positionBuffer :: [Vertex3 GLfloat],
     uvBuffer :: [Vertex2 GLfloat],
+    -- face indices
     indexBuffer :: [Word32],
+    -- rgba texture block
     bitmapBuffer :: [Word8]
   }
   deriving (Show)
