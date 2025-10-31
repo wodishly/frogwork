@@ -70,6 +70,7 @@ executable frogwork
     Test
     World
     MenuState
+    File
 
   -- LANGUAGE extensions used by modules in this package.
   -- other-extensions:
@@ -80,6 +81,7 @@ executable frogwork
     sdl2,
     OpenGL,
     bytestring,
+    binary,
     random,
     lens,
 
