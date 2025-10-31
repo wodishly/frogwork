@@ -4,6 +4,7 @@ import Control.Lens.Internal.CTypes (Int16, Int32, Word32, Word8)
 import Data.Binary.Get
 import qualified Data.ByteString.Lazy as BL
 import Graphics.Rendering.OpenGL
+import Control.Monad
 
 getFrogBytes :: IO BL.ByteString
 getFrogBytes = BL.readFile "assets/test.frog"
@@ -46,10 +47,10 @@ parseFrogFile = do
   twidth <- getInt16le
   theight <- getInt16le
   let tsize = fromIntegral twidth * fromIntegral theight * 4
-  fverts <- mapM (const parseFrogPosition) [0 .. (vcount - 1)]
-  fuvs <- mapM (const parseFrogUv) [0 .. (vcount - 1)]
-  findices <- mapM (const getWord32le) [0 .. (icount - 1)]
-  bmp <- mapM (const getWord8) [(0 :: Integer) .. (tsize - 1)]
+  fverts <- replicateM (fromIntegral vcount) parseFrogPosition
+  fuvs <- replicateM (fromIntegral vcount) parseFrogUv
+  findices <- replicateM (fromIntegral icount) getWord32le
+  bmp <- replicateM tsize getWord8
   return $!
     FrogFile
       vcount
