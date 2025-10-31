@@ -4,7 +4,7 @@
 module Main where
 
 import Control.Monad (unless, when)
-import Control.Lens ((^.))
+import Control.Lens ((^.), set)
 
 import SDL.Video
 import SDL.Event (pollEvents)
@@ -18,6 +18,7 @@ import State
 import Test
 import MenuState
 import Shade
+import Time
 
 openGLConfig :: OpenGLConfig
 openGLConfig = OpenGLConfig {
@@ -63,8 +64,11 @@ live window ctx stateInfo = do
   events <- pollEvents
   keys <- listen (stateInfo^.keyset) <$> getKeyboardState
 
+  now <- ticks
+  stateInfo <- pure $ set time (keepTime (stateInfo^.time) now) stateInfo
+
   when (stateInfo^.options.isShowingKeys) (print keys)
-  when (stateInfo^.options.isShowingTicks) (ticks >>= print)
+  when (stateInfo^.options.isShowingTicks) (print $ stateInfo^.time)
 
   stateInfo <- understand keys events stateInfo
   stateInfo <- (stateByName $ stateInfo^.currentState) ctx keys events stateInfo

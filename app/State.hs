@@ -17,6 +17,7 @@ import Random
 import Light
 import Frog
 import Mean
+import Time
 
 data OptionsInfo = OptionsInfo {
   _isShowingTicks :: Bool
@@ -38,6 +39,7 @@ data StateInfo = StateInfo {
   _seed :: Seed
 , _currentState :: StateName
 , _states :: [StateName]
+, _time :: Time
 , _options :: OptionsInfo
 , _frog :: Polygon
 , _lily :: Point
@@ -53,6 +55,7 @@ defaultState = StateInfo {
   _seed = defaultSeed
 , _currentState = Menu
 , _states = [Play, Pause, Menu, Quit]
+, _time = startTime
 , _options = defaultOptions
 , _frog = makeFrog
 , _lily = Vertex2 0 0
