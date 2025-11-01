@@ -1,7 +1,7 @@
-<center>
+<div align="center">
     <h3><em>frogwork</em></h3>
     current goal: survival horror platformer with cute 3d frogs
-</center>
+</div>
 
 ---
 
