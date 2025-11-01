@@ -9,28 +9,25 @@ import Control.Monad
 getFrogBytes :: String -> IO BL.ByteString
 getFrogBytes = BL.readFile
 
-data FrogFile = FrogFile
-  { 
-    -- header
-    vertexCount :: Int32,
-    indexCount :: Int32,
-    texWidth :: Int16,
-    texHeight :: Int16,
-    -- vertex attributes
-    positionBuffer :: [Vertex3 GLfloat],
-    uvBuffer :: [Vertex2 GLfloat],
-    -- face indices
-    indexBuffer :: [Word32],
-    -- rgba texture block
-    bitmapBuffer :: [Word8]
-  }
-  deriving (Show)
+data FrogFile = FrogFile { 
+  -- header
+  vertexCount :: Int32
+, indexCount :: Int32
+, texWidth :: Int16
+, texHeight :: Int16
+  -- vertex attributes
+, positionBuffer :: [Vertex3 GLfloat]
+, uvBuffer :: [Vertex2 GLfloat]
+  -- face indices
+, indexBuffer :: [Word32]
+  -- rgba texture block
+, bitmapBuffer :: [Word8]
+} deriving (Show)
 
-data FrogVertex = FrogVertex
-  { position :: Vertex3 GLfloat,
-    uv :: Vertex2 GLfloat
-  }
-  deriving (Show)
+data FrogVertex = FrogVertex {
+  position :: Vertex3 GLfloat
+, uv :: Vertex2 GLfloat
+} deriving (Show)
 
 parseFrogPosition :: Get (Vertex3 GLfloat)
 parseFrogPosition = do
@@ -51,18 +48,19 @@ parseFrogFile = do
   icount <- getInt32le
   twidth <- getInt16le
   theight <- getInt16le
+
   let tsize = fromIntegral twidth * fromIntegral theight * 4
   fverts <- replicateM (fromIntegral vcount) parseFrogPosition
   fuvs <- replicateM (fromIntegral vcount) parseFrogUv
   findices <- replicateM (fromIntegral icount) getWord32le
   bmp <- replicateM tsize getWord8
-  return $!
-    FrogFile
-      vcount
-      icount
-      twidth
-      theight
-      fverts
-      fuvs
-      findices
-      bmp
+
+  return $! FrogFile
+    vcount
+    icount
+    twidth
+    theight
+    fverts
+    fuvs
+    findices
+    bmp

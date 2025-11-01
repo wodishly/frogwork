@@ -11,20 +11,29 @@ import State
 import Light
 import Key
 import Time
-  
+
 playState :: GameState
 playState _ctx _keys _events stateInfo = do
   stateInfo <- move stateInfo
   bg black
 
+  -- print $ stateInfo^.programs
+
+  currentProgram $= Just ((fst.last) (stateInfo^.programs))
+  bindVertexArrayObject $= Just ((snd.last) (stateInfo^.programs))
+  drawFaces 6
+
+  currentProgram $= Just ((fst.head) (stateInfo^.programs))
+  bindVertexArrayObject $= Just ((snd.head) (stateInfo^.programs))
   lilyPtr <- new (stateInfo^.lily)
   uniformv (stateInfo^.uloc) 1 lilyPtr
 
   activeTexture $= TextureUnit 0
   tptr <- new (TextureUnit 0)
-  _ <- uniformv (stateInfo^.tloc) 1 tptr
+  uniformv (stateInfo^.tloc) 1 tptr
 
   drawFaces 1800
+
   return stateInfo
 
 move :: StateInfo -> IO StateInfo

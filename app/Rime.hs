@@ -11,9 +11,9 @@ average xs = realToFrac (sum xs) / fromIntegral (length xs)
 hardRound :: RealFrac a => a -> Int
 hardRound x = round x :: Int
 
-
 cast :: (Enum a, Num b) => a -> b
 cast = fromIntegral.fromEnum
+
 -- unused
 roundTo :: (RealFrac a) => Int -> a -> Double
 roundTo sharpness n = (fromInteger.round $ n*10^sharpness) / (10.0^sharpness)

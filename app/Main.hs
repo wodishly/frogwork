@@ -3,15 +3,14 @@
 
 module Main where
 
+import Control.Lens
 import Control.Monad (unless, when)
-import Control.Lens ((^.), set)
 
+import SDL.Vect
 import SDL.Video
-import SDL.Event (pollEvents)
 import SDL.Input.Keyboard.Codes
-import SDL.Vect ( V4(V4), V2(V2) )
-import SDL (initializeAll, quit, getKeyboardState, ticks)
 import Graphics.Rendering.OpenGL
+import qualified SDL (initializeAll, quit, getKeyboardState, ticks, pollEvents)
 
 import Key
 import State
@@ -22,6 +21,7 @@ import PlayState
 import QuitState
 import Shade
 import Time
+import Rime
 
 openGLConfig :: OpenGLConfig
 openGLConfig = OpenGLConfig {
@@ -41,39 +41,36 @@ main :: IO ()
 main = do
   when (defaultState^.options.isRunningTests) someFand
 
-  initializeAll
+  SDL.initializeAll
 
   window <- createWindow "frog universe" openGLWindow
   ctx <- glCreateContext window
 
-  _ <- shade defaultState
+  V2 windowWidth windowHeight <- (cast <$>) <$> get (windowSize window)
+  viewport $= (Position 0 0, Size windowWidth windowHeight)
 
-  V2 winWidth winHeight <- get (windowSize window)
-  viewport $= (Position 0 0, Size (fromIntegral winWidth) (fromIntegral winHeight))
-
-  let stateInfo = defaultState
-  stateInfo <- birth stateInfo
+  stateInfo <- birth defaultState
   live window ctx stateInfo
 
   die window ctx
-  quit
+  SDL.quit
 
 birth :: StateInfo -> IO StateInfo
 birth stateInfo = do
-  shade stateInfo
+  stateInfo <- shade stateInfo defaultMeshProfile
+  shadeSheet stateInfo
 
 live :: Window -> GLContext -> StateInfo -> IO ()
 live window ctx stateInfo = do
-  events <- pollEvents
-  keys <- listen (stateInfo^.keyset) <$> getKeyboardState
-
-  now <- ticks
-  stateInfo <- pure $ set time (keepTime (stateInfo^.time) now) stateInfo
+  events <- SDL.pollEvents
+  keys <- listen (stateInfo^.keyset) <$> SDL.getKeyboardState
+  now <- SDL.ticks
 
   when (stateInfo^.options.isShowingKeys) (print keys)
   when (stateInfo^.options.isShowingTicks) (print $ stateInfo^.time)
 
   stateInfo <- understand keys events stateInfo
+  stateInfo <- pure $ set time (keepTime (stateInfo^.time) now) stateInfo
   stateInfo <- (stateByName $ stateInfo^.currentState) ctx keys events stateInfo
 
   glSwapWindow window
@@ -85,7 +82,6 @@ die window ctx = do
   finish
   glDeleteContext ctx
   destroyWindow window
-  _ <- pollEvents
   return ()
 
 stateByName :: StateName -> GameState

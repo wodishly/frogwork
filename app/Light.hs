@@ -16,8 +16,8 @@ type Faces = [Int]
 bufferOffset :: Int -> Ptr Int
 bufferOffset = plusPtr nullPtr . fromIntegral
 
-drawTriangle :: Polygon -> IO ()
-drawTriangle triangle = do drawArrays Triangles 0 (fromIntegral $ length triangle)
+drawThreenook :: Polygon -> IO ()
+drawThreenook triangle = do drawArrays Triangles 0 (fromIntegral $ length triangle)
 
 drawFournook :: Polygon -> IO ()
 drawFournook fournook = do drawArrays Quads 0 (fromIntegral $ length fournook)
@@ -25,6 +25,10 @@ drawFournook fournook = do drawArrays Quads 0 (fromIntegral $ length fournook)
 drawFaces :: Int32 -> IO ()
 drawFaces count = do drawElements Triangles count UnsignedInt (bufferOffset 0)
 
+evenNooks :: Int -> Polygon
+evenNooks n = map (dir . (* (2*pi / cast n)). cast) (flight n)
+
+-- radians
 dir :: GLfloat -> Point
 dir = uncurry Vertex2 . bimap cos sin . twin
 

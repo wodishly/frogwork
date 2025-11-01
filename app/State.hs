@@ -48,6 +48,7 @@ data StateInfo = StateInfo {
 , _uvloc :: UniformLocation
 , _keyset :: KeySet
 , _menuFinger :: Int
+, _programs :: [(Program, VertexArrayObject)]
 --, _feather :: Feather
 }
 makeLenses ''StateInfo
@@ -66,6 +67,7 @@ defaultState = StateInfo {
 , _uvloc = UniformLocation 0
 , _keyset = unkeys
 , _menuFinger = 0
+, _programs = []
 --, _feather = defaultFeather
 }
 

@@ -1,77 +1,68 @@
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
+{- HLINT ignore "Redundant bracket" -}
 
 module Shade where
 
 import Control.Lens
 import Control.Monad (unless)
 import Data.Binary.Get
-import Data.ByteString as BS (readFile)
-import Foreign (Ptr, nullPtr, plusPtr, sizeOf)
 import Foreign.Marshal
+import Foreign (Storable, sizeOf)
 import Text.Printf
 
+import qualified Data.ByteString as BS (readFile)
 import Graphics.Rendering.OpenGL as GL
 
 import File
+import Light
 import State
+import Fast
+import Rime
+import GHC.Word
 
 -- data sent to the renderer went requesting a mesh
-data MeshProfile = MeshProfile
-  {
-    -- name of frog file
-    meshFileName :: String,
-    -- name of vertex shader GLSL file (without extension)
-    vertexShaderName :: String,
-    -- name of fragment shader GLSL file (without extension)
-    fragmentShaderName :: String
-  }
+data MeshProfile = MeshProfile {
+  -- name of frog file
+  meshFileName :: String
+  -- name of vertex shader GLSL file (without extension)
+, vertexShaderName :: String
+  -- name of fragment shader GLSL file (without extension)
+, fragmentShaderName :: String
+}
 
 defaultMeshProfile :: MeshProfile
 defaultMeshProfile = MeshProfile {
-  meshFileName = "test",
-  vertexShaderName = "vertex",
-  fragmentShaderName ="fragment"
+  meshFileName = "test"
+, vertexShaderName = "vertex"
+, fragmentShaderName ="fragment"
 }
 
-shaderBasePath :: String
-shaderBasePath = "app/shaders"
-assetsBasePath :: String
-assetsBasePath = "assets"
+bufferSize :: Storable a => [a] -> GLsizeiptr
+bufferSize buffer = fromIntegral (length buffer * (sizeOf.head) buffer)
 
-shade :: StateInfo -> IO StateInfo
-shade stateInfo = do
-  -- parse profile (TODO: pass in profile as an arg)
-  let profile = defaultMeshProfile
-  let filePath = printf "%s/%s.frog" assetsBasePath (meshFileName profile) 
-  let vertexShaderPath = printf "%s/%s.glsl" shaderBasePath (vertexShaderName profile) 
-  let fragmentShaderPath = printf "%s/%s.glsl" shaderBasePath (fragmentShaderName profile) 
-
-  -- read all the data
-  fbytes <- getFrogBytes filePath
-  let mesh = runGet parseFrogFile fbytes
-  let vbuffer = positionBuffer mesh
-  let ibuffer = indexBuffer mesh
-  let ubuffer = uvBuffer mesh
-  let bitmap = bitmapBuffer mesh
-  let texw = texWidth mesh
-  let texh = texHeight mesh
-
+-- A boilerplate function to initialize a shader.
+-- But `boil` < Lat. `bulliō`, and `well` (< OE `weallan`)
+-- is too overloaded, whence `brew` (< OE `brēowan`).
+brew :: FilePath -> FilePath -> IO Program
+brew vertexShaderPath fragmentShaderPath = do
   -- load sources + compile, attach, and link shaders
   vertexShader <- createShader VertexShader
   vertexSource <- BS.readFile vertexShaderPath
   shaderSourceBS vertexShader $= vertexSource
   compileShader vertexShader
+
   fragmentShader <- createShader FragmentShader
   fragmentSource <- BS.readFile fragmentShaderPath
   shaderSourceBS fragmentShader $= fragmentSource
   compileShader fragmentShader
+
   vertexStatus <- get (compileStatus vertexShader)
   fragmentStatus <- get (compileStatus fragmentShader)
 
   vsLog <- get $ shaderInfoLog vertexShader
-  putStrLn vsLog
+  print vsLog
   fsLog <- get $ shaderInfoLog fragmentShader
-  putStrLn fsLog
+  print fsLog
 
   unless vertexStatus (error "vertex shader failed to compile :(")
   unless fragmentStatus (error "fragment shader failed to compile :(")
@@ -84,6 +75,27 @@ shade stateInfo = do
   linkStatus <- get (linkStatus program)
   unless linkStatus (error "fuck")
 
+  return program
+
+shade :: StateInfo -> MeshProfile -> IO StateInfo
+shade stateInfo profile = do
+  -- parse profile
+  let filePath = printf "%s/%s.frog" assetsBasePath (meshFileName profile)
+      vertexShaderPath = printf "%s/%s.glsl" shaderBasePath (vertexShaderName profile)
+      fragmentShaderPath = printf "%s/%s.glsl" shaderBasePath (fragmentShaderName profile)
+
+  -- read all the data
+  fbytes <- getFrogBytes filePath
+  let mesh = runGet parseFrogFile fbytes
+      vbuffer = positionBuffer mesh
+      ibuffer = indexBuffer mesh
+      ubuffer = uvBuffer mesh
+      bitmap = bitmapBuffer mesh
+      texw = texWidth mesh
+      texh = texHeight mesh
+
+  program <- brew vertexShaderPath fragmentShaderPath
+
   -- position attribute
   vao <- genObjectName
   bindVertexArrayObject $= Just vao
@@ -91,10 +103,12 @@ shade stateInfo = do
   vbo <- genObjectName
   bindBuffer ArrayBuffer $= Just vbo
 
-  let vbufferSize = fromIntegral $ length vbuffer * sizeOf (head vbuffer)
-  withArray vbuffer $ \ptr -> bufferData ArrayBuffer $= (vbufferSize, ptr, StaticDraw)
+  -- bespokeness
 
-  vertexAttribPointer (AttribLocation 0) 
+  withArray vbuffer $ \ptr ->
+    bufferData ArrayBuffer $= (bufferSize vbuffer, ptr, StaticDraw)
+
+  vertexAttribPointer (AttribLocation 0)
     $= (ToFloat, VertexArrayDescriptor 3 Float 0 (bufferOffset 0))
   vertexAttribArray (AttribLocation 0) $= Enabled
 
@@ -102,9 +116,8 @@ shade stateInfo = do
   uvbo <- genObjectName
   bindBuffer ArrayBuffer $= Just uvbo
 
-  let ubufferSize = fromIntegral (length ubuffer * sizeOf (head ubuffer))
   withArray ubuffer $ \ptr ->
-    bufferData ArrayBuffer $= (ubufferSize, ptr, StaticDraw)
+    bufferData ArrayBuffer $= (bufferSize ubuffer, ptr, StaticDraw)
 
   vertexAttribPointer (AttribLocation 1)
     $= (ToFloat, VertexArrayDescriptor 2 Float 0 (bufferOffset 0))
@@ -113,8 +126,8 @@ shade stateInfo = do
   -- index buffer
   ebo <- genObjectName
   bindBuffer ElementArrayBuffer $= Just ebo
-  let indicesSize = fromIntegral $ length ibuffer * sizeOf (head ibuffer)
-  withArray ibuffer $ \ptr -> bufferData ElementArrayBuffer $= (indicesSize, ptr, StaticDraw)
+  withArray ibuffer $ \ptr ->
+    bufferData ElementArrayBuffer $= (bufferSize ibuffer, ptr, StaticDraw)
 
   -- uniform buffers
   location <- uniformLocation program "u_input2d"
@@ -136,7 +149,7 @@ shade stateInfo = do
       NoProxy
       0 -- mipmaps
       RGBA8 -- internal type
-      (TextureSize2D (fromIntegral texw) (fromIntegral texh))
+      (TextureSize2D (cast texw) (cast texh))
       0
       (PixelData RGBA UnsignedByte ptr)
 
@@ -145,10 +158,48 @@ shade stateInfo = do
   currentProgram $= Just program
 
   print program
-  auniforms <- GL.get $ activeUniforms program
+
+  auniforms <- GL.get (activeUniforms program)
   print auniforms
 
-  return stateInfo
+  return $ set programs ((stateInfo^.programs) ++ [(program, vao)]) stateInfo
 
-bufferOffset :: Int -> Ptr Int
-bufferOffset = plusPtr nullPtr . fromIntegral
+shadeSheet :: StateInfo -> IO StateInfo
+shadeSheet stateInfo = do
+  program <- brew "app/shaders/vertex_sheet.glsl" "app/shaders/fragment_sheet.glsl"
+
+  vao <- genObjectName
+  bindVertexArrayObject $= Just vao
+
+  vbo <- genObjectName
+  bindBuffer ArrayBuffer $= Just vbo
+
+  let vs = [
+           Vertex3 (-1) (-0.9) ( 1 :: GLfloat) --SW
+         , Vertex3 (-1) (-1.0) ( 1)            --NW
+         , Vertex3 ( 1) (-1.0) ( 1)            --NE
+         , Vertex3 ( 1) (-0.9) ( 1)            --SE
+        ]
+
+  withArray vs $ \ptr ->
+    bufferData ArrayBuffer $= (bufferSize vs, ptr, StaticDraw)
+
+  vertexAttribPointer (AttribLocation 0)
+    $= (ToFloat, VertexArrayDescriptor 3 Float 0 (bufferOffset 0))
+  vertexAttribArray (AttribLocation 0) $= Enabled
+
+  let ibuffer = [
+          0, 1, 2 :: Word32
+        , 2, 3, 0
+        ]
+
+  -- index buffer
+  ebo <- genObjectName
+  bindBuffer ElementArrayBuffer $= Just ebo
+  withArray ibuffer $ \ptr ->
+    bufferData ElementArrayBuffer $= (bufferSize ibuffer, ptr, StaticDraw)
+
+  depthFunc $= Just Lequal
+  currentProgram $= Just program
+
+  return $ set programs ((stateInfo^.programs) ++ [(program, vao)]) stateInfo

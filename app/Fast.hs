@@ -1,8 +1,13 @@
 module Fast where
-import Graphics.Rendering.OpenGL (GLfloat)
 
-gapGoal :: GLfloat
-gapGoal = 60
+framegoal :: Num a => a
+framegoal = 60
 
-waxEld :: GLfloat
-waxEld = 4
+framefulness :: Num a => a
+framefulness = 4
+
+shaderBasePath :: String
+shaderBasePath = "app/shaders"
+
+assetsBasePath :: String
+assetsBasePath = "assets"
