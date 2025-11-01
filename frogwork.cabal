@@ -73,7 +73,6 @@ executable frogwork
     Stave
     Test
     Time
-    World
 
   -- LANGUAGE extensions used by modules in this package.
   -- other-extensions:
