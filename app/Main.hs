@@ -62,7 +62,9 @@ birth stateInfo = do
 live :: Window -> GLContext -> StateInfo -> IO ()
 live window ctx stateInfo = do
   events <- pollEvents
-  keys <- listen (stateInfo^.keyset) <$> getKeyboardState
+  keys <- if waxen (stateInfo^.time)
+    then listen (stateInfo^.keyset) <$> getKeyboardState
+    else pure unkeys
 
   now <- ticks
   stateInfo <- pure $ set time (keepTime (stateInfo^.time) now) stateInfo

@@ -1,4 +1,6 @@
+{-# LANGUAGE TemplateHaskell #-}
 {- HLINT ignore "Use infix" -}
+
 module Time where
 
 import Data.Word (Word32)
@@ -8,38 +10,50 @@ import Data.List (elemIndex)
 
 import Mean
 import Fast
+import Control.Lens
+import Graphics.Rendering.OpenGL (GLfloat)
 
-data Time = Time Word32 [Word32]
+data Time = Time {
+  _lifetime :: Word32
+, _gaps :: [Word32]
+}
+makeLenses ''Time
 
 instance Show Time where
   show time@(Time t _)
-    = (pad 2 . Left . fromMaybe 0 . meanGap) time ++ "fps"
+    = (pad 2 . fromMaybe 0 . meanGap) time ++ "fps"
     ++ " (Lifetime: " ++ show t ++ " ms)"
 
 startTime :: Time
 startTime = Time 0 []
 
 keepTime :: Time -> Word32 -> Time
-keepTime time@(Time _ gaps) now = Time now (take (4*gapGoal) (gap time now:gaps))
+keepTime time now = Time now (take (waxEld*gapGoal) (latestGap time now:(time^.gaps)))
 
-gap :: Time -> Word32 -> Word32
-gap (Time lifetime _) now = now - lifetime
+latestGap :: Time -> Word32 -> Word32
+latestGap time now = now - (time^.lifetime)
 
-meanGap :: Time -> Maybe Double
-meanGap (Time _ gaps) = if not (null gaps)
-  then Just (1000 / average gaps)
+meanGap :: Time -> Maybe GLfloat
+meanGap time = if not (null (time^.gaps))
+  then Just (1000 / average (time^.gaps))
   else Nothing
 
--- pad either a number or string with '0'
-pad :: (Show a, Num a) => Int -> Either a String -> String
+throttle :: Time -> GLfloat
+throttle time = gapGoal / maybe (error "time has not begun yet") (cast.round) (meanGap time)
+
+ms :: Num a => a -> a
+ms = (* 1000)
+
+waxen :: Time -> Bool
+waxen time = True -- length (time^.gaps) >= waxEld*gapGoal
+
+-- pad a number with '0'
+pad :: (Show a, Num a) => Int -> a -> String
 pad = pad' '0'
 
--- pad either a number or string with `peanut`
-pad' :: (Show a, Num a) => Char -> Int -> Either a String -> String
-pad' peanut noughts eithered = pad'' peanut noughts (uneithered++(if elem '.' uneithered then "" else "."))
-  where uneithered = case eithered of
-          Left rime -> show rime
-          Right word -> word
+-- pad a number with `peanut`
+pad' :: (Show a, Num a) => Char -> Int -> a -> String
+pad' peanut noughts rime = pad'' peanut noughts (show rime ++(if elem '.' (show rime) then "" else "."))
 
 -- pad a string with `peanut`
 pad'' :: Char -> Int -> String -> String

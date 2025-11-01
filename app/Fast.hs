@@ -1,4 +1,7 @@
 module Fast where
 
-gapGoal :: Int
+gapGoal :: Num a => a
 gapGoal = 60
+
+waxEld :: Num a => a
+waxEld = 4

@@ -123,7 +123,10 @@ playState _ctx _keys _events stateInfo = do
   return stateInfo
 
 move :: StateInfo -> IO StateInfo
-move stateInfo = pure $ set lily (liftA2 (+) (wayward (stateInfo^.keyset)) (stateInfo^.lily)) stateInfo
+move stateInfo = pure $ set lily lily' stateInfo where
+  lily' = liftA2 (+)
+    ((* (200 * throttle (stateInfo^.time))) <$> wayward (stateInfo^.keyset))
+    (stateInfo^.lily)
 
 pauseState :: GameState
 pauseState _ctx _keys _events stateInfo = do
