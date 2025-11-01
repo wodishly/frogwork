@@ -66,6 +66,9 @@ executable frogwork
     Light
     Mean
     MenuState
+    PauseState
+    PlayState
+    QuitState
     Random
     Rime
     State

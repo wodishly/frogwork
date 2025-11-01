@@ -17,6 +17,9 @@ import Key
 import State
 import Test
 import MenuState
+import PauseState
+import PlayState
+import QuitState
 import Shade
 import Time
 
@@ -90,4 +93,4 @@ stateByName name = case name of
   Play -> playState
   Pause -> pauseState
   Menu -> menuState
-  _ -> error "bad state"
+  Quit -> quitState

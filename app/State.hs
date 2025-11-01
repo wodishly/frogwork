@@ -10,7 +10,6 @@ import SDL.Event (Event)
 import SDL.Video.OpenGL (GLContext)
 import SDL.Input.Keyboard.Codes
 import Graphics.Rendering.OpenGL as GL
-import Foreign
 
 import Key
 import Random
@@ -106,34 +105,3 @@ toggleOption :: Scancode -> Lens' OptionsInfo Bool -> StateInfo -> IO StateInfo
 toggleOption keycode lens stateInfo = pure $ if keyBegun (stateInfo^.keyset) keycode
   then set (options.lens) (not $ stateInfo^.options.lens) stateInfo
   else stateInfo
-
-playState :: GameState
-playState _ctx _keys _events stateInfo = do
-  stateInfo <- move stateInfo
-  bg black
-
-  lilyPtr <- new (stateInfo^.lily)
-  uniformv (stateInfo^.uloc) 1 lilyPtr
-
-  activeTexture $= TextureUnit 0
-  tptr <- new (TextureUnit 0)
-  _ <- uniformv (stateInfo^.tloc) 1 tptr
-
-  drawFaces 1800
-  return stateInfo
-
-move :: StateInfo -> IO StateInfo
-move stateInfo = pure $ set lily lily' stateInfo where
-  lily' = liftA2 (+)
-    ((* (200 * throttle (stateInfo^.time))) <$> wayward (stateInfo^.keyset))
-    (stateInfo^.lily)
-
-pauseState :: GameState
-pauseState _ctx _keys _events stateInfo = do
-  bg blue
-  return stateInfo
-
-quitState :: GameState
-quitState _ctx _keys _events stateInfo = do
-  bg black
-  return stateInfo
