@@ -1,29 +1,17 @@
 module Light where
 
 import Data.Bifunctor (Bifunctor(bimap))
-import Graphics.Rendering.OpenGL (
-    ClearBuffer (ColorBuffer, DepthBuffer),
-    Color4 (Color4),
-    GLfloat,
-    HasSetter (($=)),
-    PrimitiveMode (Quads, Triangles),
-    Vertex2 (Vertex2),
-    Vertex3,
-    clear,
-    clearColor,
-    drawArrays,
-    drawElements,
-    DataType (UnsignedInt))
+import Graphics.Rendering.OpenGL
 
 import Mean
 import Foreign
+import Rime
 
 type FrogColor = Color4 GLfloat
 type Point = Vertex2 GLfloat
 type Polygon = [Vertex2 GLfloat]
 type Polyhedron = [Vertex3 GLfloat]
 type Faces = [Int]
-
 
 bufferOffset :: Int -> Ptr Int
 bufferOffset = plusPtr nullPtr . fromIntegral

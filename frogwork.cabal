@@ -60,19 +60,20 @@ executable frogwork
   -- Modules included in this executable, other than Main.
   other-modules:
     Fast
-    Time
+    File
     Frog
     Key
     Light
     Mean
+    MenuState
     Random
+    Rime
     State
     Shade
     Stave
     Test
+    Time
     World
-    MenuState
-    File
 
   -- LANGUAGE extensions used by modules in this package.
   -- other-extensions:

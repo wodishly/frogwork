@@ -16,7 +16,7 @@ import Key
 import Random
 import Light
 import Frog
-import Mean
+import Rime
 import Time
 
 data OptionsInfo = OptionsInfo {

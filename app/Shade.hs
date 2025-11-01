@@ -2,16 +2,18 @@
 
 module Shade where
 
-import Control.Lens.Combinators (set)
+import Control.Lens
 import Control.Monad (unless)
 import Data.Binary.Get
 import Data.ByteString as BS (readFile)
-import File
 import Foreign (Ptr, nullPtr, plusPtr, sizeOf)
 import Foreign.Marshal
-import Graphics.Rendering.OpenGL as GL
-import State
 import Text.Printf
+
+import Graphics.Rendering.OpenGL as GL
+
+import File
+import State
 
 -- data sent to the renderer went requesting a mesh
 data MeshProfile = MeshProfile

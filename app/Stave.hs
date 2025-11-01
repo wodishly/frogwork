@@ -1,19 +1,19 @@
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE OverloadedStrings #-}
-
+-- {-# LANGUAGE TemplateHaskell #-}
+-- {-# LANGUAGE OverloadedStrings #-}
+-- 
 module Stave where
-
-import Data.Char
-import Foreign.C
-import Control.Lens
-import Control.Monad
-
-import SDL
-
-import Mean
-import Light
-import World
-import Graphics.Rendering.OpenGL (TextureObject)
+-- 
+-- import Data.Char
+-- import Foreign.C
+-- import Control.Lens
+-- import Control.Monad
+-- 
+-- import SDL
+-- 
+-- import Mean
+-- import Light
+-- import World
+-- import Graphics.Rendering.OpenGL (TextureObject)
 
 -- loadCharacter :: FilePath -> Char -> Int -> IO TextureObject
 -- loadCharacter path char px = undefined

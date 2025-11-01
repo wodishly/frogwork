@@ -8,7 +8,7 @@ import Data.Word (Word32)
 import Data.Maybe (fromMaybe)
 import Data.List (elemIndex)
 
-import Mean
+import Rime
 import Fast
 import Control.Lens
 import Graphics.Rendering.OpenGL (GLfloat)
@@ -28,7 +28,7 @@ startTime :: Time
 startTime = Time 0 []
 
 keepTime :: Time -> Word32 -> Time
-keepTime time now = Time now (take (waxEld*gapGoal) (latestGap time now:(time^.gaps)))
+keepTime time now = Time now (take (cast $ waxEld*gapGoal) (latestGap time now:(time^.gaps)))
 
 latestGap :: Time -> Word32 -> Word32
 latestGap time now = now - (time^.lifetime)
@@ -39,7 +39,7 @@ meanGap time = if not (null (time^.gaps))
   else Nothing
 
 throttle :: Time -> GLfloat
-throttle time = gapGoal / maybe (error "time has not begun yet") (cast.round) (meanGap time)
+throttle time = gapGoal / maybe (error "time has not begun yet") (cast.hardRound) (meanGap time)
 
 ms :: Num a => a -> a
 ms = (* 1000)

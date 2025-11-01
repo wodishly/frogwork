@@ -17,12 +17,6 @@ ly = ly' id
 weep :: IO ()
 weep = print "wah"
 
-clamp :: Ord a => (a, a) -> a -> a
-clamp (low, high) x = min high (max low x)
-
-average :: (Real a, Fractional b) => [a] -> b
-average xs = realToFrac (sum xs) / fromIntegral (length xs)
-
 applyBoth :: (a -> b) -> (a -> c) -> a -> (b, c)
 applyBoth f g = bimap f g . twin
 
@@ -37,9 +31,6 @@ untwin f x = f x x
 twimap :: (a -> b) -> (a, a) -> (b, b)
 twimap = untwin bimap
 
-cast :: (Enum a, Num b) => a -> b
-cast = fromIntegral.fromEnum
-
 -- whether `x` gladdens all in `fs`
 allIn :: (Foldable t) => t (a -> Bool) -> a -> Bool
 allIn = flip (.) (&) . flip all
@@ -50,7 +41,3 @@ anyIn fs x = any ($ x) fs
 
 flight :: Shell Int
 flight = enumFromTo 0 . pred
-
--- unused
-roundTo :: (RealFrac a) => Int -> a -> Double
-roundTo sharpness n = (fromInteger.round $ n*10^sharpness) / (10.0^sharpness)

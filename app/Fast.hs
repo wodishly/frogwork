@@ -1,7 +1,8 @@
 module Fast where
+import Graphics.Rendering.OpenGL (GLfloat)
 
-gapGoal :: Num a => a
+gapGoal :: GLfloat
 gapGoal = 60
 
-waxEld :: Num a => a
+waxEld :: GLfloat
 waxEld = 4
