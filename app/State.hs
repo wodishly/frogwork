@@ -43,7 +43,10 @@ data StateInfo = StateInfo {
 , _options :: OptionsInfo
 , _frog :: Polygon
 , _lily :: Point
+-- locations could be moved to their own data type?
 , _uloc :: UniformLocation
+, _tloc :: UniformLocation
+, _uvloc :: UniformLocation
 , _keyset :: KeySet
 , _menuFinger :: Int
 --, _feather :: Feather
@@ -60,6 +63,8 @@ defaultState = StateInfo {
 , _frog = makeFrog
 , _lily = Vertex2 0 0
 , _uloc = UniformLocation 0
+, _tloc = UniformLocation 0
+, _uvloc = UniformLocation 0
 , _keyset = unkeys
 , _menuFinger = 0
 --, _feather = defaultFeather
@@ -110,7 +115,11 @@ playState _ctx _keys _events stateInfo = do
   lilyPtr <- new (stateInfo^.lily)
   uniformv (stateInfo^.uloc) 1 lilyPtr
 
-  drawTriangle (stateInfo^.frog)
+  activeTexture $= TextureUnit 0
+  tptr <- new (TextureUnit 0)
+  _ <- uniformv (stateInfo^.tloc) 1 tptr
+
+  drawFaces 1800
   return stateInfo
 
 move :: StateInfo -> IO StateInfo
