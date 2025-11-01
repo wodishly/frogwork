@@ -44,9 +44,6 @@ throttle time = gapGoal / maybe (error "time has not begun yet") (cast.round) (m
 ms :: Num a => a -> a
 ms = (* 1000)
 
-waxen :: Time -> Bool
-waxen time = True -- length (time^.gaps) >= waxEld*gapGoal
-
 -- pad a number with '0'
 pad :: (Show a, Num a) => Int -> a -> String
 pad = pad' '0'
