@@ -13,7 +13,7 @@ void main() {
 
         vec2 i = u_input2d / 10000.0;
         float theta = i.x;
-        vec4 p = position;
+        vec4 p = position / 4.0;
         p.z *= -1.0;
         float c = cos(theta);
         float s = sin(theta);

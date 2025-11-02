@@ -93,6 +93,7 @@ executable frogwork
     , binary
     , random
     , lens
+    , unordered-containers
 
   -- Directories containing source files.
   hs-source-dirs: app

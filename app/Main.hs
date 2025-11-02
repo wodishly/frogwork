@@ -57,8 +57,12 @@ main = do
 
 birth :: StateInfo -> IO StateInfo
 birth stateInfo = do
-  stateInfo <- shade stateInfo defaultMeshProfile
-  shadeSheet stateInfo
+  depthFunc $= Just Lequal
+  playerMesh <- createAssetMesh defaultAssetMeshProfile
+  floorMesh <- createSimpleMesh defaultSimpleMeshProfile
+  tvMesh <- createAssetMesh (createAsset "tv")
+  let m = [playerMesh, floorMesh, tvMesh]
+  return $ set meshes m stateInfo
 
 live :: Window -> GLContext -> StateInfo -> IO ()
 live window ctx stateInfo = do

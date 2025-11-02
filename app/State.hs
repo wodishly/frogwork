@@ -15,9 +15,9 @@ import Graphics.Rendering.OpenGL as GL
 import Key
 import Random
 import Light
-import Frog
 import Rime
 import Time
+import Shade
 
 data OptionsInfo = OptionsInfo {
   _isShowingTicks :: Bool
@@ -41,11 +41,8 @@ data StateInfo = StateInfo {
 , _states :: [StateName]
 , _time :: Time
 , _options :: OptionsInfo
-, _frog :: Polygon
+, _meshes :: [Mesh]
 , _lily :: Point
--- locations could be moved to their own data type?
-, _uloc :: UniformLocation
-, _tloc :: UniformLocation
 , _keyset :: KeySet
 , _menuFinger :: Int
 , _programs :: [(Program, VertexArrayObject)]
@@ -60,10 +57,8 @@ defaultState = StateInfo {
 , _states = [Play, Pause, Menu, Quit]
 , _time = startTime
 , _options = defaultOptions
-, _frog = makeFrog
+, _meshes = []
 , _lily = Vertex2 0 0
-, _uloc = UniformLocation 0
-, _tloc = UniformLocation 0
 , _keyset = unkeys
 , _menuFinger = 0
 , _programs = []

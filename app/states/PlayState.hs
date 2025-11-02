@@ -5,33 +5,41 @@ module PlayState where
 import Control.Lens
 import Foreign (new)
 import Graphics.Rendering.OpenGL as GL
+import qualified Data.HashMap.Strict as HM
 
 import State
 import Light
 import Key
 import Time
+import Shade
 
 playState :: GameState
 playState _ctx _keys _events stateInfo = do
   stateInfo <- move stateInfo
   bg black
 
-  currentProgram $= Just ((fst.last) (stateInfo^.programs))
-  bindVertexArrayObject $= Just ((snd.last) (stateInfo^.programs))
-  drawFaces 6
+  -- currentProgram $= Just ((fst.last) (stateInfo^.programs))
+  -- bindVertexArrayObject $= Just ((snd.last) (stateInfo^.programs))
+  -- drawFaces 6
 
-  currentProgram $= Just ((fst.head) (stateInfo^.programs))
-  bindVertexArrayObject $= Just ((snd.head) (stateInfo^.programs))
-  lilyPtr <- new (stateInfo^.lily)
-  uniformv (stateInfo^.uloc) 1 lilyPtr
-
-  activeTexture $= TextureUnit 0
-  tptr <- new (TextureUnit 0)
-  uniformv (stateInfo^.tloc) 1 tptr
-
-  drawFaces 1800
+  let m = stateInfo^.meshes
+  useMesh $ head m
+  updatePlayerUniforms stateInfo
+  mapM_ drawMesh m
 
   return stateInfo
+
+updatePlayerUniforms :: StateInfo -> IO ()
+updatePlayerUniforms stateInfo = do
+  -- assume player = first mesh
+  let player = head (stateInfo^.meshes)
+  let uniforms = uniformMap player
+
+  -- is `new` appropriate here? 
+  lilyPtr <- new (stateInfo^.lily)
+  inputLocation <- uniforms HM.! "u_input2d"
+  uniformv inputLocation 1 lilyPtr
+
 
 move :: StateInfo -> IO StateInfo
 move stateInfo = pure $ set lily lily' stateInfo where
