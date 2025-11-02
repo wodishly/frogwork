@@ -6,6 +6,10 @@ import Control.Lens
 import Foreign (new)
 import Graphics.Rendering.OpenGL as GL
 import qualified Data.HashMap.Strict as HM
+import SDL.Vect
+import Data.Maybe
+import Rime (cast)
+import SDL (windowSize)
 
 import State
 import Light
@@ -18,14 +22,22 @@ playState _ctx _keys _events stateInfo = do
   stateInfo <- move stateInfo
   bg black
 
-  -- currentProgram $= Just ((fst.last) (stateInfo^.programs))
-  -- bindVertexArrayObject $= Just ((snd.last) (stateInfo^.programs))
-  -- drawFaces 6
+  let w = fromJust (stateInfo^.window)
+  V2 windowWidth windowHeight <- (cast <$>) <$> get (windowSize w)
+  viewport $= (Position 0 0, Size windowWidth windowHeight)
+  let aspect = fromIntegral windowWidth / fromIntegral windowHeight :: Float
+  let display = RenderView {
+    aspect = aspect,
+    fov = pi / 4.0,
+    near = 0.1,
+    far = 100.0
+  }
+  let projectionMatrix = getProjectionMatrix display
 
+  -- mesh rendering --
   let m = stateInfo^.meshes
-  useMesh $ head m
   updatePlayerUniforms stateInfo
-  mapM_ drawMesh m
+  mapM_ (`drawMesh` projectionMatrix) m
 
   return stateInfo
 
@@ -33,6 +45,7 @@ updatePlayerUniforms :: StateInfo -> IO ()
 updatePlayerUniforms stateInfo = do
   -- assume player = first mesh
   let player = head (stateInfo^.meshes)
+  useMesh player
   let uniforms = uniformMap player
 
   -- is `new` appropriate here? 

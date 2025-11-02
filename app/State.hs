@@ -18,6 +18,7 @@ import Light
 import Rime
 import Time
 import Shade
+import SDL (Window)
 
 data OptionsInfo = OptionsInfo {
   _isShowingTicks :: Bool
@@ -46,6 +47,7 @@ data StateInfo = StateInfo {
 , _keyset :: KeySet
 , _menuFinger :: Int
 , _programs :: [(Program, VertexArrayObject)]
+, _window :: Maybe Window
 --, _feather :: Feather
 }
 makeLenses ''StateInfo
@@ -62,6 +64,7 @@ defaultState = StateInfo {
 , _keyset = unkeys
 , _menuFinger = 0
 , _programs = []
+, _window = Nothing
 --, _feather = defaultFeather
 }
 

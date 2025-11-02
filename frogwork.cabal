@@ -97,11 +97,12 @@ executable frogwork
     , unordered-containers ^>=0.2.20.1
     , sdl2
     , OpenGL
+    , OpenGLRaw
     , bytestring
     , binary
     , random
     , lens
-    , unordered-containers
+    , vector
 
   -- Directories containing source files.
   hs-source-dirs: app

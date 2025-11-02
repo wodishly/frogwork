@@ -34,7 +34,8 @@ openGLConfig = OpenGLConfig {
 
 openGLWindow :: WindowConfig
 openGLWindow = defaultWindow {
-  windowGraphicsContext = OpenGLContext openGLConfig
+  windowGraphicsContext = OpenGLContext openGLConfig,
+  windowResizable = True
 }
 
 main :: IO ()
@@ -49,20 +50,28 @@ main = do
   V2 windowWidth windowHeight <- (cast <$>) <$> get (windowSize window)
   viewport $= (Position 0 0, Size windowWidth windowHeight)
 
-  stateInfo <- birth defaultState
+  stateInfo <- birth defaultState window
   live window ctx stateInfo
 
   die window ctx
   SDL.quit
 
-birth :: StateInfo -> IO StateInfo
-birth stateInfo = do
+birth :: StateInfo -> Window -> IO StateInfo
+birth stateInfo w = do
   depthFunc $= Just Lequal
+  
   playerMesh <- createAssetMesh defaultAssetMeshProfile
+  playerMesh <- setMeshTransform playerMesh $ fromTranslation 0 (-2) 0
+
   floorMesh <- createSimpleMesh defaultSimpleMeshProfile
-  tvMesh <- createAssetMesh (createAsset "tv")
-  let m = [playerMesh, floorMesh, tvMesh]
-  return $ set meshes m stateInfo
+
+  froggy <- createAssetMesh $ createAsset "test"
+  froggy <- setMeshTransform froggy $ fromTranslation 2 (-2) 0
+
+  let m = [playerMesh, floorMesh, froggy]
+
+  let stateWithWindow = set window (Just w) stateInfo
+  return $ set meshes m stateWithWindow
 
 live :: Window -> GLContext -> StateInfo -> IO ()
 live window ctx stateInfo = do

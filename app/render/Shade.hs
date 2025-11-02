@@ -12,6 +12,8 @@ import Text.Printf (printf)
 
 import qualified Data.ByteString as BS (readFile)
 import Graphics.Rendering.OpenGL as GL
+import qualified Graphics.GL as GLRaw
+import qualified Data.Vector.Storable as S
 
 import File
 
@@ -19,19 +21,21 @@ import Fast
 import Rime
 import Foreign.Marshal (new)
 import Data.Maybe (fromJust)
-import Light 
+import Light
 import Data.Int
 
 -- data sent to the renderer when requesting a mesh
 data AssetMeshProfile = AssetMeshProfile {
   aMeshFileName :: String,
-  aShaderProfile :: ShaderProfile
+  aShaderProfile :: ShaderProfile,
+  aTransform :: Transform
 }
 
 data SimpleMeshProfile = SimpleMeshProfile {
   sVertexBuffer :: [Vertex3 GLfloat],
   sIndexBuffer :: [Word32],
-  sShaderProfile :: ShaderProfile
+  sShaderProfile :: ShaderProfile,
+  sTransform :: Transform
 }
 
 data ShaderProfile = ShaderProfile {
@@ -49,41 +53,49 @@ data Mesh = Mesh {
   tex :: Maybe TextureObject,
   file :: Maybe FrogFile,
   uniformMap :: UniformMap,
-  elementCount :: Int32
+  elementCount :: Int32,
+  transform :: Transform
 }
 type UniformMap = HM.HashMap [Char] (GettableStateVar UniformLocation)
 
 defaultAssetMeshProfile :: AssetMeshProfile
 defaultAssetMeshProfile = AssetMeshProfile {
   aMeshFileName = "test",
-  aShaderProfile = defaultAssetShaderProfile
+  aShaderProfile = defaultAssetShaderProfile,
+  aTransform = identity
 }
 
 defaultAssetShaderProfile :: ShaderProfile
 defaultAssetShaderProfile = ShaderProfile {
   vertexShaderName = "vertex",
   fragmentShaderName = "texture_fragment",
-  uniforms = ["u_texture", "u_input2d"]
+  uniforms = ["u_projection_matrix", "u_modelview_matrix", "u_texture", "u_input2d"]
 }
 
 createAsset :: String -> AssetMeshProfile
-createAsset name = AssetMeshProfile { 
+createAsset name = AssetMeshProfile {
   aMeshFileName = name,
-  aShaderProfile = defaultAssetShaderProfile
+  aShaderProfile = defaultAssetShaderProfile,
+  aTransform = identity
 }
+
+setMeshTransform :: Mesh -> Transform -> IO Mesh
+setMeshTransform m transform = do
+    return $ m { transform = transform }
 
 defaultSimpleMeshProfile :: SimpleMeshProfile
 defaultSimpleMeshProfile = SimpleMeshProfile {
   sVertexBuffer = floorVbuffer,
   sIndexBuffer = floorIbuffer,
-  sShaderProfile = defaultSimpleShaderProfile
+  sShaderProfile = defaultSimpleShaderProfile,
+  sTransform = identity
 }
 
 defaultSimpleShaderProfile :: ShaderProfile
 defaultSimpleShaderProfile = ShaderProfile {
   vertexShaderName = "vertex_sheet",
   fragmentShaderName = "color_fragment",
-  uniforms = []
+  uniforms = ["u_projection_matrix", "u_modelview_matrix"]
 }
 
 bufferSize :: Storable a => [a] -> GLsizeiptr
@@ -143,6 +155,7 @@ brewProfile mprofile = do
   let vertexShaderPath = printf "%s/%s.glsl" shaderBasePath (vertexShaderName sprofile)
       fragmentShaderPath = printf "%s/%s.glsl" shaderBasePath (fragmentShaderName sprofile)
   program <- brew vertexShaderPath fragmentShaderPath
+  currentProgram $= Just program
   let hmap = HM.fromList $ map (\u -> (u, uniformLocation program u)) uniformNames
   return Concoction {
     prog = program,
@@ -151,16 +164,28 @@ brewProfile mprofile = do
   }
 
 useMesh :: Mesh -> IO ()
-useMesh (Mesh program vao tex _ _ _) = do
+useMesh (Mesh program vao tex _ _ _ _) = do
   currentProgram $= Just program
   bindVertexArrayObject $= Just vao
   textureBinding Texture2D $= tex
 
-drawMesh :: Mesh -> IO ()
-drawMesh mesh = do
+type Transform = S.Vector GLfloat
+drawMesh :: Mesh -> Transform -> IO ()
+drawMesh mesh projectionMatrix = do
   let uniforms = uniformMap mesh
   let count = elementCount mesh
   useMesh mesh
+
+  -- the bindings seem to be broken here? :(
+  -- projLocation <- uniforms HM.! "u_projection_matrix"
+  -- m <- newMatrix ColumnMajor (S.toList projectionMatrix) :: IO (GLmatrix GLfloat)
+  -- withMatrix m $ const $ uniformv projLocation 1
+
+  (UniformLocation projLocation) <- get (uniforms HM.! "u_projection_matrix")
+  S.unsafeWith projectionMatrix (GLRaw.glUniformMatrix4fv projLocation 1 1)
+
+  (UniformLocation mvLocation) <- get (uniforms HM.! "u_modelview_matrix")
+  S.unsafeWith (transform mesh) (GLRaw.glUniformMatrix4fv mvLocation 1 1)
 
   let tex0Location = HM.lookup "u_texture" uniforms
   case tex0Location of
@@ -172,6 +197,36 @@ drawMesh mesh = do
     _ -> return ()
 
   drawFaces count
+
+data RenderView = RenderView {
+  aspect :: Float,
+  fov :: Float,
+  near :: Float,
+  far :: Float
+}
+
+identity :: Transform
+identity = S.fromList
+           [1,0,0,0,
+            0,1,0,0,
+            0,0,1,0,
+            0,0,0,1]
+fromTranslation :: GLfloat -> GLfloat -> GLfloat -> Transform
+fromTranslation x y z = S.fromList
+           [1,0,0,x,
+            0,1,0,y,
+            0,0,1,z,
+            0,0,0,1]
+
+matrix :: [Float] -> Transform
+matrix = S.fromList
+
+getProjectionMatrix :: RenderView -> Transform
+getProjectionMatrix (RenderView aspect fov near far)
+  = S.fromList [1 / (aspect * tan (fov / 2)), 0.0, 0.0, 0.0,
+    0.0, 1 / tan (fov / 2), 0.0, 0.0,
+    0.0, 0.0,- ((far + near) / (far - near)),- (2.0 * far * near / (far - near)),
+    0.0, 0.0, -1.0, 0.0]
 
 createAssetMesh :: AssetMeshProfile -> IO Mesh
 createAssetMesh mprofile = do
@@ -186,7 +241,6 @@ createAssetMesh mprofile = do
       bitmap = bitmapBuffer frogFile
       texw = texWidth frogFile
       texh = texHeight frogFile
-
 
   -- position attribute
   vao <- genObjectName
@@ -249,7 +303,8 @@ createAssetMesh mprofile = do
     tex = Just texObject,
     file = Just frogFile,
     uniformMap = hmap,
-    elementCount = indexCount frogFile
+    elementCount = indexCount frogFile,
+    transform = identity
   }
 
 createSimpleMesh :: SimpleMeshProfile -> IO Mesh
@@ -284,16 +339,16 @@ createSimpleMesh mprofile = do
     tex = Nothing,
     file = Nothing,
     uniformMap = hmap,
-    elementCount = fromIntegral (length ibuffer)
+    elementCount = fromIntegral (length ibuffer),
+    transform = identity
   }
-
 
 floorVbuffer :: [Vertex3 GLfloat]
 floorVbuffer = [
-          Vertex3 (-1) (-0.9) ( 1.0)            --SW
+          Vertex3 (-1) (-0) ( 1.0)            --SW
         , Vertex3 (-1) (-1.0) ( 1.0)            --NW
         , Vertex3 ( 1) (-1.0) ( 1.0)            --NE
-        , Vertex3 ( 1) (-0.9) ( 1.0)            --SE
+        , Vertex3 ( 1) (-0) ( 1.0)            --SE
       ]
 
 floorIbuffer :: [Word32]
