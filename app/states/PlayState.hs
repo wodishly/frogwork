@@ -3,7 +3,6 @@
 module PlayState where
 
 import Control.Lens
-import Control.Monad.State (State)
 import Foreign (new)
 import Graphics.Rendering.OpenGL as GL
 import qualified Data.HashMap.Strict as HM
@@ -17,6 +16,7 @@ import Light
 import Key
 import Time
 import Shade
+import Matrix
 
 playState :: GameState
 playState _ctx _keys _events stateInfo = do
@@ -28,10 +28,10 @@ playState _ctx _keys _events stateInfo = do
   viewport $= (Position 0 0, Size windowWidth windowHeight)
   let aspect = fromIntegral windowWidth / fromIntegral windowHeight :: Float
   let display = RenderView {
-    aspect = aspect,
-    fov = pi / 4.0,
-    near = 0.1,
-    far = 100.0
+    _aspect = aspect,
+    _fov = pi / 4.0,
+    _near = 0.1,
+    _far = 100.0
   }
   let projectionMatrix = getProjectionMatrix display
 

@@ -206,20 +206,6 @@ drawMesh mesh projectionMatrix = do
 
   drawFaces (elementCount mesh)
 
-data RenderView = RenderView {
-  aspect :: Float,
-  fov :: Float,
-  near :: Float,
-  far :: Float
-}
-
-getProjectionMatrix :: RenderView -> Transform
-getProjectionMatrix (RenderView aspect fov near far)
-  = S.fromList [1 / (aspect * tan (fov / 2)), 0.0, 0.0, 0.0,
-    0.0, 1 / tan (fov / 2), 0.0, 0.0,
-    0.0, 0.0,- ((far + near) / (far - near)),- (2.0 * far * near / (far - near)),
-    0.0, 0.0, -1.0, 0.0]
-
 createAssetMesh :: AssetMeshProfile -> IO Mesh
 createAssetMesh mprofile = do
   (Concoction program hmap filePath) <- brewProfile (Left mprofile)
