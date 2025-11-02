@@ -75,12 +75,12 @@ isLight :: Breath -> Bool
 isLight = not.isHeavy
 
 makeRime :: Flight -> Rime
-makeRime ls = case findIndex (not.worth' Bear) ls of
+makeRime ls = case findIndex (not.worth Bear) ls of
   Just n -> uncurry Rime (splitAt n ls)
   Nothing -> Rime ls []
 
 makeBreath :: Flight -> Breath
-makeBreath ls = case findIndex (worth' Bear) ls of
+makeBreath ls = case findIndex (worth Bear) ls of
   Just n -> (\x -> Breath (fst x) (makeRime $ snd x) False) (splitAt n ls)
   Nothing -> Breath ls unrime False
 
@@ -114,7 +114,7 @@ isGoodOnset :: Onset -> Bool
 isGoodOnset o = lif (multipleton o) (elem o (map dirtys ["t", "tp"]))
 
 makeBright :: Flight -> Bright
-makeBright = nudge . map makeBreath . split (worth' Bear)
+makeBright = nudge . map makeBreath . split (worth Bear)
 
 -- in loudness
 lengthL :: Bright -> Int

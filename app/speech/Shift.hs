@@ -94,10 +94,10 @@ onbear :: Shift Flight
 onbear = map onbear' . bothly 1 1
 
 onbear' :: (Flight, Loud, Flight) -> Loud
-onbear' (l, m, r) = applyWhen (not (any (any (worth' Bear)) [l, r]))
+onbear' (l, m, r) = applyWhen (not (any (any (worth Bear)) [l, r]))
   (if isThroat m
     then onbearThroat
-    else applyWhen (worth' Smooth m) (on Bear)
+    else applyWhen (worth Smooth m) (on Bear)
   ) m
 
 gainbear :: Shift Bright
@@ -107,7 +107,7 @@ nosesame :: Shift Bright
 nosesame = makeBright . map nosesame' . rightly 1 . flatten
 
 nosesame' :: (Loud, Flight) -> Loud
-nosesame' (l, [r]) = applyWhen (worth' Nose l && isRough r && (not.worth' Thru) r) (borrow Mouth r) l
+nosesame' (l, [r]) = applyWhen (worth Nose l && isRough r && (not.worth Thru) r) (borrow Mouth r) l
 nosesame' (l, []) = l
 nosesame' _ = error "bad nosesame"
 
@@ -118,7 +118,7 @@ stavefold' :: Shift Flight
 stavefold' ls = case ls of
 -- todo: remember why this line is commented
 --  (a:b:rest) -> lif (worth' Bear a && (on Long a == on Long b)) (stavefold' (on Long b:rest)) (a: stavefold' (b:rest))
-  (a:b:rest) -> if all (\x -> worth' Bear x && not (isDerm x)) [a,b]
+  (a:b:rest) -> if all (\x -> worth Bear x && not (isDerm x)) [a,b]
     then stavefold' (on Long a:rest)
     else a: stavefold' (b:rest)
   stuff -> stuff

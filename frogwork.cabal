@@ -94,7 +94,7 @@ executable frogwork
   -- Other library packages from which modules are imported.
   build-depends:
     , base ^>=4.18.3.0
-    , containers ^>=0.6.7
+    , unordered-containers ^>=0.2.20.1
     , sdl2
     , OpenGL
     , bytestring

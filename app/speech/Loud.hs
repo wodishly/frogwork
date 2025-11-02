@@ -55,16 +55,16 @@ unloud :: Loud
 unloud = off Tung (def Tung)
 
 isGlide :: Loud -> Bool
-isGlide x = none (flip worth' x) [Bear, Choke]
+isGlide x = none (flip worth x) [Bear, Choke]
 
 isDerm :: Loud -> Bool
 isDerm = worths [Bear, Choke]
 
 isRough :: Loud -> Bool
-isRough = not.worth' Smooth
+isRough = not.worth Smooth
 
 isThroat :: Loud -> Bool
-isThroat l = all ($ l) [not.worth' Root, worths [Thru, Body]]
+isThroat l = all ($ l) [not.worth Root, worths [Thru, Body]]
 
 unbear :: Shift Loud
 unbear = offs [Bear, Long]

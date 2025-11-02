@@ -157,11 +157,11 @@ shade stateInfo profile = do
   currentProgram $= Just program
 
   print program
-
   auniforms <- GL.get (activeUniforms program)
   print auniforms
 
   return $ set programs ((stateInfo^.programs) ++ [(program, vao)]) stateInfo
+
 
 shadeSheet :: StateInfo -> IO StateInfo
 shadeSheet stateInfo = do

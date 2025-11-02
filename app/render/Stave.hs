@@ -1,7 +1,11 @@
--- {-# LANGUAGE TemplateHaskell #-}
--- {-# LANGUAGE OverloadedStrings #-}
--- 
 module Stave where
+
+-- import FreeType
+
+-- write :: IO()
+-- write = do
+--   paths <- getArgs
+
 -- 
 -- import Data.Char
 -- import Foreign.C
