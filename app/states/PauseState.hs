@@ -1,6 +1,6 @@
 module PauseState where
 
-import State
+import FrogState
 import Light
 
 pauseState :: GameState

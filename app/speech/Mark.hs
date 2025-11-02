@@ -3,7 +3,7 @@
 
 module Mark where
 import Mean
-import Data.Maybe (isJust)
+import Data.Maybe (isJust, fromJust)
 import Control.Monad (join)
 import Data.Function (applyWhen)
 import Data.Foldable (find)
@@ -68,7 +68,7 @@ offs :: Mark a => [a] -> Shift (Branch a)
 offs = (flip.foldr) off
 
 get :: Mark a => a -> Shift (Branch a)
-get = (wis .) . get'
+get = (fromJust .) . get'
 
 set :: Mark a => Branch a -> Shift (Branch a) --Loud -> Shift Loud
 set b l = if _mark b == _mark l

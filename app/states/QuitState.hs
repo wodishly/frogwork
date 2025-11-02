@@ -1,6 +1,6 @@
 module QuitState where
 
-import State
+import FrogState
 import Light
 
 quitState :: GameState

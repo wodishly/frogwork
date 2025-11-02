@@ -10,22 +10,20 @@ import Data.Binary.Get (runGet)
 import Foreign (Storable, sizeOf, withArray, Int32)
 import Text.Printf (printf)
 import Foreign.Marshal (new)
+import Data.HashMap.Strict (HashMap, (!))
 
 import Graphics.Rendering.OpenGL as GL
 import qualified Graphics.GL as GLRaw
-import qualified Data.Vector.Storable as S
 import qualified Data.ByteString as BS (readFile)
 import qualified Data.HashMap.Strict as HM
+import qualified Data.Vector.Storable as S
 
 import File
 import Fast
 import Rime
-import Foreign.Marshal (new)
-import Data.Maybe (fromJust)
-import Light
-import Data.Int
 import Light 
 import Mean
+import Matrix
 
 data ShaderKind = Vertex | Fragment deriving (Show, Eq)
 
@@ -57,7 +55,10 @@ data ShaderProfile = ShaderProfile {
 }
 
 pathsOf :: ShaderProfile -> (FilePath, FilePath)
-pathsOf = twimap (printf "%s/%s.glsl" shaderBasePath) . applyBoth vertexShaderName fragmentShaderName
+pathsOf = twimap (printf "%s/%s.glsl" shaderBasePath) . doBoth vertexShaderName fragmentShaderName
+
+bufferSize :: Storable a => [a] -> GLsizeiptr
+bufferSize buffer = fromIntegral (length buffer * (sizeOf.head) buffer)
 
 data Mesh = Mesh {
   program :: Program,
@@ -69,7 +70,7 @@ data Mesh = Mesh {
   transform :: Transform
 }
 
-type UniformMap = HM.HashMap [Char] (GettableStateVar UniformLocation)
+type UniformMap = HashMap [Char] (GettableStateVar UniformLocation)
 
 data Concoction = Concoction {
   prog :: Program,
@@ -99,8 +100,7 @@ createAsset name = AssetMeshProfile {
 }
 
 setMeshTransform :: Mesh -> Transform -> IO Mesh
-setMeshTransform m transform = do
-    return $ m { transform = transform }
+setMeshTransform m transform = return $ m { transform = transform }
 
 defaultSimpleMeshProfile :: SimpleMeshProfile
 defaultSimpleMeshProfile = SimpleMeshProfile {
@@ -116,9 +116,6 @@ defaultSimpleShaderProfile = ShaderProfile {
   fragmentShaderName = "color_fragment",
   uniforms = ["u_projection_matrix", "u_modelview_matrix"]
 }
-
-bufferSize :: Storable a => [a] -> GLsizeiptr
-bufferSize buffer = fromIntegral (length buffer * (sizeOf.head) buffer)
 
 -- | A boilerplate function to initialize a shader.
 -- But `boil` < Lat. `bulliō`, and `well` (< OE `weallan`)
@@ -160,7 +157,7 @@ brew vertexShaderPath fragmentShaderPath = do
 brewProfile :: MeshProfile -> IO Concoction
 brewProfile profile = do
   -- parse profile
-  let (sprofile, filePath) = case mprofile of
+  let (sprofile, filePath) = case profile of
         Left a -> (aShaderProfile a, Just $ printf "%s/%s.frog" assetsBasePath (aMeshFileName a))
         Right a -> (sShaderProfile a, Nothing)
   let uniformNames = uniforms sprofile
@@ -181,11 +178,10 @@ useMesh (Mesh program vao tex _ _ _ _) = do
   bindVertexArrayObject $= Just vao
   textureBinding Texture2D $= tex
 
-type Transform = S.Vector GLfloat
 drawMesh :: Mesh -> Transform -> IO ()
 drawMesh mesh projectionMatrix = do
   let uniforms = uniformMap mesh
-  let count = elementCount mesh
+  let _ = elementCount mesh
   useMesh mesh
 
   -- the bindings seem to be broken here? :(
@@ -193,10 +189,10 @@ drawMesh mesh projectionMatrix = do
   -- m <- newMatrix ColumnMajor (S.toList projectionMatrix) :: IO (GLmatrix GLfloat)
   -- withMatrix m $ const $ uniformv projLocation 1
 
-  (UniformLocation projLocation) <- get (uniforms HM.! "u_projection_matrix")
+  (UniformLocation projLocation) <- get (uniforms ! "u_projection_matrix")
   S.unsafeWith projectionMatrix (GLRaw.glUniformMatrix4fv projLocation 1 1)
 
-  (UniformLocation mvLocation) <- get (uniforms HM.! "u_modelview_matrix")
+  (UniformLocation mvLocation) <- get (uniforms ! "u_modelview_matrix")
   S.unsafeWith (transform mesh) (GLRaw.glUniformMatrix4fv mvLocation 1 1)
 
   let tex0Location = HM.lookup "u_texture" uniforms
@@ -204,7 +200,7 @@ drawMesh mesh projectionMatrix = do
     Just a -> do
       activeTexture $= TextureUnit 0
       tex0Pointer <- new (TextureUnit 0)
-      location <- uLoc
+      location <- a
       uniformv location 1 tex0Pointer
     _ -> return ()
 
@@ -216,22 +212,6 @@ data RenderView = RenderView {
   near :: Float,
   far :: Float
 }
-
-identity :: Transform
-identity = S.fromList
-           [1,0,0,0,
-            0,1,0,0,
-            0,0,1,0,
-            0,0,0,1]
-fromTranslation :: GLfloat -> GLfloat -> GLfloat -> Transform
-fromTranslation x y z = S.fromList
-           [1,0,0,x,
-            0,1,0,y,
-            0,0,1,z,
-            0,0,0,1]
-
-matrix :: [Float] -> Transform
-matrix = S.fromList
 
 getProjectionMatrix :: RenderView -> Transform
 getProjectionMatrix (RenderView aspect fov near far)
@@ -320,7 +300,7 @@ createAssetMesh mprofile = do
 
 createSimpleMesh :: SimpleMeshProfile -> IO Mesh
 createSimpleMesh mprofile = do
-  (Concoction program hmap _) <- brewProfile (Right mprofile)
+  Concoction program hmap _ <- brewProfile (Right mprofile)
 
   vao <- genObjectName
   bindVertexArrayObject $= Just vao
@@ -355,11 +335,11 @@ createSimpleMesh mprofile = do
 
 floorVbuffer :: Polyhedron
 floorVbuffer = [
-          Vertex3 (-1) (-0  ) ( 1.0) --SW
-        , Vertex3 (-1) (-1.0) ( 1.0) --NW
-        , Vertex3 ( 1) (-1.0) ( 1.0) --NE
-        , Vertex3 ( 1) (-0  ) ( 1.0) --SE
-      ]
+    Vertex3 (-1) (-0  ) ( 1.0) --SW
+  , Vertex3 (-1) (-1.0) ( 1.0) --NW
+  , Vertex3 ( 1) (-1.0) ( 1.0) --NE
+  , Vertex3 ( 1) (-0  ) ( 1.0) --SE
+  ]
 
 floorIbuffer :: [Word32]
 floorIbuffer = [

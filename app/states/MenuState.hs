@@ -2,7 +2,7 @@
 
 module MenuState where
 
-import State
+import FrogState
 import Light
 
 menuOptions :: [String]

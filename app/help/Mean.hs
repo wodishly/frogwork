@@ -4,14 +4,13 @@ import Debug.Trace (trace)
 import Data.Function ((&))
 import Data.Bifunctor (first, bimap)
 import Control.Exception (assert)
-import Data.Maybe (fromJust, isJust)
 import Data.List (singleton)
 
 type Shed a = [a] -> a
 type Shell a = a -> [a]
 type Shift a = a -> a
 
--- | debugging
+-- @region For working with bugs.
 
 -- | generalized loudly
 ly' :: Show b => (a -> b) -> a -> a
@@ -26,44 +25,74 @@ ly = ly' id
 weep :: IO ()
 weep = print "wah"
 
--- | end debugging
+-- @endregion
+
+-- @region For working with failables.
+
+-- | Asserts that @l == r@, and then returns the value.
+--
+-- >>> samely "frog" "frog"
+-- "frog"
+-- >>> samely "frog" "toad"
+-- Assertion failed
+samely :: Eq a => a -> a -> a
+samely l r = assert (l == r) l
+
+-- @endregion
+
+-- @region For working with twains.
 
 -- given that `f thing` holds, return `thing`
 -- otherwise, return `bad`
 given :: (a -> Bool) -> a -> a -> a
 given f thing bad = if f thing then thing else bad
 
--- assert `isJust x`, and then unpack and return `x`
-wis :: Maybe a -> a
-wis x = assert (isJust x) (fromJust x)
-
+-- | Lifts the argument into a twain.
+--
+-- >>> twin "frog"
+-- ("frog","frog")
 twin :: a -> (a, a)
 twin x = (x, x)
 
--- given a dyadic function `f`, applies `x` to both arguments
-untwin :: (a -> a -> b) -> a -> b
-untwin f x = f x x
+-- | Applies the same thing to both arguments of a binary operation.
+--
+-- A better name is wanting.
+--
+-- A better description is wanting.
+--
+-- >>> toBoth (+) 1
+-- 2
+toBoth :: (a -> a -> b) -> a -> b
+toBoth f x = f x x
 
--- a -> (f a, g a)
-applyBoth :: (a -> b) -> (a -> c) -> a -> (b, c)
-applyBoth f g = bimap f g . twin
+-- | Returns a twain of both functions applied to the argument.
+--
+-- >>> applyBoth succ pred 0
+-- (1,-1)
+doBoth :: (a -> b) -> (a -> c) -> a -> (b, c)
+doBoth f g = bimap f g . twin
 
--- applies a function to both arguments of a pair
+-- | Applies a function to both things of a twain.
+--
+-- >>> twimap (*2) (1,2)
+-- (2,4)
 twimap :: (a -> b) -> (a, a) -> (b, b)
-twimap = untwin bimap
+twimap = toBoth bimap
 
--- foldlikes
+-- @endregion
+
+-- @region For working with lists.
 
 -- | >>> flight 4
 -- [0,1,2,3]
 flight :: Shell Int
 flight = enumFromTo 0 . pred
 
--- | Whether @x@ gladdens all @f@ in @fs@.
+-- | Whether the thing withstands all of the ordeals.
 allIn :: Foldable t => t (a -> Bool) -> a -> Bool
 allIn = flip (.) (&) . flip all
 
--- | Whether @x@ gladdens any @f@ in @fs@.
+-- | Whether the thing withstands any of the ordeals.
 anyIn :: Foldable t => t (a -> Bool) -> a -> Bool
 anyIn fs x = any ($ x) fs
 
@@ -75,17 +104,39 @@ full = not.null
 split :: (a -> Bool) -> Shell [a]
 split f = split' f . map singleton
 
--- | Wraps @arg@ in a list.
+split' :: (a -> Bool) -> Shift [[a]]
+split' f (a:b:rest) = if (f.last) a
+  then a : split' f (b:rest)
+  else split' f ((a++b):rest)
+split' _ xs = xs
+
+-- | Wraps the argument in a list.
+--
+-- Alias for 'Data.List.singleton'.
 --
 -- >>> shell "frog"
 -- ["frog"]
 shell :: Shell a
-shell = (: [])
+shell = singleton
 
 -- | Whether the argument has more than one thing.
+--
+-- A better name is wanting.
+--
+-- >>> multipleton [0,1]
+-- True
+-- >>> multipleton [0..]
+-- True
+-- >>> multipleton [0]
+-- False
+-- >>> multipleton []
+-- False
 multipleton :: Foldable t => t a -> Bool
 multipleton = (> 1) . length
 
+-- | Returns @True@ iff nothing in the list withstands the ordeal.
+--
+-- By De Morgan's laws, @none f xs@ iff @not (any (not f) xs)@.
 none :: Foldable t => (a -> Bool) -> t a -> Bool
 none = (not .) . any
 
@@ -120,15 +171,15 @@ hits :: [Int] -> Shift a -> Shift [a]
 hits [] _ = id
 hits ns f = hits (tail ns) f . hit (head ns) f
 
--- for when you feel bad about having to choose from between two of the same thing
-samely :: Eq a => a -> a -> a
-samely l r = assert (l == r) l
-
-split' :: (a -> Bool) -> Shift [[a]]
-split' f (a:b:rest) = if (f.last) a
-  then a : split' f (b:rest)
-  else split' f ((a++b):rest)
-split' _ xs = xs
-
+-- | Logical if.
+--
+-- >>> lif True True
+-- True
+-- >>> lif True False
+-- False
+-- >>> lif False True
+-- True
+-- >>> lif False False
+-- True
 lif :: Bool -> Bool -> Bool
 lif = (||) . not

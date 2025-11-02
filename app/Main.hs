@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
+{- HLINT ignore "Redundant return" -}
 
 module Main where
 
@@ -13,7 +14,7 @@ import Graphics.Rendering.OpenGL
 import qualified SDL (initializeAll, quit, getKeyboardState, ticks, pollEvents)
 
 import Key
-import State
+import FrogState
 import Test
 import MenuState
 import PauseState
@@ -22,6 +23,7 @@ import QuitState
 import Shade
 import Time
 import Rime
+import Matrix
 
 openGLConfig :: OpenGLConfig
 openGLConfig = OpenGLConfig {
@@ -56,7 +58,7 @@ main = do
   die window ctx
   SDL.quit
 
-birth :: StateInfo -> Window -> IO StateInfo
+birth :: StateWit -> Window -> IO StateWit
 birth stateInfo w = do
   depthFunc $= Just Lequal
 
@@ -70,10 +72,11 @@ birth stateInfo w = do
 
   let m = [playerMesh, floorMesh, froggy]
 
-  let stateWithWindow = set window (Just w) stateInfo
-  return $ set meshes m stateWithWindow
+  stateInfo <- pure $ set window (Just w) stateInfo
+  stateInfo <- pure $ set meshes m stateInfo
+  return stateInfo
 
-live :: Window -> GLContext -> StateInfo -> IO ()
+live :: Window -> GLContext -> StateWit -> IO ()
 live window ctx stateInfo = do
   events <- SDL.pollEvents
   keys <- listen (stateInfo^.keyset) <$> SDL.getKeyboardState

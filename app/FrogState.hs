@@ -2,7 +2,7 @@
 {-# LANGUAGE ImpredicativeTypes #-}
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 
-module State where
+module FrogState where
 
 import Control.Lens
 
@@ -36,7 +36,7 @@ defaultOptions = OptionsInfo {
 
 data StateName = Play | Pause | Menu | Quit deriving (Show, Eq)
 
-data StateInfo = StateInfo {
+data StateWit = StateWit {
   _seed :: Seed
 , _currentState :: StateName
 , _states :: [StateName]
@@ -50,10 +50,10 @@ data StateInfo = StateInfo {
 , _window :: Maybe Window
 --, _feather :: Feather
 }
-makeLenses ''StateInfo
+makeLenses ''StateWit
 
-defaultState :: StateInfo
-defaultState = StateInfo {
+defaultState :: StateWit
+defaultState = StateWit {
   _seed = defaultSeed
 , _currentState = Menu
 , _states = [Play, Pause, Menu, Quit]
@@ -68,7 +68,7 @@ defaultState = StateInfo {
 --, _feather = defaultFeather
 }
 
-type Response = [SDL.Event] -> StateInfo -> IO StateInfo
+type Response = [SDL.Event] -> StateWit -> IO StateWit
 type GameState = SDL.GLContext -> KeySet -> Response
 
 understand :: KeySet -> Response
@@ -78,7 +78,7 @@ understand keys _events stateInfo = do
   stateInfo <- toggleOption ScancodeT isShowingTicks stateInfo
   decideState stateInfo
 
-decideState :: StateInfo -> IO StateInfo
+decideState :: StateWit -> IO StateWit
 decideState stateInfo = case stateInfo^.currentState of
   Menu -> do
     stateInfo <- pure $ set menuFinger (navigate stateInfo (stateInfo^.menuFinger) 3) stateInfo
@@ -90,17 +90,17 @@ decideState stateInfo = case stateInfo^.currentState of
       then togglePause stateInfo
       else stateInfo
 
-navigate :: StateInfo -> Int -> Int -> Int
+navigate :: StateWit -> Int -> Int -> Int
 navigate stateInfo finger = mod (finger + cast (wayUpDown (stateInfo^.keyset) keyBegun))
 
-togglePause :: StateInfo -> StateInfo
+togglePause :: StateWit -> StateWit
 togglePause stateInfo = set currentState (case stateInfo^.currentState of
     Play -> Pause
     Pause -> Play
     _ -> error "bad state"
   ) stateInfo
 
-toggleOption :: Scancode -> Lens' OptionsInfo Bool -> StateInfo -> IO StateInfo
+toggleOption :: Scancode -> Lens' OptionsInfo Bool -> StateWit -> IO StateWit
 toggleOption keycode lens stateInfo = pure $ if keyBegun (stateInfo^.keyset) keycode
   then set (options.lens) (not $ stateInfo^.options.lens) stateInfo
   else stateInfo

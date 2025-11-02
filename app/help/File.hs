@@ -1,13 +1,12 @@
 module File where
 
 import Control.Monad (replicateM)
-
 import Foreign (Int16, Int32, Word32, Word8)
 import Data.Binary.Get
 
 import qualified Data.ByteString.Lazy as BL
-
 import Graphics.Rendering.OpenGL
+
 import Light
 
 getFrogBytes :: String -> IO BL.ByteString

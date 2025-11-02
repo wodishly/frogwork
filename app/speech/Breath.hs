@@ -4,7 +4,7 @@
 module Breath where
 
 import Data.List (findIndex)
-import Data.Maybe (maybeToList)
+import Data.Maybe (maybeToList, fromJust)
 import Data.Bifunctor (first)
 
 import Mark
@@ -33,7 +33,7 @@ data Breath = Breath {
 instance Show Breath where
   show (Breath o r s) = "(" ++ cleans o ++ stuff ++ ")"
     where stuff = if s
-                  then "(" ++ wis (lookup (clean $ head (inset r)) sharps)
+                  then "(" ++ fromJust (lookup (clean $ head (inset r)) sharps)
                            ++ concatMap cleans [tail (inset r), offset r] ++ ")"
                   else show r
 

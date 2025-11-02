@@ -3,6 +3,7 @@
 module PlayState where
 
 import Control.Lens
+import Control.Monad.State (State)
 import Foreign (new)
 import Graphics.Rendering.OpenGL as GL
 import qualified Data.HashMap.Strict as HM
@@ -11,7 +12,7 @@ import Data.Maybe
 import Rime (cast)
 import SDL (windowSize)
 
-import State
+import FrogState
 import Light
 import Key
 import Time
@@ -41,7 +42,7 @@ playState _ctx _keys _events stateInfo = do
 
   return stateInfo
 
-updatePlayerUniforms :: StateInfo -> IO ()
+updatePlayerUniforms :: StateWit -> IO ()
 updatePlayerUniforms stateInfo = do
   -- assume player = first mesh
   let player = head (stateInfo^.meshes)
@@ -54,7 +55,7 @@ updatePlayerUniforms stateInfo = do
   uniformv inputLocation 1 lilyPtr
 
 
-move :: StateInfo -> IO StateInfo
+move :: StateWit -> IO StateWit
 move stateInfo = pure $ set lily lily' stateInfo where
   lily' = liftA2 (+)
     ((* (200 * throttle (stateInfo^.time))) <$> wayward (stateInfo^.keyset))
