@@ -59,7 +59,7 @@ main = do
 birth :: StateInfo -> Window -> IO StateInfo
 birth stateInfo w = do
   depthFunc $= Just Lequal
-  
+
   playerMesh <- createAssetMesh defaultAssetMeshProfile
   playerMesh <- setMeshTransform playerMesh $ fromTranslation 0 (-2) 0
 

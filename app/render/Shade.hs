@@ -5,24 +5,31 @@ module Shade where
 
 import Control.Monad (unless)
 import Data.Word (Word32)
+import Data.Maybe (fromJust)
 import Data.Binary.Get (runGet)
-import qualified Data.HashMap.Strict as HM
-import Foreign (Storable, sizeOf, withArray)
+import Foreign (Storable, sizeOf, withArray, Int32)
 import Text.Printf (printf)
+import Foreign.Marshal (new)
 
-import qualified Data.ByteString as BS (readFile)
 import Graphics.Rendering.OpenGL as GL
 import qualified Graphics.GL as GLRaw
 import qualified Data.Vector.Storable as S
+import qualified Data.ByteString as BS (readFile)
+import qualified Data.HashMap.Strict as HM
 
 import File
-
 import Fast
 import Rime
 import Foreign.Marshal (new)
 import Data.Maybe (fromJust)
 import Light
 import Data.Int
+import Light 
+import Mean
+
+data ShaderKind = Vertex | Fragment deriving (Show, Eq)
+
+class FrogShader s where
 
 -- data sent to the renderer when requesting a mesh
 data AssetMeshProfile = AssetMeshProfile {
@@ -32,11 +39,13 @@ data AssetMeshProfile = AssetMeshProfile {
 }
 
 data SimpleMeshProfile = SimpleMeshProfile {
-  sVertexBuffer :: [Vertex3 GLfloat],
+  sVertexBuffer :: Polyhedron,
   sIndexBuffer :: [Word32],
   sShaderProfile :: ShaderProfile,
   sTransform :: Transform
 }
+
+type MeshProfile = Either AssetMeshProfile SimpleMeshProfile
 
 data ShaderProfile = ShaderProfile {
   -- name of vertex shader GLSL file (without extension)
@@ -47,6 +56,9 @@ data ShaderProfile = ShaderProfile {
   uniforms :: [String]
 }
 
+pathsOf :: ShaderProfile -> (FilePath, FilePath)
+pathsOf = twimap (printf "%s/%s.glsl" shaderBasePath) . applyBoth vertexShaderName fragmentShaderName
+
 data Mesh = Mesh {
   program :: Program,
   vao :: VertexArrayObject,
@@ -56,7 +68,14 @@ data Mesh = Mesh {
   elementCount :: Int32,
   transform :: Transform
 }
+
 type UniformMap = HM.HashMap [Char] (GettableStateVar UniformLocation)
+
+data Concoction = Concoction {
+  prog :: Program,
+  umap :: UniformMap,
+  fpath :: Maybe String
+}
 
 defaultAssetMeshProfile :: AssetMeshProfile
 defaultAssetMeshProfile = AssetMeshProfile {
@@ -101,7 +120,7 @@ defaultSimpleShaderProfile = ShaderProfile {
 bufferSize :: Storable a => [a] -> GLsizeiptr
 bufferSize buffer = fromIntegral (length buffer * (sizeOf.head) buffer)
 
--- A boilerplate function to initialize a shader.
+-- | A boilerplate function to initialize a shader.
 -- But `boil` < Lat. `bulliō`, and `well` (< OE `weallan`)
 -- is too overloaded, whence `brew` (< OE `brēowan`).
 brew :: FilePath -> FilePath -> IO Program
@@ -138,15 +157,8 @@ brew vertexShaderPath fragmentShaderPath = do
 
   return program
 
-data Concoction = Concoction {
-  prog :: Program,
-  umap :: UniformMap,
-  fpath :: Maybe String
-}
-
-type MeshProfile = Either AssetMeshProfile SimpleMeshProfile
 brewProfile :: MeshProfile -> IO Concoction
-brewProfile mprofile = do
+brewProfile profile = do
   -- parse profile
   let (sprofile, filePath) = case mprofile of
         Left a -> (aShaderProfile a, Just $ printf "%s/%s.frog" assetsBasePath (aMeshFileName a))
@@ -192,11 +204,11 @@ drawMesh mesh projectionMatrix = do
     Just a -> do
       activeTexture $= TextureUnit 0
       tex0Pointer <- new (TextureUnit 0)
-      location <- a
+      location <- uLoc
       uniformv location 1 tex0Pointer
     _ -> return ()
 
-  drawFaces count
+  drawFaces (elementCount mesh)
 
 data RenderView = RenderView {
   aspect :: Float,
@@ -297,15 +309,14 @@ createAssetMesh mprofile = do
   print auniforms
 
   -- ✿*,(*´◕ω◕`*)+✿.*
-  return Mesh {
-    program = program,
-    vao = vao,
-    tex = Just texObject,
-    file = Just frogFile,
-    uniformMap = hmap,
-    elementCount = indexCount frogFile,
-    transform = identity
-  }
+  return $ Mesh
+    program
+    vao
+    (Just texObject)
+    (Just frogFile)
+    hmap
+    (indexCount frogFile)
+    identity
 
 createSimpleMesh :: SimpleMeshProfile -> IO Mesh
 createSimpleMesh mprofile = do
@@ -333,26 +344,25 @@ createSimpleMesh mprofile = do
   withArray ibuffer $ \ptr ->
     bufferData ElementArrayBuffer $= (bufferSize ibuffer, ptr, StaticDraw)
 
-  return Mesh {
-    program = program,
-    vao = vao,
-    tex = Nothing,
-    file = Nothing,
-    uniformMap = hmap,
-    elementCount = fromIntegral (length ibuffer),
-    transform = identity
-  }
+  return $ Mesh
+    program
+    vao
+    Nothing
+    Nothing
+    hmap
+    (fromIntegral $ length ibuffer)
+    identity
 
-floorVbuffer :: [Vertex3 GLfloat]
+floorVbuffer :: Polyhedron
 floorVbuffer = [
-          Vertex3 (-1) (-0) ( 1.0)            --SW
-        , Vertex3 (-1) (-1.0) ( 1.0)            --NW
-        , Vertex3 ( 1) (-1.0) ( 1.0)            --NE
-        , Vertex3 ( 1) (-0) ( 1.0)            --SE
+          Vertex3 (-1) (-0  ) ( 1.0) --SW
+        , Vertex3 (-1) (-1.0) ( 1.0) --NW
+        , Vertex3 ( 1) (-1.0) ( 1.0) --NE
+        , Vertex3 ( 1) (-0  ) ( 1.0) --SE
       ]
 
 floorIbuffer :: [Word32]
 floorIbuffer = [
-        0, 1, 2
-      , 2, 3, 0
-      ]
+    0, 1, 2
+  , 2, 3, 0
+  ]
