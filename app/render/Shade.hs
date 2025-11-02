@@ -5,10 +5,10 @@ module Shade where
 
 import Control.Lens
 import Control.Monad (unless)
-import Data.Binary.Get
-import Foreign.Marshal
-import Foreign (Storable, sizeOf)
-import Text.Printf
+import Data.Word (Word32)
+import Data.Binary.Get (runGet)
+import Foreign (Storable, sizeOf, withArray)
+import Text.Printf (printf)
 
 import qualified Data.ByteString as BS (readFile)
 import Graphics.Rendering.OpenGL as GL
@@ -18,7 +18,6 @@ import Light
 import State
 import Fast
 import Rime
-import GHC.Word
 
 -- data sent to the renderer went requesting a mesh
 data MeshProfile = MeshProfile {
@@ -166,7 +165,7 @@ shade stateInfo profile = do
 
 shadeSheet :: StateInfo -> IO StateInfo
 shadeSheet stateInfo = do
-  program <- brew "app/shaders/vertex_sheet.glsl" "app/shaders/fragment_sheet.glsl"
+  program <- brew "app/render/shaders/vertex_sheet.glsl" "app/render/shaders/fragment_sheet.glsl"
 
   vao <- genObjectName
   bindVertexArrayObject $= Just vao

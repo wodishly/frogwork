@@ -2,7 +2,7 @@ module Mean where
 
 import Debug.Trace (trace)
 import Data.Function ((&))
-import Data.Bifunctor (Bifunctor(first, bimap))
+import Data.Bifunctor (first, bimap)
 
 type Shed a = [a] -> a
 type Shell a = a -> [a]

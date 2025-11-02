@@ -4,11 +4,12 @@
 
 module State where
 
-import Control.Lens (makeLenses, Lens', set, (^.))
+import Control.Lens
 
-import SDL.Event (Event)
-import SDL.Video.OpenGL (GLContext)
+import qualified SDL.Event as SDL
+import qualified SDL.Video.OpenGL as SDL
 import SDL.Input.Keyboard.Codes
+
 import Graphics.Rendering.OpenGL as GL
 
 import Key
@@ -45,7 +46,6 @@ data StateInfo = StateInfo {
 -- locations could be moved to their own data type?
 , _uloc :: UniformLocation
 , _tloc :: UniformLocation
-, _uvloc :: UniformLocation
 , _keyset :: KeySet
 , _menuFinger :: Int
 , _programs :: [(Program, VertexArrayObject)]
@@ -64,15 +64,14 @@ defaultState = StateInfo {
 , _lily = Vertex2 0 0
 , _uloc = UniformLocation 0
 , _tloc = UniformLocation 0
-, _uvloc = UniformLocation 0
 , _keyset = unkeys
 , _menuFinger = 0
 , _programs = []
 --, _feather = defaultFeather
 }
 
-type Response = [Event] -> StateInfo -> IO StateInfo
-type GameState = GLContext -> KeySet -> Response
+type Response = [SDL.Event] -> StateInfo -> IO StateInfo
+type GameState = SDL.GLContext -> KeySet -> Response
 
 understand :: KeySet -> Response
 understand keys _events stateInfo = do

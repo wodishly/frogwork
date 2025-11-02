@@ -2,11 +2,11 @@
 
 module Key where
 
-import Control.Lens (makeLenses)
-import Control.Lens.Getter ((^.))
+import Control.Lens
+
+import SDL.Input.Keyboard.Codes
 
 import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2))
-import SDL.Input.Keyboard.Codes
 
 import Light
 import Mean

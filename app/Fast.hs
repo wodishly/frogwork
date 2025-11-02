@@ -7,7 +7,7 @@ framefulness :: Num a => a
 framefulness = 4
 
 shaderBasePath :: String
-shaderBasePath = "app/shaders"
+shaderBasePath = "app/render/shaders"
 
 assetsBasePath :: String
 assetsBasePath = "assets"

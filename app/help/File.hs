@@ -1,28 +1,31 @@
 module File where
 
-import Control.Lens.Internal.CTypes (Int16, Int32, Word32, Word8)
+import Control.Monad (replicateM)
+
+import Foreign (Int16, Int32, Word32, Word8)
 import Data.Binary.Get
 import qualified Data.ByteString.Lazy as BL
+
 import Graphics.Rendering.OpenGL
-import Control.Monad
 
 getFrogBytes :: String -> IO BL.ByteString
 getFrogBytes = BL.readFile
 
-data FrogFile = FrogFile { 
-  -- header
-  vertexCount :: Int32
-, indexCount :: Int32
-, texWidth :: Int16
-, texHeight :: Int16
-  -- vertex attributes
-, positionBuffer :: [Vertex3 GLfloat]
-, uvBuffer :: [Vertex2 GLfloat]
-  -- face indices
-, indexBuffer :: [Word32]
-  -- rgba texture block
-, bitmapBuffer :: [Word8]
-} deriving (Show)
+data FrogFile = FrogFile
+  { -- header
+    vertexCount :: Int32,
+    indexCount :: Int32,
+    texWidth :: Int16,
+    texHeight :: Int16,
+    -- vertex attributes
+    positionBuffer :: [Vertex3 GLfloat],
+    uvBuffer :: [Vertex2 GLfloat],
+    -- face indices
+    indexBuffer :: [Word32],
+    -- rgba texture block
+    bitmapBuffer :: [Word8]
+  }
+  deriving (Show)
 
 data FrogVertex = FrogVertex {
   position :: Vertex3 GLfloat
@@ -55,12 +58,13 @@ parseFrogFile = do
   findices <- replicateM (fromIntegral icount) getWord32le
   bmp <- replicateM tsize getWord8
 
-  return $! FrogFile
-    vcount
-    icount
-    twidth
-    theight
-    fverts
-    fuvs
-    findices
-    bmp
+  return $!
+    FrogFile
+      vcount
+      icount
+      twidth
+      theight
+      fverts
+      fuvs
+      findices
+      bmp

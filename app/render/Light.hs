@@ -1,10 +1,10 @@
 module Light where
 
-import Data.Bifunctor (Bifunctor(bimap))
+import Data.Bifunctor (bimap)
+import Foreign (Int32, Ptr, nullPtr, plusPtr)
 import Graphics.Rendering.OpenGL
 
 import Mean
-import Foreign
 import Rime
 
 type FrogColor = Color4 GLfloat

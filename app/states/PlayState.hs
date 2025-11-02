@@ -3,8 +3,7 @@
 module PlayState where
 
 import Control.Lens
-import Foreign
-
+import Foreign (new)
 import Graphics.Rendering.OpenGL as GL
 
 import State
@@ -16,8 +15,6 @@ playState :: GameState
 playState _ctx _keys _events stateInfo = do
   stateInfo <- move stateInfo
   bg black
-
-  -- print $ stateInfo^.programs
 
   currentProgram $= Just ((fst.last) (stateInfo^.programs))
   bindVertexArrayObject $= Just ((snd.last) (stateInfo^.programs))

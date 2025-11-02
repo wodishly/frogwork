@@ -59,39 +59,47 @@ executable frogwork
 
   -- Modules included in this executable, other than Main.
   other-modules:
-    Fast
     File
-    Frog
-    Key
-    Light
     Mean
+    Random
+    Rime
+    Time
+
+    Key
+
+    Light
+    Shade
+    Stave
+
     MenuState
     PauseState
     PlayState
     QuitState
-    Random
-    Rime
+
+    Fast
+    Frog
     State
-    Shade
-    Stave
     Test
-    Time
 
   -- LANGUAGE extensions used by modules in this package.
   -- other-extensions:
 
   -- Other library packages from which modules are imported.
   build-depends:
-    base ^>=4.18.3.0,
-    sdl2,
-    OpenGL,
-    bytestring,
-    binary,
-    random,
-    lens,
+    base ^>=4.18.3.0
+    , sdl2
+    , OpenGL
+    , bytestring
+    , binary
+    , random
+    , lens
 
   -- Directories containing source files.
   hs-source-dirs: app
+    , app/help
+    , app/input
+    , app/render
+    , app/states
 
   -- Base language which the package is written in.
   default-language: Haskell2010

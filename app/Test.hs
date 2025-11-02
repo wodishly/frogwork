@@ -1,6 +1,7 @@
 module Test where
-import Random
 import Control.Monad
+
+import Random
 import Rime
 
 someFand :: IO ()

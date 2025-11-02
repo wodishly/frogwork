@@ -1,4 +1,5 @@
 module Rime where
+
 import Graphics.Rendering.OpenGL (GLfloat)
 
 clamp :: Ord a => (a, a) -> a -> a

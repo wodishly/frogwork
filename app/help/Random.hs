@@ -1,7 +1,7 @@
 module Random where
 
-import System.Random (Random(randoms), mkStdGen, randomIO)
-import Data.Bifunctor (Bifunctor(bimap))
+import System.Random (randoms, mkStdGen, randomIO)
+import Data.Bifunctor (bimap)
 
 import Graphics.Rendering.OpenGL (Vertex2(Vertex2), GLfloat)
 
