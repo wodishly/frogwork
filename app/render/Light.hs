@@ -56,6 +56,3 @@ magenta = Color4 255 0 255 1
 -- interpolates a color `c` by fraction `n`
 clerp :: GLfloat -> FrogColor -> FrogColor
 clerp n = fmap (cast . (*) (clamp (0, 1) n) . cast)
-
-bg :: FrogColor -> IO ()
-bg c = clearColor $= c >> clear [ColorBuffer, DepthBuffer]

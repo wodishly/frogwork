@@ -24,8 +24,8 @@ instance Show Time where
     = (pad 2 . fromMaybe 0 . meanGap) time ++ "fps"
     ++ " (Lifetime: " ++ show t ++ " ms)"
 
-startTime :: Time
-startTime = Time 0 []
+beginTime :: Time
+beginTime = Time 0 []
 
 keepTime :: Time -> Word32 -> Time
 keepTime time now = Time now (take (framefulness*framegoal :: Int) (latestGap time now:(time^.gaps)))
