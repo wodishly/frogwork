@@ -3,9 +3,7 @@
 module PlayState where
 
 import Control.Lens
-import Foreign (new)
 import Graphics.Rendering.OpenGL as GL
-import qualified Data.HashMap.Strict as HM
 import SDL.Vect
 import Data.Maybe
 import Rime (cast)
@@ -35,25 +33,22 @@ playState _ctx _keys _events stateInfo = do
   }
   let projectionMatrix = getProjectionMatrix display
 
+  let Vertex2 a b = stateInfo^.lily
+  stateInfo <- pure $ set camera (Camera {
+      cTarget=[cos(pi/2+a/10000),-1,sin(pi/2+a/10000)-1+b/10000],
+      cPosition=[0,-1,-1+b/10000]
+    }) stateInfo
+  let c = stateInfo^.camera
+  let viewMatrix = frogLookAt (cPosition c) (cTarget c)
+  -- print viewMatrix
+  -- let lapl = detLaplace $ unhew viewMatrix
+  -- print lapl
+
   -- mesh rendering --
   let m = stateInfo^.meshes
-  updatePlayerUniforms stateInfo
-  mapM_ (`drawMesh` projectionMatrix) m
+  mapM_ (\mesh -> drawMesh mesh projectionMatrix viewMatrix) m
 
   return stateInfo
-
-updatePlayerUniforms :: StateWit -> IO ()
-updatePlayerUniforms stateInfo = do
-  -- assume player = first mesh
-  let player = head (stateInfo^.meshes)
-  useMesh player
-  let uniforms = uniformMap player
-
-  -- is `new` appropriate here? 
-  lilyPtr <- new (stateInfo^.lily)
-  inputLocation <- uniforms HM.! "u_input2d"
-  uniformv inputLocation 1 lilyPtr
-
 
 move :: StateWit -> IO StateWit
 move stateInfo = pure $ set lily lily' stateInfo where

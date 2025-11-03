@@ -19,6 +19,7 @@ import Rime
 import Time
 import Shade
 import SDL (Window)
+import Matrix (FrogVector, frogZero)
 
 data OptionsInfo = OptionsInfo {
   _isShowingTicks :: Bool
@@ -36,6 +37,11 @@ defaultOptions = OptionsInfo {
 
 data StateName = Play | Pause | Menu | Quit deriving (Show, Eq)
 
+data Camera = Camera {
+  cPosition :: FrogVector,
+  cTarget :: FrogVector
+}
+
 data StateWit = StateWit {
   _seed :: Seed
 , _currentState :: StateName
@@ -44,6 +50,7 @@ data StateWit = StateWit {
 , _options :: OptionsInfo
 , _meshes :: [Mesh]
 , _lily :: Point
+, _camera :: Camera
 , _keyset :: KeySet
 , _menuFinger :: Int
 , _programs :: [(Program, VertexArrayObject)]
@@ -60,6 +67,7 @@ defaultState = StateWit {
 , _time = startTime
 , _options = defaultOptions
 , _meshes = []
+, _camera = Camera { cPosition = frogZero, cTarget = [0, 0, 1] }
 , _lily = Vertex2 0 0
 , _keyset = unkeys
 , _menuFinger = 0

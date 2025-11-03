@@ -63,12 +63,12 @@ birth stateInfo w = do
   depthFunc $= Just Lequal
 
   playerMesh <- createAssetMesh defaultAssetMeshProfile
-  playerMesh <- setMeshTransform playerMesh $ fromTranslation 0 (-2) 0
+  playerMesh <- setMeshTransform playerMesh $ fromTranslation [0, -2, -5]
 
   floorMesh <- createSimpleMesh defaultSimpleMeshProfile
 
   froggy <- createAssetMesh $ createAsset "test"
-  froggy <- setMeshTransform froggy $ fromTranslation 2 (-2) 0
+  froggy <- setMeshTransform froggy $ fromTranslation [2, -2, -5]
 
   let m = [playerMesh, floorMesh, froggy]
 
