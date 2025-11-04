@@ -65,7 +65,7 @@ keyEnded keySet = flip elem (keySet^.keysEnd)
 
 unwrapKeys :: [Event] -> [Keywit]
 unwrapKeys = mapMaybe (\event -> case eventPayload event of
-  KeyboardEvent e -> Just (keysymScancode $ keyboardEventKeysym e, keyboardEventKeyMotion e)
+  KeyboardEvent e -> Just (doBoth (keysymScancode.keyboardEventKeysym) keyboardEventKeyMotion e)
   _ -> Nothing)
 
 listen :: [Event] -> KeySet -> KeySet

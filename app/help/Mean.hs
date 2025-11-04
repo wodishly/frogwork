@@ -81,6 +81,13 @@ twimap = toBoth bimap
 
 -- @endregion
 
+-- @region For working with higher tuples.
+
+uncurry3 :: (a -> b -> c -> d) -> (a, b, c) -> d
+uncurry3 f (x, y, z) = f x y z
+
+-- @endregion
+
 -- @region For working with lists.
 
 -- | >>> flight 4
