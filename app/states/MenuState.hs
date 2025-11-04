@@ -15,7 +15,7 @@ menuOptions = ["play", "frog", "quit"]
 --  drawWord renderer feather (V2 (centeredX feather "frogford") 150) "frogford"
 --
 menuState :: GameState
-menuState _ctx _keys _events stateInfo = do
+menuState _ctx _keys stateInfo = do
   bg (clerp (1/4) white)
   -- print $ menuOptions!!(stateInfo^.menuFinger)
   -- drawTitle renderer (stateInfo^.feather)

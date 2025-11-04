@@ -17,7 +17,7 @@ import Shade
 import Matrix
 
 playState :: GameState
-playState _ctx _keys _events stateInfo = do
+playState _ctx _keys stateInfo = do
   stateInfo <- move stateInfo
   bg black
 

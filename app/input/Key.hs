@@ -46,11 +46,11 @@ keyContinuing keySet = flip elem (keySet^.keysBegin ++ keySet^.keysContinue)
 keyEnded :: KeySet -> Scancode -> Bool
 keyEnded keySet = flip elem (keySet^.keysEnd)
 
-listen :: KeySet -> (Scancode -> Bool) -> KeySet
-listen keySet keyboardState = KeySet
-  (filter (allIn [keyboardState, not.keyContinuing keySet]) hearableKeys)
-  (filter (allIn [keyboardState, keyContinuing keySet]) hearableKeys)
-  (filter (allIn [not.keyboardState, keyContinuing keySet]) hearableKeys)
+listen :: KeySet -> [Scancode] -> KeySet
+listen olds news = KeySet
+  (filter (allIn [flip elem news, not.keyContinuing olds]) hearableKeys)
+  (filter (allIn [flip elem news, keyContinuing olds]) hearableKeys)
+  (filter (allIn [not.flip elem news, keyContinuing olds]) hearableKeys)
 
 wayUpDown :: KeySet -> (KeySet -> Scancode -> Bool) -> GLfloat
 wayUpDown = way' (ScancodeUp, ScancodeDown)

@@ -6,7 +6,6 @@ module FrogState where
 
 import Control.Lens
 
-import qualified SDL.Event as SDL
 import qualified SDL.Video.OpenGL as SDL
 import SDL.Input.Keyboard.Codes
 
@@ -76,11 +75,11 @@ defaultState = StateWit {
 --, _feather = defaultFeather
 }
 
-type Response = [SDL.Event] -> StateWit -> IO StateWit
+type Response = StateWit -> IO StateWit
 type GameState = SDL.GLContext -> KeySet -> Response
 
 understand :: KeySet -> Response
-understand keys _events stateInfo = do
+understand keys stateInfo = do
   stateInfo <- pure $ set keyset keys stateInfo
   stateInfo <- toggleOption ScancodeK isShowingKeys stateInfo
   stateInfo <- toggleOption ScancodeT isShowingTicks stateInfo

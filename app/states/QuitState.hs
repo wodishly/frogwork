@@ -4,6 +4,6 @@ import FrogState
 import Light
 
 quitState :: GameState
-quitState _ctx _keys _events stateInfo = do
+quitState _ctx _keys stateInfo = do
   bg black
   return stateInfo
