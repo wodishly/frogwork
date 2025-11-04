@@ -1,35 +1,36 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# OPTIONS_GHC -Wno-name-shadowing #-}
 {-# LANGUAGE RankNTypes #-}
+{-# OPTIONS_GHC -Wno-name-shadowing #-}
 {- HLINT ignore "Redundant return" -}
 
 module Main where
 
+import Data.Map (Map, fromList, (!), adjust)
+import Data.Function (applyWhen)
 import Control.Lens
 import Control.Monad (unless, when)
 import Control.Monad.State
-import Data.Word (Word32)
 
 import SDL (Event)
 import SDL.Vect
 import SDL.Video
 import SDL.Input.Keyboard.Codes
-import qualified Graphics.Rendering.OpenGL as GL (get)
 import Graphics.Rendering.OpenGL as GL hiding (get)
+import qualified Graphics.Rendering.OpenGL as GL (get)
 import qualified SDL (initializeAll, quit, getKeyboardState, ticks, pollEvents)
 
 import Key
-import FrogState
 import Test
+import FrogState
 import MenuState
 import PauseState
 import PlayState
-import QuitState
 import Shade
 import Time
 import Rime
 import Matrix
+import Mean
 
 openGLConfig :: OpenGLConfig
 openGLConfig = OpenGLConfig {
@@ -46,26 +47,31 @@ openGLWindow = defaultWindow {
   windowResizable = True
 }
 
+data GameState =
+    Pl PlayState PlayUpdate
+  | Pa PauseState PauseUpdate
+  | Me MenuState MenuUpdate
+
 data Allwit = Allwit {
   _time :: Time,
-  _options :: OptionsInfo,
-  _ctx :: GLContext,
-  _keys :: KeySet,
-  _window :: Window,
+  _settings :: Settings,
   _events :: [Event],
-  _nowState :: Statewit
+  _ctx :: GLContext,
+  _window :: Window,
+  _keyset :: KeySet,
+  _stateList :: Map StateName GameState,
+  _nowState :: StateName
 }
 makeLenses ''Allwit
 
-mkAllwit :: GLContext -> Window -> Allwit
-mkAllwit ctx w = Allwit
+news :: Allwit -> News
+news allwit = (allwit^.events, allwit^.keyset, allwit^.window, allwit^.time)
+
+mkAllwit :: GLContext -> Window -> KeySet -> Map StateName GameState -> StateName -> Allwit
+mkAllwit = Allwit
   beginTime
-  defaultOptions
-  ctx
-  unkeys
-  w
+  makeSettings
   []
-  makeState
 
 main :: IO ()
 main = do
@@ -84,6 +90,9 @@ main = do
   die window ctx
   SDL.quit
 
+wake :: Stately a => StateT a IO ()
+wake = return ()
+
 birth :: GLContext -> Window -> IO Allwit
 birth ctx w = do
 
@@ -99,12 +108,23 @@ birth ctx w = do
 
   let m = [playerMesh, floorMesh, froggy]
 
-  let allwit = mkAllwit ctx w
-  put $ allwit {
-    _nowState = set meshes m (allwit^.nowState)
-  }
+  play <- execStateT wake makePlayState
+  play <- pure $ set meshes m play
 
-  when (allwit^.options.isRunningTests) someFand
+  pause <- execStateT wake makePauseState
+
+  menu <- execStateT wake makeMenuState
+
+  keyset <- listen unkeys <$> SDL.getKeyboardState
+
+  let allwit = mkAllwit ctx w keyset (fromList [
+        (Play, Pl play playState),
+        (Pause, Pa pause pauseState),
+        (Menu, Me menu menuState)
+        ]) Play
+
+  when (allwit^.settings.isRunningTests) someFand
+
   return allwit
 
 live :: StateT Allwit IO ()
@@ -112,26 +132,40 @@ live = do
   allwit <- get
 
   events <- SDL.pollEvents
-  keys <- listen (allwit^.keys) <$> SDL.getKeyboardState
   now <- SDL.ticks
-  liftIO $ print "hi"
 
-  when (allwit^.options.isShowingKeys) (liftIO $ print keys)
-  when (allwit^.options.isShowingTicks) (liftIO $ print $ allwit^.time)
+  put $ allwit {
+    _events = events,
+    _time = keepTime (allwit^.time) now
+  }
 
-  understand
-  ticktock now
+  when (allwit^.settings.isShowingKeys) (lift $ print $ allwit^.keyset)
+  when (allwit^.settings.isShowingTicks) (lift $ print $ allwit^.time)
 
-  let thisState = allwit^.nowState
-  stuff (playState $ passables allwit) thisState
+  toggleSettings
+  togglePause ScancodeP
+
+  _ <- lift $ case (allwit^.stateList)!(allwit^.nowState) of
+    Pa x f -> do
+      newState <- execStateT (f (news allwit)) x
+      return $ (put :: Allwit -> StateT Allwit IO ()) $ allwit {
+        _stateList = adjust (const $ Pa newState f) (allwit^.nowState) (allwit^.stateList)
+      }
+    Pl x f -> do
+      newState <- execStateT (f (news allwit)) x
+      return $ put $ allwit {
+        _stateList = adjust (const $ Pl newState f) (allwit^.nowState) (allwit^.stateList)
+      }
+    Me x f -> do
+      newState <- execStateT (f (news allwit)) x
+      return $ put $ allwit {
+        _stateList = adjust (const $ Me newState f) (allwit^.nowState) (allwit^.stateList)
+      }
 
   glSwapWindow (allwit^.window)
 
-  unless (keyBegun keys ScancodeQ) live
+  unless (keyBegun (allwit^.keyset) ScancodeQ) live
   return ()
-
-passables :: Allwit -> Passables
-passables allwit = (allwit^.events, allwit^.keys, allwit^.window, allwit^.time)
 
 die :: Window -> GLContext -> IO ()
 die window ctx = do
@@ -140,38 +174,32 @@ die window ctx = do
   destroyWindow window
   return ()
 
--- stateByName :: StateName -> GameState
+-- stateByName :: StateName -> StateUpdate
 -- stateByName name = case name of
---   Play -> playState
---   Pause -> pauseState
---   Menu -> menuState
---   Quit -> quitState
+--   Play -> PlayUpdate playState
+--   Pause -> PauseUpdate pauseState
+--   Menu -> MenuUpdate menuState
 
-understand :: StateT Allwit IO ()
-understand = do
-  toggleOption ScancodeK isShowingKeys
-  toggleOption ScancodeT isShowingTicks
-  -- decideState
+toggleSettings :: StateT Allwit IO ()
+toggleSettings = do
+  toggleOnlyOneSetting ScancodeK isShowingKeys
+  toggleOnlyOneSetting ScancodeT isShowingTicks
 
-ticktock :: Word32 -> StateT Allwit IO ()
-ticktock now = do
+toggleOnlyOneSetting :: Scancode -> Lens' Settings Bool -> StateT Allwit IO ()
+toggleOnlyOneSetting keycode lens = do
   allwit <- get
-  put $ allwit { _time = keepTime (allwit^.time) now }
-
-toggleOption :: Scancode -> Lens' OptionsInfo Bool -> StateT Allwit IO ()
-toggleOption keycode lens = do
-  allwit <- get
-  if keyBegun (allwit^.keys) keycode
-  then put $ allwit {
-    _options = set lens (not $ allwit^.options.lens) (allwit^.options)
+  put $ allwit {
+    _settings = applyWhen (keyBegun (allwit^.keyset) keycode)
+      (ly' (const ("setting toggled!" :: String)) $ set lens (not $ allwit^.settings.lens))
+      (allwit^.settings)
   }
-  else put allwit
 
-togglePause :: StateT Allwit IO ()
-togglePause = return ()
--- do
---   allwit <- get
---   put $ allwit { _nowState = case allwit^.nowState.currentState of
---     Play -> Pause
---     Pause -> Play
---     _ -> error "bad state" }
+togglePause :: Scancode -> StateT Allwit IO ()
+togglePause key = do
+  allwit <- get
+  when (keyBegun (allwit^.keyset) key) $
+    put $ allwit {
+      _nowState = case allwit^.nowState of
+        Play -> ly' (const ("paused." :: String)) Pause
+        _ -> ly' (const ("not paused." :: String)) Play
+    }

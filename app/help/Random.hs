@@ -8,10 +8,10 @@ import Graphics.Rendering.OpenGL (Vertex2(Vertex2), GLfloat)
 import Light
 import Mean
 
-type Seed = [GLfloat]
-type Rand = GLfloat
+type FrogSeed = [GLfloat]
+type FrogRand = GLfloat
 
-defaultSeed :: Seed
+defaultSeed :: FrogSeed
 defaultSeed = randoms $ mkStdGen 0
 
 -- returns a random number in [0, 1)

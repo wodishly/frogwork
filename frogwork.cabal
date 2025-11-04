@@ -82,7 +82,6 @@ executable frogwork
     MenuState
     PauseState
     PlayState
-    QuitState
 
     Fast
     FrogState
@@ -93,6 +92,7 @@ executable frogwork
 
   -- Other library packages from which modules are imported.
   build-depends:
+    containers ^>=0.6.7,
     base ^>=4.18.3.0,
     unordered-containers,
     random,

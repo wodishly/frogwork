@@ -25,7 +25,7 @@ instance Show Time where
     ++ " (Lifetime: " ++ show t ++ " ms)"
 
 beginTime :: Time
-beginTime = Time 0 []
+beginTime = Time 0 [17]
 
 keepTime :: Time -> Word32 -> Time
 keepTime time now = Time now (take (framefulness*framegoal :: Int) (latestGap time now:(time^.gaps)))
