@@ -68,8 +68,8 @@ birth stateInfo w = do
 
   floorMesh <- createSimpleMesh defaultSimpleMeshProfile
 
-  froggy <- createAssetMesh $ createAsset "test"
-  froggy <- setMeshTransform froggy $ fromTranslation [2, -2, -5]
+  froggy <- createAssetMesh $ createAsset "tv"
+  froggy <- setMeshTransform froggy $ fromTranslation [-5, -2, -5]
 
   let m = [playerMesh, floorMesh, froggy]
 
