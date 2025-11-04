@@ -24,6 +24,7 @@ import Rime
 import Light 
 import Mean
 import Matrix
+import SDL (time)
 
 data ShaderKind = Vertex | Fragment deriving (Show, Eq)
 
@@ -86,7 +87,7 @@ defaultAssetShaderProfile :: ShaderProfile
 defaultAssetShaderProfile = ShaderProfile {
   vertexShaderName = "vertex",
   fragmentShaderName = "texture_fragment",
-  uniforms = ["u_projection_matrix", "u_model_matrix", "u_texture", "u_view_matrix"]
+  uniforms = ["u_projection_matrix", "u_model_matrix", "u_texture", "u_view_matrix", "u_time"]
 }
 
 createAsset :: String -> AssetMeshProfile
@@ -109,7 +110,7 @@ defaultSimpleShaderProfile :: ShaderProfile
 defaultSimpleShaderProfile = ShaderProfile {
   vertexShaderName = "vertex_sheet",
   fragmentShaderName = "color_fragment",
-  uniforms = ["u_projection_matrix", "u_model_matrix", "u_view_matrix"]
+  uniforms = ["u_projection_matrix", "u_model_matrix", "u_view_matrix", "u_time"]
 }
 
 -- | A boilerplate function to initialize a shader.
@@ -193,6 +194,12 @@ drawMesh mesh projectionMatrix viewMatrix = do
   (UniformLocation viewLocation) <- get (uniforms ! "u_view_matrix")
   S.unsafeWith viewMatrix (GLRaw.glUniformMatrix4fv viewLocation 1 1)
 
+  timeLocation <- uniforms ! "u_time"
+  t <- time
+  let timeMs = t :: GLfloat
+  let u = uniform timeLocation :: StateVar GLfloat
+  u $= timeMs
+
   let tex0Location = HM.lookup "u_texture" uniforms
   case tex0Location of
     Just a -> do
@@ -212,6 +219,7 @@ createAssetMesh mprofile = do
   fbytes <- getFrogBytes (fromJust filePath)
   let frogFile = runGet parseFrogFile fbytes
       vbuffer = positionBuffer frogFile
+      nbuffer = normalBuffer frogFile
       ibuffer = indexBuffer frogFile
       ubuffer = uvBuffer frogFile
       bitmap = bitmapBuffer frogFile
@@ -244,6 +252,17 @@ createAssetMesh mprofile = do
   vertexAttribPointer (AttribLocation 1)
     $= (ToFloat, VertexArrayDescriptor 2 Float 0 (bufferOffset 0))
   vertexAttribArray (AttribLocation 1) $= Enabled
+
+  -- normal attribute
+  nbo <- genObjectName
+  bindBuffer ArrayBuffer $= Just nbo
+
+  withArray nbuffer $ \ptr ->
+    bufferData ArrayBuffer $= (bufferSize nbuffer, ptr, StaticDraw)
+
+  vertexAttribPointer (AttribLocation 2)
+    $= (ToFloat, VertexArrayDescriptor 3 Float 0 (bufferOffset 0))
+  vertexAttribArray (AttribLocation 2) $= Enabled
 
   -- index buffer
   ebo <- genObjectName
