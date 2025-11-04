@@ -14,34 +14,34 @@ import SDL.Input.Keyboard.Codes
 data MenuState = MenuState {
   _hand :: [(StateName, String)],
   _finger :: Int,
-  _placeholder :: ()
+  _chosen :: Maybe StateName
 }
 makeLenses ''MenuState
 
-type MenuUpdate = News -> StateT MenuState IO (Maybe StateName)
-
 instance Stately MenuState where
   _name _ = Menu
+  _update = menuState
 
 makeMenuState :: MenuState
 makeMenuState = MenuState {
   _hand = [(Play, "play"), (Play, "frog")],
   _finger = 0,
-  _placeholder = ()
+  _chosen = Nothing
 }
 
-menuState :: News -> StateT MenuState IO (Maybe StateName)
+menuState :: News -> StateT MenuState IO ()
 menuState (_, keyset, _, _) = do
   menuwit <- get
   lift $ bg (clerp (1/4) white)
-  lift $ print $ (menuwit^.hand)!!(menuwit^.finger)
-  settleState keyset
+  menuFare keyset
 
-settleState :: KeySet -> StateT MenuState IO (Maybe StateName)
-settleState keyset = do
+menuFare :: KeySet -> StateT MenuState IO ()
+menuFare keyset = do
   menuwit <- get
   if keyBegun keyset ScancodeReturn
-    then return $ Just $ fst $ (menuwit^.hand)!!(menuwit^.finger)
+    then put $ menuwit {
+      _chosen = Just $ fst $ (menuwit^.hand)!!(menuwit^.finger)
+    }
   else do
     put $ menuwit {
       _finger = if keyBegun keyset ScancodeUp
@@ -50,4 +50,3 @@ settleState keyset = do
           then mod (pred $ menuwit^.finger) (length $ menuwit^.hand)
         else menuwit^.finger
     }
-    return Nothing

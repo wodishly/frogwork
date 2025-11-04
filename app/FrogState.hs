@@ -10,6 +10,7 @@ import SDL (Event, Window)
 
 import Key
 import Time
+import Control.Monad.State (StateT)
 
 type News = ([Event], KeySet, Window, Time)
 
@@ -31,3 +32,4 @@ makeSettings = Choosewit {
 
 class Stately a where
   _name :: a -> StateName
+  _update :: News -> StateT a IO ()

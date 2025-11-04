@@ -12,10 +12,9 @@ data PauseState = PauseState {
 }
 makeLenses ''PauseState
 
-type PauseUpdate = News -> StateT PauseState IO ()
-
 instance Stately PauseState where
   _name _ = Pause
+  _update = pauseState
 
 makePauseState :: PauseState
 makePauseState = PauseState {

@@ -26,12 +26,12 @@ data PlayState = MkPlayState {
   _lily :: Point,
   _programs :: [(Program, VertexArrayObject)]
 }
-makeLenses ''PlayState
 
-type PlayUpdate = News -> StateT PlayState IO ()
+makeLenses ''PlayState
 
 instance Stately PlayState where
   _name _ = Play
+  _update = playState
 
 makePlayState :: PlayState
 makePlayState = MkPlayState {
