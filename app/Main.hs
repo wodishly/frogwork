@@ -56,9 +56,9 @@ data Allwit = Allwit {
   _time :: Time,
   _settings :: Settings,
   _events :: [Event],
+  _keyset :: KeySet,
   _ctx :: GLContext,
   _window :: Window,
-  _keyset :: KeySet,
   _stateList :: Map StateName GameState,
   _nowState :: StateName
 }
@@ -67,11 +67,12 @@ makeLenses ''Allwit
 news :: Allwit -> News
 news allwit = (allwit^.events, allwit^.keyset, allwit^.window, allwit^.time)
 
-mkAllwit :: GLContext -> Window -> KeySet -> Map StateName GameState -> StateName -> Allwit
+mkAllwit :: GLContext -> Window -> Map StateName GameState -> StateName -> Allwit
 mkAllwit = Allwit
   beginTime
   makeSettings
   []
+  unkeys
 
 main :: IO ()
 main = do
@@ -115,9 +116,7 @@ birth ctx w = do
 
   menu <- execStateT wake makeMenuState
 
-  keyset <- listen unkeys <$> SDL.getKeyboardState
-
-  let allwit = mkAllwit ctx w keyset (fromList [
+  let allwit = mkAllwit ctx w (fromList [
         (Play, Pl play playState),
         (Pause, Pa pause pauseState),
         (Menu, Me menu menuState)
@@ -132,10 +131,12 @@ live = do
   allwit <- get
 
   events <- SDL.pollEvents
+  keys <- listen unkeys <$> SDL.getKeyboardState
   now <- SDL.ticks
 
   put $ allwit {
     _events = events,
+    _keyset = keys,
     _time = keepTime (allwit^.time) now
   }
 

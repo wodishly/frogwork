@@ -18,7 +18,6 @@ import Light
 import Key
 import Shade
 import Time
-import Mean
 import Random
 
 data PlayState = MkPlayState {
