@@ -10,11 +10,12 @@ import FrogState
 import Light
 import Key
 import SDL.Input.Keyboard.Codes
+import Mean
 
 data MenuState = MenuState {
   _hand :: [(StateName, String)],
   _finger :: Int,
-  _chosen :: Maybe StateName
+  _choosen :: Maybe StateName
 }
 makeLenses ''MenuState
 
@@ -26,7 +27,7 @@ makeMenuState :: MenuState
 makeMenuState = MenuState {
   _hand = [(Play, "play"), (Play, "frog")],
   _finger = 0,
-  _chosen = Nothing
+  _choosen = Nothing
 }
 
 menuState :: News -> StateT MenuState IO ()
@@ -39,14 +40,14 @@ menuFare :: KeySet -> StateT MenuState IO ()
 menuFare keyset = do
   menuwit <- get
   if keyBegun keyset ScancodeReturn
-    then put $ menuwit {
-      _chosen = Just $ fst $ (menuwit^.hand)!!(menuwit^.finger)
-    }
-  else do
+  then do
     put $ menuwit {
-      _finger = if keyBegun keyset ScancodeUp
-          then mod (succ $ menuwit^.finger) (length $ menuwit^.hand)
-        else if keyBegun keyset ScancodeDown
-          then mod (pred $ menuwit^.finger) (length $ menuwit^.hand)
-        else menuwit^.finger
+      _choosen = ly $ Just $ fst $ (menuwit^.hand)!!(menuwit^.finger)
+    }
+  else put $ menuwit {
+    _finger = if keyBegun keyset ScancodeUp
+        then mod (succ $ menuwit^.finger) (length $ menuwit^.hand)
+      else if keyBegun keyset ScancodeDown
+        then mod (pred $ menuwit^.finger) (length $ menuwit^.hand)
+      else menuwit^.finger
     }

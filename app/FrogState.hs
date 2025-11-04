@@ -26,7 +26,7 @@ makeLenses ''Settings
 makeSettings :: Settings
 makeSettings = Choosewit {
   _isShowingTicks = False
-, _isShowingKeys = False
+, _isShowingKeys = True
 , _isRunningTests = False
 }
 

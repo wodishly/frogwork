@@ -6,7 +6,6 @@
 
 module Main where
 
-import Data.Map (Map, fromList, (!), adjust)
 import Data.Function (applyWhen)
 import Control.Lens
 import Control.Monad (unless, when)
@@ -31,6 +30,7 @@ import Time
 import Rime
 import Matrix
 import Mean
+import Data.Maybe (fromMaybe)
 
 openGLConfig :: OpenGLConfig
 openGLConfig = OpenGLConfig {
@@ -60,6 +60,15 @@ data Allwit = Allwit {
   _nowState :: StateName
 }
 makeLenses ''Allwit
+
+getPlay :: StateTuple -> PlayState
+getPlay (x, _, _) = x
+
+getPause :: StateTuple -> PauseState
+getPause (_, x, _) = x
+
+getMenu :: StateTuple -> MenuState
+getMenu (_, _, x) = x
 
 news :: Allwit -> News
 news allwit = (allwit^.events, allwit^.keyset, allwit^.window, allwit^.time)
@@ -106,14 +115,11 @@ birth ctx w = do
 
   let m = [playerMesh, floorMesh, froggy]
 
-  play <- execStateT wake makePlayState
-  play <- pure $ set meshes m play
-
-  pause <- execStateT wake makePauseState
-
-  menu <- execStateT wake makeMenuState
-
-  let allwit = mkAllwit ctx w (play, pause, menu) Menu
+  let allwit = mkAllwit ctx w (
+        set meshes m makePlayState,
+        makePauseState,
+        makeMenuState
+        ) Menu
 
   when (allwit^.settings.isRunningTests) someFand
 
@@ -139,38 +145,40 @@ live = do
   toggleSettings
   togglePause ScancodeP
 
-  when (allwit^.nowState == Menu) (do
-    let menu = (\(_,_,x) -> x) (allwit^.stateList) in do
-      case MenuState._chosen menu of
-        Just _ -> do
-          put $ allwit { _nowState = Play }
-          lift $ print "yayyaayaya"
-        Nothing -> lift weep
-      _ <- lift $ execStateT (_update (news allwit)) menu
-      return ()
-    )
-
-  -- _ <- lift $ case (allwit^.stateList)!(allwit^.nowState) of
-  --   Pa x f -> do
-  --     newState <- execStateT (f (news allwit)) x
-  --     return $ (put :: Allwit -> StateT Allwit IO ()) $ allwit {
-  --       _stateList = adjust (const $ Pa newState f) (allwit^.nowState) (allwit^.stateList)
-  --     }
-  --   Pl x f -> do
-  --     newState <- execStateT (f (news allwit)) x
-  --     return $ put $ allwit {
-  --       _stateList = adjust (const $ Pl newState f) (allwit^.nowState) (allwit^.stateList)
-  --     }
-  --   Me x f -> do
-  --     newState <- execStateT (f (news allwit)) x
-  --     return $ put $ allwit {
-  --       _stateList = adjust (const $ Me newState f) (allwit^.nowState) (allwit^.stateList)
-  --     }
+  case allwit^.nowState of
+    Play -> doPlayState
+    Pause -> doPauseState
+    Menu -> doMenuState
 
   glSwapWindow (allwit^.window)
 
   unless (keyBegun (allwit^.keyset) ScancodeQ) live
   return ()
+
+doPlayState :: StateT Allwit IO ()
+doPlayState = do
+  allwit <- get
+  newPlay <- lift $ execStateT (_update (news allwit)) $ getPlay (allwit^.stateList)
+  put $ allwit {
+    _stateList = (newPlay, getPause (allwit^.stateList), getMenu (allwit^.stateList))
+  }
+
+doPauseState :: StateT Allwit IO ()
+doPauseState = do
+  allwit <- get
+  newPause <- lift $ execStateT (_update (news allwit)) $ getPause (allwit^.stateList)
+  put $ allwit {
+    _stateList = (getPlay (allwit^.stateList), newPause, getMenu (allwit^.stateList))
+  }
+
+doMenuState :: StateT Allwit IO ()
+doMenuState = do
+  allwit <- get
+  newMenu <- lift $ execStateT (_update (news allwit)) $ getMenu (allwit^.stateList)
+  put $ allwit {
+    _stateList = (getPlay (allwit^.stateList), getPause (allwit^.stateList), newMenu),
+    _nowState = fromMaybe (allwit^.nowState) (newMenu^.choosen)
+  }
 
 die :: Window -> GLContext -> IO ()
 die window ctx = do
