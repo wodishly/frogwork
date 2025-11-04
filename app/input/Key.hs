@@ -57,11 +57,11 @@ keyBegun keySet code = elem code (keySet^.keysBegin)
 
 -- | Checks @keySet@ to see if @code@ continues being depressed since an earlier frame.
 keyContinuing :: KeySet -> Scancode -> Bool
-keyContinuing keySet = flip elem (keySet^.keysBegin ++ keySet^.keysContinue)
+keyContinuing keySet code = elem code (keySet^.keysBegin ++ keySet^.keysContinue)
 
 -- | Checks @keySet@ to see if @code@ ended being depressed on this frame.
 keyEnded :: KeySet -> Scancode -> Bool
-keyEnded keySet = flip elem (keySet^.keysEnd)
+keyEnded keySet code = elem code (keySet^.keysEnd)
 
 unwrapKeys :: [Event] -> [Keywit]
 unwrapKeys = mapMaybe (\event -> case eventPayload event of
