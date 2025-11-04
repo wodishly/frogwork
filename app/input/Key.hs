@@ -1,4 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
+{- HLINT ignore "Use infix" -}
 
 module Key where
 
@@ -10,6 +11,9 @@ import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2))
 
 import Light
 import Mean
+import SDL (Event (eventPayload), Keysym (keysymScancode), KeyboardEventData (keyboardEventKeysym, keyboardEventKeyMotion), InputMotion (Pressed, Released))
+import SDL.Event (EventPayload(KeyboardEvent))
+import Data.Maybe (mapMaybe)
 
 data KeySet = KeySet {
   _keysBegin :: [Scancode]
@@ -37,20 +41,38 @@ hearableKeys = [
 unkeys :: KeySet
 unkeys = KeySet [] [] []
 
-keyBegun :: KeySet -> Scancode -> Bool
-keyBegun keySet = flip elem (keySet^.keysBegin)
+type Keywit = (Scancode, InputMotion)
 
+-- | Checks @wits@ to see if @code@ is @Pressed@.
+keyDown :: [Keywit] -> Scancode -> Bool
+keyDown wits code = elem (code, Pressed) wits
+
+-- | Checks @wits@ to see if @code@ is @Released@.
+keyUp :: [Keywit] -> Scancode -> Bool
+keyUp wits code = elem (code, Released) wits
+
+-- | Checks @keySet@ to see if @code@ began being depressed on this frame.
+keyBegun :: KeySet -> Scancode -> Bool
+keyBegun keySet code = elem code (keySet^.keysBegin)
+
+-- | Checks @keySet@ to see if @code@ continues being depressed since an earlier frame.
 keyContinuing :: KeySet -> Scancode -> Bool
 keyContinuing keySet = flip elem (keySet^.keysBegin ++ keySet^.keysContinue)
 
+-- | Checks @keySet@ to see if @code@ ended being depressed on this frame.
 keyEnded :: KeySet -> Scancode -> Bool
 keyEnded keySet = flip elem (keySet^.keysEnd)
 
-listen :: KeySet -> [Scancode] -> KeySet
-listen olds news = KeySet
-  (filter (allIn [flip elem news, not.keyContinuing olds]) hearableKeys)
-  (filter (allIn [flip elem news, keyContinuing olds]) hearableKeys)
-  (filter (allIn [not.flip elem news, keyContinuing olds]) hearableKeys)
+unwrapKeys :: [Event] -> [Keywit]
+unwrapKeys = mapMaybe (\event -> case eventPayload event of
+  KeyboardEvent e -> Just (keysymScancode $ keyboardEventKeysym e, keyboardEventKeyMotion e)
+  _ -> Nothing)
+
+listen :: [Event] -> KeySet -> KeySet
+listen events keyset = let news = unwrapKeys events in KeySet
+  (filter (allIn [keyDown news, not.keyContinuing keyset]) hearableKeys)
+  (filter (allIn [not.keyUp news, keyContinuing keyset]) hearableKeys)
+  (filter (allIn [keyUp news, keyContinuing keyset]) hearableKeys)
 
 wayUpDown :: KeySet -> (KeySet -> Scancode -> Bool) -> GLfloat
 wayUpDown = way' (ScancodeUp, ScancodeDown)

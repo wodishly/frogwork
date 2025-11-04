@@ -12,7 +12,6 @@ import SDL.Video
 import SDL.Input.Keyboard.Codes
 import Graphics.Rendering.OpenGL
 import qualified SDL (initializeAll, quit, getKeyboardState, ticks, pollEvents)
-import SDL (eventPayload, KeyboardEventData (keyboardEventKeysym), Keysym (keysymScancode), Event, EventPayload (KeyboardEvent))
 
 import Key
 import FrogState
@@ -25,7 +24,6 @@ import Shade
 import Time
 import Rime
 import Matrix
-import Data.Maybe (mapMaybe)
 
 openGLConfig :: OpenGLConfig
 openGLConfig = OpenGLConfig {
@@ -47,6 +45,7 @@ main = do
   when (defaultState^.options.isRunningTests) someFand
 
   SDL.initializeAll
+  _ <- SDL.getKeyboardState
 
   window <- createWindow "frog universe" openGLWindow
   ctx <- glCreateContext window
@@ -54,7 +53,6 @@ main = do
   V2 windowWidth windowHeight <- (cast <$>) <$> get (windowSize window)
   viewport $= (Position 0 0, Size windowWidth windowHeight)
 
-  _ <- SDL.getKeyboardState
   stateInfo <- birth defaultState window
   live window ctx stateInfo
 
@@ -79,20 +77,13 @@ birth stateInfo w = do
   stateInfo <- pure $ set meshes m stateInfo
   return stateInfo
 
-unwrapKey :: Event -> Maybe Scancode
-unwrapKey event = case eventPayload event of
-  KeyboardEvent e -> Just $ keysymScancode $ keyboardEventKeysym e
-  _ -> Nothing
-
 live :: Window -> GLContext -> StateWit -> IO ()
 live window ctx stateInfo = do
   events <- SDL.pollEvents
   now <- SDL.ticks
-  print $ mapMaybe unwrapKey events
-  stateInfo <- pure $ set keyset (listen (stateInfo^.keyset) (mapMaybe unwrapKey events)) stateInfo
+  stateInfo <- pure $ set keyset (listen events (stateInfo^.keyset)) stateInfo
 
   let keys = stateInfo^.keyset
-
 
   when (stateInfo^.options.isShowingKeys) (print keys)
   when (stateInfo^.options.isShowingTicks) (print $ stateInfo^.time)
