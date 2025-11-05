@@ -21,6 +21,7 @@ import Shade
 import Time
 import Random
 import Matrix
+import Mean
 
 data PlayState = MkPlayState {
     _seed :: FrogSeed

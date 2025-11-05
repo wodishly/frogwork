@@ -19,7 +19,7 @@ data Settings = Choosewit {
   _isShowingTicks :: Bool
 , _isShowingKeys :: Bool
 , _isRunningTests :: Bool
-}
+} deriving (Show, Eq)
 makeLenses ''Settings
 
 makeSettings :: Settings
@@ -36,4 +36,4 @@ class Stately a where
 data Camera = Camera {
   cPosition :: FrogVector,
   cTarget :: FrogVector
-}
+} deriving (Show, Eq)

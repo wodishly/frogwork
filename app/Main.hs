@@ -8,7 +8,6 @@ import Data.Function (applyWhen)
 
 import SDL (
     V2(V2), V4(V4)
-  , Event
   , Window
   , GLContext, Profile(Core), Mode(Normal)
   )
