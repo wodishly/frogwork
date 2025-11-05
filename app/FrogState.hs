@@ -3,7 +3,7 @@
 module FrogState where
 
 import Control.Lens (makeLenses)
-import Control.Monad.State (StateT)
+import Control.Monad.State (StateT, MonadTrans (lift))
 
 import SDL (Window)
 
@@ -32,3 +32,6 @@ makeSettings = Settings {
 class Stately a where
   _name :: a -> StateName
   _update :: News -> StateT a IO ()
+
+preent :: Show a => a -> StateT b IO ()
+preent = lift . print

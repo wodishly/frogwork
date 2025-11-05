@@ -144,8 +144,8 @@ live = do
     _time = keepTime (allwit^.time) now
   }
 
-  when (allwit^.settings.isShowingKeys) (lift $ print $ allwit^.keyset)
-  when (allwit^.settings.isShowingTicks) (lift $ print $ allwit^.time)
+  when (allwit^.settings.isShowingKeys) (preent $ allwit^.keyset)
+  when (allwit^.settings.isShowingTicks) (preent $ allwit^.time)
 
   toggleSettings
   togglePause ScancodeP
