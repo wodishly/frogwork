@@ -11,6 +11,9 @@ import Graphics.Rendering.OpenGL as GL hiding (get)
 import qualified Graphics.Rendering.OpenGL as GL (get)
 import qualified Data.HashMap.Strict as HM
 import SDL (windowSize, V2 (V2))
+import Graphics.Rendering.OpenGL as GL
+import SDL.Vect
+import Data.Maybe
 import Rime (cast)
 
 import FrogState
@@ -57,6 +60,17 @@ playState (_, keys, window, time) = do
     near = 0.1,
     far = 100.0
   }
+
+  let Vertex2 a b = stateInfo^.lily
+  stateInfo <- pure $ set camera (Camera {
+      cTarget=[cos(pi/2+a/10000),-1,sin(pi/2+a/10000)-1+b/10000],
+      cPosition=[0,-1,-1+b/10000]
+    }) stateInfo
+  let c = stateInfo^.camera
+  let viewMatrix = frogLookAt (cPosition c) (cTarget c)
+  -- print viewMatrix
+  -- let lapl = detLaplace $ unhew viewMatrix
+  -- print lapl
 
   -- mesh rendering --
   updatePlayerUniforms

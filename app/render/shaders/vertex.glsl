@@ -4,24 +4,20 @@ precision highp float;
 
 layout(location = 0) in vec4 position;
 layout(location = 1) in vec2 uv;
+layout(location = 2) in vec3 normal;
 
 out vec2 v_uv;
-uniform mat4 u_modelview_matrix;
+out vec3 v_normal;
+uniform mat4 u_model_matrix;
 uniform mat4 u_projection_matrix;
-uniform vec2 u_input2d;
+uniform mat4 u_view_matrix;
 
 void main() {
         v_uv = uv;
 
-        vec4 p = position;
-        vec2 i = u_input2d / 10000.0;
+        mat4 modelview_matrix = u_view_matrix * u_model_matrix;
+        mat3 normal_matrix = transpose(inverse(mat3(modelview_matrix)));
+        v_normal = normal_matrix * normal;
 
-        float theta = mod(i.x, 2. * 3.1415);
-        float c = cos(theta);
-        float s = sin(theta);
-        float px = c * p.x - s * p.z;
-        float pz = s * p.x + c * p.z;
-
-        vec4 coord = vec4(px , p.y, pz - 5.0+ i.y, 1.0);
-        gl_Position = u_projection_matrix * u_modelview_matrix * coord;
+        gl_Position = u_projection_matrix * modelview_matrix * position;
 }

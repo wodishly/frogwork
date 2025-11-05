@@ -92,6 +92,7 @@ mkAllwit = Allwit
 main :: IO ()
 main = do
   SDL.initializeAll
+  _ <- SDL.getKeyboardState
 
   w <- SDL.createWindow "frog universe" openGLWindow
   c <- SDL.glCreateContext w
@@ -141,6 +142,9 @@ live = do
   es <- SDL.pollEvents
   keys <- listen unkeys <$> SDL.getKeyboardState
   now <- SDL.ticks
+  stateInfo <- pure $ set keyset (listen events (stateInfo^.keyset)) stateInfo
+
+  let keys = stateInfo^.keyset
 
   put $ allwit {
     _events = es,
