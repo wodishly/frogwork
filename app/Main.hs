@@ -113,12 +113,12 @@ birth w c = do
   GL.depthFunc $= Just Lequal
 
   playerMesh <- createAssetMesh defaultAssetMeshProfile
-    >>= flip setMeshTransform (fromTranslation [0, -2, 0])
+    >>= flip setMeshTransform (fromTranslation [0, -2, -5])
 
   floorMesh <- createSimpleMesh defaultSimpleMeshProfile
 
-  froggy <- createAssetMesh (createAsset "test")
-    >>= flip setMeshTransform (fromTranslation [2, -2, 0])
+  froggy <- createAssetMesh (createAsset "tv")
+    >>= flip setMeshTransform (fromTranslation [2, -2, -5])
 
   let m = [playerMesh, floorMesh, froggy]
 

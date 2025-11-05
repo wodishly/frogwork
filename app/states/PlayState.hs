@@ -100,4 +100,3 @@ move keys time = do
         ((* (200 * throttle time)) <$> wayward keys)
         (statewit^.lily)
   }
-  lift $ print $ statewit^.lily
