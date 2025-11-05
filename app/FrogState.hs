@@ -5,17 +5,11 @@ module FrogState where
 import Control.Lens (makeLenses)
 import Control.Monad.State (StateT)
 
-import qualified SDL.Video.OpenGL as SDL
-import SDL.Input.Keyboard.Codes
-
-import Graphics.Rendering.OpenGL as GL
+import SDL (Window)
 
 import Key
 import Time
-import Control.Monad.State (StateT)
-import Shade
-import SDL (Window)
-import Matrix (FrogVector, frogZero)
+
 
 type News = (KeySet, Window, Time)
 

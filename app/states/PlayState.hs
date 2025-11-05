@@ -22,18 +22,23 @@ import Matrix
 import Mean
 
 data Camera = Camera {
-  cPosition :: FrogVector,
-  cTarget :: FrogVector
+    cPosition :: FrogVector
+  , cTarget :: FrogVector
 } deriving (Show, Eq)
 
-data PlayState = PlayState {
-  _seed :: FrogSeed,
-  _meshes :: [Mesh],
-  _lily :: Point,
-  _programs :: [(Program, VertexArrayObject)],
-  _camera :: Camera
+makeCamera :: Camera
+makeCamera = Camera {
+    cPosition = frogZero
+  , cTarget = [0, 0, 1]
 }
 
+data PlayState = PlayState {
+  _seed :: FrogSeed
+  , _meshes :: [Mesh]
+  , _lily :: Point
+  , _programs :: [(Program, VertexArrayObject)]
+  , _camera :: Camera
+}
 makeLenses ''PlayState
 
 instance Stately PlayState where
@@ -45,11 +50,11 @@ instance Show PlayState where
 
 makePlayState :: PlayState
 makePlayState = PlayState {
-  _seed = defaultSeed,
-  _meshes = [],
-  _lily = Vertex2 0 0,
-  _programs = [],
-  _camera = Camera { cPosition = frogZero, cTarget = [0, 0, 1] }
+    _seed = defaultSeed
+  , _meshes = []
+  , _lily = Vertex2 0 0
+  , _programs = []
+  , _camera = makeCamera
 }
 
 playState :: News -> StateT PlayState IO ()
