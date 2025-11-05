@@ -24,6 +24,7 @@ import Rime
 import Light 
 import Mean
 import Matrix
+import SDL (time)
 
 data ShaderKind = Vertex | Fragment deriving (Show, Eq)
 
@@ -32,15 +33,13 @@ class FrogShader s where
 -- data sent to the renderer when requesting a mesh
 data AssetMeshProfile = AssetMeshProfile {
   aMeshFileName :: String,
-  aShaderProfile :: ShaderProfile,
-  aTransform :: Transform
+  aShaderProfile :: ShaderProfile
 }
 
 data SimpleMeshProfile = SimpleMeshProfile {
   sVertexBuffer :: Polyhedron,
   sIndexBuffer :: [Word32],
-  sShaderProfile :: ShaderProfile,
-  sTransform :: Transform
+  sShaderProfile :: ShaderProfile
 }
 
 type MeshProfile = Either AssetMeshProfile SimpleMeshProfile
@@ -67,7 +66,7 @@ data Mesh = Mesh {
   file :: Maybe FrogFile,
   uniformMap :: UniformMap,
   elementCount :: Int32,
-  transform :: Transform
+  transform :: StorableMatrix
 }
 
 type UniformMap = HashMap [Char] (GettableStateVar UniformLocation)
@@ -81,40 +80,37 @@ data Concoction = Concoction {
 defaultAssetMeshProfile :: AssetMeshProfile
 defaultAssetMeshProfile = AssetMeshProfile {
   aMeshFileName = "test",
-  aShaderProfile = defaultAssetShaderProfile,
-  aTransform = identity
+  aShaderProfile = defaultAssetShaderProfile
 }
 
 defaultAssetShaderProfile :: ShaderProfile
 defaultAssetShaderProfile = ShaderProfile {
   vertexShaderName = "vertex",
   fragmentShaderName = "texture_fragment",
-  uniforms = ["u_projection_matrix", "u_modelview_matrix", "u_texture", "u_input2d"]
+  uniforms = ["u_projection_matrix", "u_model_matrix", "u_texture", "u_view_matrix", "u_time"]
 }
 
 createAsset :: String -> AssetMeshProfile
 createAsset name = AssetMeshProfile {
   aMeshFileName = name,
-  aShaderProfile = defaultAssetShaderProfile,
-  aTransform = identity
+  aShaderProfile = defaultAssetShaderProfile
 }
 
-setMeshTransform :: Mesh -> Transform -> IO Mesh
-setMeshTransform m transform = return $ m { transform = transform }
+setMeshTransform :: Mesh -> FrogMatrix -> IO Mesh
+setMeshTransform m transform = return $ m { transform = hew transform }
 
 defaultSimpleMeshProfile :: SimpleMeshProfile
 defaultSimpleMeshProfile = SimpleMeshProfile {
   sVertexBuffer = floorVbuffer,
   sIndexBuffer = floorIbuffer,
-  sShaderProfile = defaultSimpleShaderProfile,
-  sTransform = identity
+  sShaderProfile = defaultSimpleShaderProfile
 }
 
 defaultSimpleShaderProfile :: ShaderProfile
 defaultSimpleShaderProfile = ShaderProfile {
   vertexShaderName = "vertex_sheet",
   fragmentShaderName = "color_fragment",
-  uniforms = ["u_projection_matrix", "u_modelview_matrix"]
+  uniforms = ["u_projection_matrix", "u_model_matrix", "u_view_matrix", "u_time"]
 }
 
 -- | A boilerplate function to initialize a shader.
@@ -178,8 +174,8 @@ useMesh (Mesh program vao tex _ _ _ _) = do
   bindVertexArrayObject $= Just vao
   textureBinding Texture2D $= tex
 
-drawMesh :: Mesh -> Transform -> IO ()
-drawMesh mesh projectionMatrix = do
+drawMesh :: Mesh -> StorableMatrix -> StorableMatrix -> IO ()
+drawMesh mesh projectionMatrix viewMatrix = do
   let uniforms = uniformMap mesh
   let _ = elementCount mesh
   useMesh mesh
@@ -189,11 +185,20 @@ drawMesh mesh projectionMatrix = do
   -- m <- newMatrix ColumnMajor (S.toList projectionMatrix) :: IO (GLmatrix GLfloat)
   -- withMatrix m $ const $ uniformv projLocation 1
 
+  (UniformLocation mLocation) <- get (uniforms ! "u_model_matrix")
+  S.unsafeWith (transform mesh) (GLRaw.glUniformMatrix4fv mLocation 1 1)
+
+  -- TODO: move these to a Uniform Buffer Object
   (UniformLocation projLocation) <- get (uniforms ! "u_projection_matrix")
   S.unsafeWith projectionMatrix (GLRaw.glUniformMatrix4fv projLocation 1 1)
+  (UniformLocation viewLocation) <- get (uniforms ! "u_view_matrix")
+  S.unsafeWith viewMatrix (GLRaw.glUniformMatrix4fv viewLocation 1 1)
 
-  (UniformLocation mvLocation) <- get (uniforms ! "u_modelview_matrix")
-  S.unsafeWith (transform mesh) (GLRaw.glUniformMatrix4fv mvLocation 1 1)
+  timeLocation <- uniforms ! "u_time"
+  t <- time
+  let timeMs = t :: GLfloat
+  let u = uniform timeLocation :: StateVar GLfloat
+  u $= timeMs
 
   let tex0Location = HM.lookup "u_texture" uniforms
   case tex0Location of
@@ -206,20 +211,6 @@ drawMesh mesh projectionMatrix = do
 
   drawFaces (elementCount mesh)
 
-data RenderView = RenderView {
-  aspect :: Float,
-  fov :: Float,
-  near :: Float,
-  far :: Float
-}
-
-getProjectionMatrix :: RenderView -> Transform
-getProjectionMatrix (RenderView aspect fov near far)
-  = S.fromList [1 / (aspect * tan (fov / 2)), 0.0, 0.0, 0.0,
-    0.0, 1 / tan (fov / 2), 0.0, 0.0,
-    0.0, 0.0, -((far + near) / (far - near)), -(2.0 * far * near / (far - near)),
-    0.0, 0.0, -1.0, 0.0]
-
 createAssetMesh :: AssetMeshProfile -> IO Mesh
 createAssetMesh mprofile = do
   (Concoction program hmap filePath) <- brewProfile (Left mprofile)
@@ -228,6 +219,7 @@ createAssetMesh mprofile = do
   fbytes <- getFrogBytes (fromJust filePath)
   let frogFile = runGet parseFrogFile fbytes
       vbuffer = positionBuffer frogFile
+      nbuffer = normalBuffer frogFile
       ibuffer = indexBuffer frogFile
       ubuffer = uvBuffer frogFile
       bitmap = bitmapBuffer frogFile
@@ -260,6 +252,17 @@ createAssetMesh mprofile = do
   vertexAttribPointer (AttribLocation 1)
     $= (ToFloat, VertexArrayDescriptor 2 Float 0 (bufferOffset 0))
   vertexAttribArray (AttribLocation 1) $= Enabled
+
+  -- normal attribute
+  nbo <- genObjectName
+  bindBuffer ArrayBuffer $= Just nbo
+
+  withArray nbuffer $ \ptr ->
+    bufferData ArrayBuffer $= (bufferSize nbuffer, ptr, StaticDraw)
+
+  vertexAttribPointer (AttribLocation 2)
+    $= (ToFloat, VertexArrayDescriptor 3 Float 0 (bufferOffset 0))
+  vertexAttribArray (AttribLocation 2) $= Enabled
 
   -- index buffer
   ebo <- genObjectName

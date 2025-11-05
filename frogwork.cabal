@@ -71,6 +71,7 @@ executable frogwork
     Light
     Shade
     Stave
+    
 
     Breath
     Loud
@@ -108,7 +109,8 @@ executable frogwork
     bytestring,
     lens,
     vector,
-    mtl
+    mtl,
+    matrix
 
   -- Directories containing source files.
   hs-source-dirs: app

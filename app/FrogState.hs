@@ -6,25 +6,31 @@ module FrogState where
 
 import Control.Lens
 
-import SDL (Event, Window)
+import qualified SDL.Video.OpenGL as SDL
+import SDL.Input.Keyboard.Codes
+
+import Graphics.Rendering.OpenGL as GL
 
 import Key
 import Time
 import Control.Monad.State (StateT)
+import Shade
+import SDL (Window)
+import Matrix (FrogVector, frogZero)
 
-type News = ([Event], KeySet, Window, Time)
+type News = (KeySet, Window, Time)
 
 data StateName = Play | Pause | Menu deriving (Show, Eq, Ord)
 
-data Settings = Choosewit {
+data Settings = Settings {
   _isShowingTicks :: Bool
 , _isShowingKeys :: Bool
 , _isRunningTests :: Bool
-}
+} deriving (Show, Eq)
 makeLenses ''Settings
 
 makeSettings :: Settings
-makeSettings = Choosewit {
+makeSettings = Settings {
   _isShowingTicks = False
 , _isShowingKeys = True
 , _isRunningTests = False
