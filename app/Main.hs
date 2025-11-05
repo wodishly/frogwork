@@ -80,7 +80,7 @@ getMenu :: StateTuple -> MenuState
 getMenu (_, _, x) = x
 
 news :: Allwit -> News
-news allwit = (allwit^.events, allwit^.keyset, allwit^.window, allwit^.time)
+news allwit = (allwit^.keyset, allwit^.window, allwit^.time)
 
 mkAllwit :: GLContext -> Window -> StateTuple -> StateName -> Allwit
 mkAllwit = Allwit
@@ -116,12 +116,12 @@ birth w c = do
   GL.depthFunc $= Just Lequal
 
   playerMesh <- createAssetMesh defaultAssetMeshProfile
-    >>= flip setMeshTransform (fromTranslation 0 (-2) 0)
+    >>= flip setMeshTransform (fromTranslation [0, -2, 0])
 
   floorMesh <- createSimpleMesh defaultSimpleMeshProfile
 
   froggy <- createAssetMesh (createAsset "test")
-    >>= flip setMeshTransform (fromTranslation 2 -2 0)
+    >>= flip setMeshTransform (fromTranslation [2, -2, 0])
 
   let m = [playerMesh, floorMesh, froggy]
 
@@ -144,7 +144,7 @@ live = do
 
   put $ allwit {
     _events = es,
-    _keyset = listen events (stateInfo^.keyset),
+    _keyset = listen es (allwit^.keyset),
     _time = keepTime (allwit^.time) now
   }
 
