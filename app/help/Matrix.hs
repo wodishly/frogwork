@@ -63,7 +63,7 @@ getProjectionMatrix :: RenderView -> StorableMatrix
 getProjectionMatrix (RenderView aspect fov near far) = hew' [
   1 / (aspect * tan (fov / 2)), 0.0, 0.0, 0.0,
   0.0, 1 / tan (fov / 2), 0.0, 0.0,
-  0.0, 0.0,- ((far + near) / (far - near)),- (2.0 * far * near / (far - near)),
+  0.0, 0.0 ,-((far + near) / (far - near)), -(2.0 * far * near / (far - near)),
   0.0, 0.0, -1.0, 0.0
   ]
 
