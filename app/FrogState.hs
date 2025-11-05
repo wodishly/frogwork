@@ -32,7 +32,7 @@ makeLenses ''Settings
 makeSettings :: Settings
 makeSettings = Settings {
   _isShowingTicks = False
-, _isShowingKeys = True
+, _isShowingKeys = False
 , _isRunningTests = False
 }
 

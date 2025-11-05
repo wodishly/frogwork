@@ -8,6 +8,7 @@ import SDL.Input.Keyboard.Codes
 import Light
 import Key
 import FrogState
+import Mean
 
 data MenuState = MenuState {
   _hand :: [(StateName, String)],
