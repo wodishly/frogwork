@@ -217,7 +217,7 @@ getProjectionMatrix :: RenderView -> Transform
 getProjectionMatrix (RenderView aspect fov near far)
   = S.fromList [1 / (aspect * tan (fov / 2)), 0.0, 0.0, 0.0,
     0.0, 1 / tan (fov / 2), 0.0, 0.0,
-    0.0, 0.0,- ((far + near) / (far - near)),- (2.0 * far * near / (far - near)),
+    0.0, 0.0, -((far + near) / (far - near)), -(2.0 * far * near / (far - near)),
     0.0, 0.0, -1.0, 0.0]
 
 createAssetMesh :: AssetMeshProfile -> IO Mesh
