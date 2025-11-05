@@ -1,16 +1,13 @@
-{-# LANGUAGE TemplateHaskell #-}
-{-# OPTIONS_GHC -Wno-name-shadowing #-}
-
 module MenuState where
 
-import Control.Lens
+import Control.Lens (makeLenses, (^.))
 import Control.Monad.State
 
-import FrogState
+import SDL.Input.Keyboard.Codes
+
 import Light
 import Key
-import SDL.Input.Keyboard.Codes
-import Mean
+import FrogState
 
 data MenuState = MenuState {
   _hand :: [(StateName, String)],
@@ -32,7 +29,7 @@ makeMenuState = MenuState {
 
 menuState :: News -> StateT MenuState IO ()
 menuState (_, keyset, _, _) = do
-  menuwit <- get
+  _ <- get
   lift $ bg (clerp (1/4) white)
   menuFare keyset
 
@@ -42,7 +39,7 @@ menuFare keyset = do
   if keyBegun keyset ScancodeReturn
   then do
     put $ menuwit {
-      _choosen = ly $ Just $ fst $ (menuwit^.hand)!!(menuwit^.finger)
+      _choosen = Just . fst $ (menuwit^.hand)!!(menuwit^.finger)
     }
   else put $ menuwit {
     _finger = if keyBegun keyset ScancodeUp

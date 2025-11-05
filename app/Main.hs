@@ -1,23 +1,24 @@
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RankNTypes #-}
-{-# OPTIONS_GHC -Wno-name-shadowing #-}
-{- HLINT ignore "Redundant return" -}
-
 module Main where
 
-import Data.Function (applyWhen)
-import Control.Lens
+import Control.Lens (Lens', makeLenses, (^.), set)
 import Control.Monad (unless, when)
-import Control.Monad.State
+import Control.Monad.State (StateT, execStateT, MonadTrans (lift), MonadState (get, put))
+import Data.Maybe (fromMaybe)
+import Data.Function (applyWhen)
 
-import SDL (Event)
-import SDL.Vect
-import SDL.Video
+import SDL (
+    V2(V2), V4(V4)
+  , Event
+  , Window
+  , GLContext, Profile(Core), Mode(Normal)
+  )
 import SDL.Input.Keyboard.Codes
-import Graphics.Rendering.OpenGL as GL hiding (get)
-import qualified Graphics.Rendering.OpenGL as GL (get)
-import qualified SDL (initializeAll, quit, getKeyboardState, ticks, pollEvents)
+import Graphics.Rendering.OpenGL (
+  Size(Size),
+  Position(Position),
+  ComparisonFunction(Lequal),
+  HasSetter(($=))
+  )
 
 import Key
 import Test
@@ -30,21 +31,29 @@ import Time
 import Rime
 import Matrix
 import Mean
-import Data.Maybe (fromMaybe)
 
-openGLConfig :: OpenGLConfig
-openGLConfig = OpenGLConfig {
-    glColorPrecision = V4 8 8 8 0
-  , glDepthPrecision = 24
-  , glStencilPrecision = 8
-  , glMultisampleSamples = 1
-  , glProfile = Core Normal 2 1
+import qualified Graphics.Rendering.OpenGL as GL
+import qualified SDL (
+    initializeAll, quit, getKeyboardState, ticks, pollEvents
+  , WindowConfig(..), defaultWindow, createWindow, destroyWindow, windowSize
+  , OpenGLConfig(..), glCreateContext, glDeleteContext, glSwapWindow
+  , WindowGraphicsContext(OpenGLContext)
+  )
+
+
+openGLConfig :: SDL.OpenGLConfig
+openGLConfig = SDL.OpenGLConfig {
+    SDL.glColorPrecision = V4 8 8 8 0
+  , SDL.glDepthPrecision = 24
+  , SDL.glStencilPrecision = 8
+  , SDL.glMultisampleSamples = 1
+  , SDL.glProfile = Core Normal 2 1
 }
 
-openGLWindow :: WindowConfig
-openGLWindow = defaultWindow {
-  windowGraphicsContext = OpenGLContext openGLConfig,
-  windowResizable = True
+openGLWindow :: SDL.WindowConfig
+openGLWindow = SDL.defaultWindow {
+  SDL.windowGraphicsContext = SDL.OpenGLContext openGLConfig,
+  SDL.windowResizable = True
 }
 
 type StateTuple = (PlayState, PauseState, MenuState)
@@ -54,7 +63,7 @@ data Allwit = Allwit {
   _settings :: Settings,
   _events :: [Event],
   _keyset :: KeySet,
-  _ctx :: GLContext,
+  _context :: GLContext,
   _window :: Window,
   _stateList :: StateTuple,
   _nowState :: StateName
@@ -84,38 +93,38 @@ main :: IO ()
 main = do
   SDL.initializeAll
 
-  window <- createWindow "frog universe" openGLWindow
-  ctx <- glCreateContext window
+  w <- SDL.createWindow "frog universe" openGLWindow
+  c <- SDL.glCreateContext w
 
-  V2 windowWidth windowHeight <- (cast <$>) <$> GL.get (windowSize window)
-  viewport $= (Position 0 0, Size windowWidth windowHeight)
+  V2 windowWidth windowHeight <- (cast <$>) <$> GL.get (SDL.windowSize w)
+  GL.viewport $= (Position 0 0, Size windowWidth windowHeight)
 
-  allwit <- birth ctx window
+  allwit <- birth w c
 
   _ <- execStateT live allwit
 
-  die window ctx
+  die w c
   SDL.quit
 
 wake :: Stately a => StateT a IO ()
 wake = return ()
 
-birth :: GLContext -> Window -> IO Allwit
-birth ctx w = do
+birth :: Window -> GLContext -> IO Allwit
+birth w c = do
 
-  depthFunc $= Just Lequal
+  GL.depthFunc $= Just Lequal
 
   playerMesh <- createAssetMesh defaultAssetMeshProfile
-  playerMesh <- setMeshTransform playerMesh $ fromTranslation 0 (-2) 0
+    >>= flip setMeshTransform (fromTranslation 0 (-2) 0)
 
   floorMesh <- createSimpleMesh defaultSimpleMeshProfile
 
-  froggy <- createAssetMesh $ createAsset "test"
-  froggy <- setMeshTransform froggy $ fromTranslation 2 (-2) 0
+  froggy <- createAssetMesh (createAsset "test")
+    >>= flip setMeshTransform (fromTranslation 2 -2 0)
 
   let m = [playerMesh, floorMesh, froggy]
 
-  let allwit = mkAllwit ctx w (
+  let allwit = mkAllwit c w (
         set meshes m makePlayState,
         makePauseState,
         makeMenuState
@@ -129,12 +138,12 @@ live :: StateT Allwit IO ()
 live = do
   allwit <- get
 
-  events <- SDL.pollEvents
+  es <- SDL.pollEvents
   keys <- listen unkeys <$> SDL.getKeyboardState
   now <- SDL.ticks
 
   put $ allwit {
-    _events = events,
+    _events = es,
     _keyset = keys,
     _time = keepTime (allwit^.time) now
   }
@@ -150,10 +159,9 @@ live = do
     Pause -> doPauseState
     Menu -> doMenuState
 
-  glSwapWindow (allwit^.window)
+  SDL.glSwapWindow (allwit^.window)
 
   unless (keyBegun (allwit^.keyset) ScancodeQ) live
-  return ()
 
 doPlayState :: StateT Allwit IO ()
 doPlayState = do
@@ -181,10 +189,10 @@ doMenuState = do
   }
 
 die :: Window -> GLContext -> IO ()
-die window ctx = do
-  finish
-  glDeleteContext ctx
-  destroyWindow window
+die w c = do
+  GL.finish
+  SDL.glDeleteContext c
+  SDL.destroyWindow w
   return ()
 
 toggleSettings :: StateT Allwit IO ()

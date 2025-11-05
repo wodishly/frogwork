@@ -88,7 +88,11 @@ executable frogwork
     Test
 
   -- LANGUAGE extensions used by modules in this package.
-  -- other-extensions:
+  default-extensions:
+    TemplateHaskell
+    OverloadedStrings
+    RankNTypes
+    LexicalNegation
 
   -- Other library packages from which modules are imported.
   build-depends:
