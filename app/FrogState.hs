@@ -5,17 +5,23 @@ module FrogState where
 import Control.Lens (makeLenses)
 import Control.Monad.State (StateT)
 
-import SDL (Window)
+import qualified SDL.Video.OpenGL as SDL
+import SDL.Input.Keyboard.Codes
+
+import Graphics.Rendering.OpenGL as GL
 
 import Key
 import Time
-import Matrix
+import Control.Monad.State (StateT)
+import Shade
+import SDL (Window)
+import Matrix (FrogVector, frogZero)
 
 type News = (KeySet, Window, Time)
 
 data StateName = Play | Pause | Menu deriving (Show, Eq, Ord)
 
-data Settings = Choosewit {
+data Settings = Settings {
   _isShowingTicks :: Bool
 , _isShowingKeys :: Bool
 , _isRunningTests :: Bool
@@ -23,17 +29,12 @@ data Settings = Choosewit {
 makeLenses ''Settings
 
 makeSettings :: Settings
-makeSettings = Choosewit {
+makeSettings = Settings {
   _isShowingTicks = False
-, _isShowingKeys = True
+, _isShowingKeys = False
 , _isRunningTests = False
 }
 
 class Stately a where
   _name :: a -> StateName
   _update :: News -> StateT a IO ()
-
-data Camera = Camera {
-  cPosition :: FrogVector,
-  cTarget :: FrogVector
-} deriving (Show, Eq)
