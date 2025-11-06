@@ -1,13 +1,21 @@
-{-# OPTIONS_GHC -Wno-name-shadowing #-}
-
-module FrogState where
+module FrogState (
+  News
+, Settings (..)
+, StateName (..)
+, Stately (..)
+, isRunningTests
+, isShowingKeys
+, isShowingTicks
+, makeSettings
+, preent
+) where
 
 import Control.Lens (makeLenses)
-import Control.Monad.State (StateT, MonadTrans (lift))
+import Control.Monad.State (MonadTrans (lift), StateT)
 
-import Key
-import Time
+import Key (KeySet)
 import Matrix (RenderView)
+import Time (Time)
 
 
 type News = (KeySet, RenderView, Time)

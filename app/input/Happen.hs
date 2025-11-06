@@ -8,19 +8,19 @@ module Happen (
 import Data.Maybe (mapMaybe)
 
 import SDL (
-  Event (eventPayload),
-  EventPayload (KeyboardEvent, WindowResizedEvent),
-  InputMotion,
-  KeyboardEventData (keyboardEventKeyMotion, keyboardEventKeysym),
-  Keysym (keysymScancode),
-  Scancode, Window, V2 (V2), windowSize
+    Event (eventPayload)
+  , EventPayload (KeyboardEvent, WindowResizedEvent)
+  , InputMotion
+  , KeyboardEventData (keyboardEventKeyMotion, keyboardEventKeysym)
+  , Keysym (keysymScancode)
+  , Scancode, Window, V2 (V2), windowSize
   )
 
 import Mean (doBoth)
 import Matrix (RenderView (..))
 import Rime (cast)
-import qualified Graphics.Rendering.OpenGL as GL
 import Graphics.Rendering.OpenGL (Size(Size), Position (Position), ComparisonFunction (Lequal), HasSetter (($=)))
+import qualified Graphics.Rendering.OpenGL as GL (get, depthFunc, viewport)
 
 
 type Keywit = (Scancode, InputMotion)

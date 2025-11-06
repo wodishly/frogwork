@@ -18,3 +18,9 @@ libraries:<br>
 ```sh
 cabal run
 ```
+
+# fand
+```sh
+cabal configure --enable-profiling
+cabal run frogwork -- +RTS -pj -RTS
+```

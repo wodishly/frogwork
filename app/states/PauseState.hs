@@ -22,4 +22,4 @@ makePauseState = PauseState {
 
 pauseState :: News -> StateT PauseState IO ()
 pauseState _ = do
-  lift $ bg blue
+  bg blue

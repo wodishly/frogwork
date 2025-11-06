@@ -6,6 +6,7 @@ import Graphics.Rendering.OpenGL
 
 import Mean
 import Rime
+import Control.Monad.State (StateT, MonadTrans (lift))
 
 type FrogColor = Color4 GLfloat
 type Point = Vertex2 GLfloat
@@ -57,5 +58,5 @@ magenta = Color4 255 0 255 1
 clerp :: GLfloat -> FrogColor -> FrogColor
 clerp n = fmap (cast . (*) (clamp (0, 1) n) . cast)
 
-bg :: FrogColor -> IO ()
-bg c = clearColor $= c >> clear [ColorBuffer, DepthBuffer]
+bg :: FrogColor -> StateT a IO ()
+bg c = lift (clearColor $= c >> clear [ColorBuffer, DepthBuffer])

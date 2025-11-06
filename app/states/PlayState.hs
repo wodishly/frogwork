@@ -61,7 +61,7 @@ playState (keys, dis, time) = do
   statewit <- get
 
   move keys time
-  lift $ bg black
+  bg black
 
   let projectionMatrix = getProjectionMatrix dis
 

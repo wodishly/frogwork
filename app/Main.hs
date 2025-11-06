@@ -15,15 +15,6 @@ import SDL (
   )
 import SDL.Input.Keyboard.Codes
 
-import Key
-import Test
-import FrogState
-import MenuState
-import PauseState
-import Shade
-import Time
-import Matrix
-import Mean
 import Happen (unwrapHappenWindow, waxwane)
 
 import qualified Graphics.Rendering.OpenGL as GL
@@ -33,8 +24,17 @@ import qualified SDL (
   , OpenGLConfig(..), glCreateContext, glDeleteContext, glSwapWindow
   , WindowGraphicsContext(OpenGLContext)
   )
-import PlayState (PlayState, makePlayState, meshes)
 
+import FrogState
+import PlayState
+import PauseState
+import MenuState
+
+import Key (KeySet, keyBegun, listen, unkeys)
+import Matrix (RenderView, fromTranslation)
+import Mean (ly', weep)
+import Shade
+import Time (Time, beginTime, keepTime)
 
 openGLConfig :: SDL.OpenGLConfig
 openGLConfig = SDL.OpenGLConfig {
@@ -87,7 +87,7 @@ main :: IO ()
 main = do
   SDL.initializeAll
   _ <- SDL.getKeyboardState
-  wind <- SDL.createWindow "frog universe" openGLWindow
+  wind <- SDL.createWindow "frogwork" openGLWindow
   ctx <- SDL.glCreateContext wind
 
   birth wind ctx >>= execStateT live >> die wind ctx
@@ -112,7 +112,7 @@ birth wind ctx = do
         makeMenuState
         ) Menu
 
-  when (allwit^.settings.isRunningTests) someFand
+  when (allwit^.settings.isRunningTests) weep
 
   return allwit
 

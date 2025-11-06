@@ -84,9 +84,8 @@ executable frogwork
     PauseState
     PlayState
 
-    Fast
+    Fasten
     FrogState
-    Test
 
   -- LANGUAGE extensions used by modules in this package.
   default-extensions:

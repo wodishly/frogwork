@@ -19,7 +19,7 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.Vector.Storable as S
 
 import File
-import Fast
+import Fasten
 import Rime
 import Light 
 import Mean

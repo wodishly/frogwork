@@ -1,19 +1,23 @@
-module MenuState where
+module MenuState (
+  MenuState
+, makeMenuState
+, choosen
+) where
 
 import Control.Lens (makeLenses, (^.))
-import Control.Monad.State
+import Control.Monad.State (StateT, MonadState (get, put))
 
 import SDL.Input.Keyboard.Codes
 
-import Light
-import Key
-import FrogState
-import Mean
+import FrogState (StateName (..), Stately (..), News)
+import Key (KeySet, keyBegun)
+import Light (bg, white, clerp)
+
 
 data MenuState = MenuState {
-  _hand :: [(StateName, String)],
-  _finger :: Int,
-  _choosen :: Maybe StateName
+    _hand :: [(StateName, String)]
+  , _finger :: Int
+  , _choosen :: Maybe StateName
 } deriving (Show, Eq)
 makeLenses ''MenuState
 
@@ -23,15 +27,15 @@ instance Stately MenuState where
 
 makeMenuState :: MenuState
 makeMenuState = MenuState {
-  _hand = [(Play, "play"), (Play, "frog")],
-  _finger = 0,
-  _choosen = Nothing
+    _hand = [(Play, "play"), (Play, "frog")]
+  , _finger = 0
+  , _choosen = Nothing
 }
 
 menuState :: News -> StateT MenuState IO ()
 menuState (keyset, _, _) = do
   _ <- get
-  lift $ bg (clerp (1/4) white)
+  bg (clerp (1/4) white)
   menuFare keyset
 
 menuFare :: KeySet -> StateT MenuState IO ()

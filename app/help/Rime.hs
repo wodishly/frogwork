@@ -1,20 +1,24 @@
-module Rime where
+module Rime (
+  average
+, cast
+, clamp
+, hardRound
+) where
 
 import Graphics.Rendering.OpenGL (GLfloat)
+import Mean (doBoth)
 
-clamp :: Ord a => (a, a) -> a -> a
-clamp (low, high) x = min high (max low x)
 
 average :: Real a => [a] -> GLfloat
-average xs = realToFrac (sum xs) / fromIntegral (length xs)
+average = uncurry (/) . doBoth (realToFrac.sum) (fromIntegral.length)
 
--- rounds specifically to type `Int` rather than some type `Integral a => a`
+-- | Casts @Bool@ and most numeric types to the needed inferred type.
+cast :: (Enum a, Num b) => a -> b
+cast = fromIntegral . fromEnum
+
+clamp :: Ord a => (a, a) -> a -> a
+clamp (low, high) = min high . max low
+
+-- | Rounds to type @Int@ rather than to an inferred @Integral a@.
 hardRound :: RealFrac a => a -> Int
 hardRound x = round x :: Int
-
-cast :: (Enum a, Num b) => a -> b
-cast = fromIntegral.fromEnum
-
--- unused
-roundTo :: (RealFrac a) => Int -> a -> Double
-roundTo sharpness n = (fromInteger.round $ n*10^sharpness) / (10.0^sharpness)

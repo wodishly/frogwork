@@ -1,10 +1,10 @@
 module Mean where
 
 import Debug.Trace (trace)
-import Data.Function ((&))
 import Data.Bifunctor (first, bimap)
 import Control.Exception (assert)
 import Data.List (singleton)
+
 
 type Shed a = [a] -> a
 type Shell a = a -> [a]
@@ -23,7 +23,7 @@ ly = ly' id
 
 -- | wah
 weep :: IO ()
-weep = print "wah"
+weep = print ("wah" :: String)
 
 -- @endregion
 
@@ -44,6 +44,7 @@ samely l r = assert (l == r) l
 
 -- given that `f thing` holds, return `thing`
 -- otherwise, return `bad`
+{-# INLINE given #-}
 given :: (a -> Bool) -> a -> a -> a
 given f thing bad = if f thing then thing else bad
 
@@ -51,6 +52,7 @@ given f thing bad = if f thing then thing else bad
 --
 -- >>> twin "frog"
 -- ("frog","frog")
+{-# INLINE twin #-}
 twin :: a -> (a, a)
 twin x = (x, x)
 
@@ -62,6 +64,7 @@ twin x = (x, x)
 --
 -- >>> toBoth (+) 1
 -- 2
+{-# INLINE toBoth #-}
 toBoth :: (a -> a -> b) -> a -> b
 toBoth f x = f x x
 
@@ -69,6 +72,7 @@ toBoth f x = f x x
 --
 -- >>> applyBoth succ pred 0
 -- (1,-1)
+{-# INLINE doBoth #-}
 doBoth :: (a -> b) -> (a -> c) -> a -> (b, c)
 doBoth f g = bimap f g . twin
 
@@ -76,6 +80,7 @@ doBoth f g = bimap f g . twin
 --
 -- >>> twimap (*2) (1,2)
 -- (2,4)
+{-# INLINE twimap #-}
 twimap :: (a -> b) -> (a, a) -> (b, b)
 twimap = toBoth bimap
 
@@ -83,6 +88,7 @@ twimap = toBoth bimap
 
 -- @region For working with higher tuples.
 
+{-# INLINE uncurry3 #-}
 uncurry3 :: (a -> b -> c -> d) -> (a, b, c) -> d
 uncurry3 f (x, y, z) = f x y z
 
@@ -92,22 +98,27 @@ uncurry3 f (x, y, z) = f x y z
 
 -- | >>> flight 4
 -- [0,1,2,3]
+{-# INLINE flight #-}
 flight :: Shell Int
 flight = enumFromTo 0 . pred
 
 -- | Whether the thing withstands all of the ordeals.
+{-# INLINE allIn #-}
 allIn :: Foldable t => t (a -> Bool) -> a -> Bool
-allIn = flip (.) (&) . flip all
+allIn fs x = all ($ x) fs
 
 -- | Whether the thing withstands any of the ordeals.
+{-# INLINE anyIn #-}
 anyIn :: Foldable t => t (a -> Bool) -> a -> Bool
 anyIn fs x = any ($ x) fs
 
 -- | Whether the argument is unempty.
+{-# INLINE full #-}
 full :: Foldable t => t a -> Bool
 full = not.null
 
 -- split xs into a list of lists xss where each `last xss` gladdens `f`
+{-# INLINE split #-}
 split :: (a -> Bool) -> Shell [a]
 split f = split' f . map singleton
 
@@ -123,6 +134,7 @@ split' _ xs = xs
 --
 -- >>> shell "frog"
 -- ["frog"]
+{-# INLINE shell #-}
 shell :: Shell a
 shell = singleton
 
@@ -138,12 +150,14 @@ shell = singleton
 -- False
 -- >>> multipleton []
 -- False
+{-# INLINE multipleton #-}
 multipleton :: Foldable t => t a -> Bool
 multipleton = (> 1) . length
 
 -- | Returns @True@ iff nothing in the list withstands the ordeal.
 --
 -- By De Morgan's laws, @none f xs@ iff @not (any (not f) xs)@.
+{-# INLINE none #-}
 none :: Foldable t => (a -> Bool) -> t a -> Bool
 none = (not .) . any
 
@@ -152,6 +166,7 @@ none = (not .) . any
 --
 -- >>> leave 3 [0,1,2,3,4,5,6,7]
 -- [0,1,2,3,4]
+{-# INLINE leave #-}
 leave :: Int -> Shift [a]
 leave n xs = take (length xs - n) xs
 
@@ -160,6 +175,7 @@ leave n xs = take (length xs - n) xs
 --
 -- >>> scoop 3 [0,1,2,3,4,5,6,7]
 -- [5,6,7]
+{-# INLINE scoop #-}
 scoop :: Int -> Shift [a]
 scoop n xs = drop (length xs - n) xs
 
@@ -188,5 +204,6 @@ hits ns f = hits (tail ns) f . hit (head ns) f
 -- True
 -- >>> lif False False
 -- True
+{-# INLINE lif #-}
 lif :: Bool -> Bool -> Bool
 lif = (||) . not

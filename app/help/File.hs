@@ -1,13 +1,20 @@
-module File where
+module File (
+  getFrogBytes
+, parseFrogFile
+, FrogFile (..)
+, FrogVertex (..)
+) where
 
 import Control.Monad (replicateM)
+import Data.Binary.Get (Get, getFloatle, getInt16le, getInt32le, getWord32le, getWord8)
 import Foreign (Int16, Int32, Word32, Word8)
-import Data.Binary.Get
+
+import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2), Vertex3 (Vertex3))
 
 import qualified Data.ByteString.Lazy as BL
-import Graphics.Rendering.OpenGL
 
-import Light
+import Light (Polygon, Polyhedron)
+
 
 getFrogBytes :: String -> IO BL.ByteString
 getFrogBytes = BL.readFile
@@ -27,13 +34,13 @@ data FrogFile = FrogFile {
   indexBuffer :: [Word32],
   -- rgba texture block
   bitmapBuffer :: [Word8]
-} deriving (Show)
+} deriving (Show, Eq)
 
 data FrogVertex = FrogVertex {
   position :: Vertex3 GLfloat
 , uv :: Vertex2 GLfloat
 , normal :: Vertex3 GLfloat
-} deriving (Show)
+} deriving (Show, Eq)
 
 parseFrogVector3 :: Get (Vertex3 GLfloat)
 parseFrogVector3 = do
