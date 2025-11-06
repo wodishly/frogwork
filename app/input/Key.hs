@@ -1,25 +1,24 @@
-{-# LANGUAGE TemplateHaskell #-}
 {- HLINT ignore "Use infix" -}
 
 module Key where
 
-import Control.Lens
+import Control.Lens (makeLenses, (^.))
 
+import SDL (InputMotion (Pressed, Released), Event)
 import SDL.Input.Keyboard.Codes
 
 import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2))
 
-import Light
-import Mean
-import SDL (Event (eventPayload), Keysym (keysymScancode), KeyboardEventData (keyboardEventKeysym, keyboardEventKeyMotion), InputMotion (Pressed, Released))
-import SDL.Event (EventPayload(KeyboardEvent))
-import Data.Maybe (mapMaybe)
+import Happen (Keywit, unwrapKeys)
+import Light (Point)
+import Mean (allIn)
+
 
 data KeySet = KeySet {
   _keysBegin :: [Scancode]
 , _keysContinue :: [Scancode]
 , _keysEnd :: [Scancode]
-}
+} deriving (Eq)
 makeLenses ''KeySet
 
 instance Show KeySet where
@@ -41,8 +40,6 @@ hearableKeys = [
 unkeys :: KeySet
 unkeys = KeySet [] [] []
 
-type Keywit = (Scancode, InputMotion)
-
 -- | Checks @wits@ to see if @code@ is @Pressed@.
 keyDown :: [Keywit] -> Scancode -> Bool
 keyDown wits code = elem (code, Pressed) wits
@@ -62,11 +59,6 @@ keyContinuing keySet code = elem code (keySet^.keysBegin ++ keySet^.keysContinue
 -- | Checks @keySet@ to see if @code@ ended being depressed on this frame.
 keyEnded :: KeySet -> Scancode -> Bool
 keyEnded keySet code = elem code (keySet^.keysEnd)
-
-unwrapKeys :: [Event] -> [Keywit]
-unwrapKeys = mapMaybe (\event -> case eventPayload event of
-  KeyboardEvent e -> Just (doBoth (keysymScancode.keyboardEventKeysym) keyboardEventKeyMotion e)
-  _ -> Nothing)
 
 listen :: [Event] -> KeySet -> KeySet
 listen events keyset = let news = unwrapKeys events in KeySet

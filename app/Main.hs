@@ -61,8 +61,8 @@ data Allwit = Allwit {
   _time :: Time,
   _settings :: Settings,
   _keyset :: KeySet,
-  _context :: GLContext,
   _window :: Window,
+  _context :: GLContext,
   _stateList :: StateTuple,
   _nowState :: StateName
 }
@@ -80,7 +80,7 @@ getMenu (_, _, x) = x
 news :: Allwit -> News
 news allwit = (allwit^.keyset, allwit^.window, allwit^.time)
 
-mkAllwit :: GLContext -> Window -> StateTuple -> StateName -> Allwit
+mkAllwit :: Window -> GLContext -> StateTuple -> StateName -> Allwit
 mkAllwit = Allwit
   beginTime
   makeSettings
@@ -90,22 +90,13 @@ main :: IO ()
 main = do
   SDL.initializeAll
   _ <- SDL.getKeyboardState
-
   w <- SDL.createWindow "frog universe" openGLWindow
   c <- SDL.glCreateContext w
 
   V2 windowWidth windowHeight <- (cast <$>) <$> GL.get (SDL.windowSize w)
   GL.viewport $= (Position 0 0, Size windowWidth windowHeight)
 
-  allwit <- birth w c
-
-  _ <- execStateT live allwit
-
-  die w c
-  SDL.quit
-
-wake :: Stately a => StateT a IO ()
-wake = return ()
+  birth w c >>= execStateT live >> die w c
 
 birth :: Window -> GLContext -> IO Allwit
 birth w c = do
@@ -122,7 +113,7 @@ birth w c = do
 
   let m = [playerMesh, floorMesh, froggy]
 
-  let allwit = mkAllwit c w (
+  let allwit = mkAllwit w c (
         set meshes m makePlayState,
         makePauseState,
         makeMenuState
@@ -159,6 +150,13 @@ live = do
 
   unless (keyBegun (allwit^.keyset) ScancodeQ) live
 
+die :: Window -> GLContext -> IO ()
+die w c = do
+  GL.finish
+  SDL.glDeleteContext c
+  SDL.destroyWindow w
+  SDL.quit
+
 doPlayState :: StateT Allwit IO ()
 doPlayState = do
   allwit <- get
@@ -183,13 +181,6 @@ doMenuState = do
     _stateList = (getPlay (allwit^.stateList), getPause (allwit^.stateList), newMenu),
     _nowState = fromMaybe (allwit^.nowState) (newMenu^.choosen)
   }
-
-die :: Window -> GLContext -> IO ()
-die w c = do
-  GL.finish
-  SDL.glDeleteContext c
-  SDL.destroyWindow w
-  return ()
 
 toggleSettings :: StateT Allwit IO ()
 toggleSettings = do
