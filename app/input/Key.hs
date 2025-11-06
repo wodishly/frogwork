@@ -9,7 +9,7 @@ import SDL.Input.Keyboard.Codes
 
 import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2))
 
-import Happen (Keywit, unwrapKeys)
+import Happen (Keywit, unwrapHappenKeys)
 import Light (Point)
 import Mean (allIn)
 
@@ -61,7 +61,7 @@ keyEnded :: KeySet -> Scancode -> Bool
 keyEnded keySet code = elem code (keySet^.keysEnd)
 
 listen :: [Event] -> KeySet -> KeySet
-listen events keyset = let news = unwrapKeys events in KeySet
+listen events keyset = let news = unwrapHappenKeys events in KeySet
   (filter (allIn [keyDown news, not.keyContinuing keyset]) hearableKeys)
   (filter (allIn [not.keyUp news, keyContinuing keyset]) hearableKeys)
   (filter (allIn [keyUp news, keyContinuing keyset]) hearableKeys)

@@ -1,25 +1,24 @@
-{-# LANGUAGE TemplateHaskell #-}
-{-# OPTIONS_GHC -Wno-name-shadowing #-}
+module PlayState (
+  PlayState (..)
+, makePlayState
+, meshes
+, programs
+, camera
+, seed
+) where
 
-module PlayState where
-
-import Control.Lens
-import Control.Monad.State
+import Control.Lens (makeLenses, (^.))
+import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT)
 
 import Graphics.Rendering.OpenGL as GL hiding (get)
-import qualified Graphics.Rendering.OpenGL as GL (get)
-import SDL (windowSize)
-import SDL.Vect hiding (Point)
-import Rime (cast)
 
-import FrogState
-import Light
-import Key
-import Shade
-import Time
-import Random
-import Matrix
-import Mean
+import FrogState (News, StateName (Play), Stately (..))
+import Key (KeySet, wayward)
+import Light (Point, bg, black)
+import Matrix (FrogVector, frogLookAt, frogZero, getProjectionMatrix)
+import Random (FrogSeed, defaultSeed)
+import Shade (Mesh, drawMesh)
+import Time (Time, throttle)
 
 data Camera = Camera {
     cPosition :: FrogVector
@@ -33,7 +32,7 @@ makeCamera = Camera {
 }
 
 data PlayState = PlayState {
-  _seed :: FrogSeed
+    _seed :: FrogSeed
   , _meshes :: [Mesh]
   , _lily :: Point
   , _programs :: [(Program, VertexArrayObject)]
@@ -58,21 +57,13 @@ makePlayState = PlayState {
 }
 
 playState :: News -> StateT PlayState IO ()
-playState (keys, window, time) = do
+playState (keys, dis, time) = do
   statewit <- get
 
   move keys time
   lift $ bg black
 
-  V2 windowWidth windowHeight <- (cast <$>) <$> GL.get (windowSize window)
-  viewport $= (Position 0 0, Size windowWidth windowHeight)
-  let display = RenderView {
-    _aspect = fromIntegral windowWidth / fromIntegral windowHeight,
-    _fov = pi / 4.0,
-    _near = 0.1,
-    _far = 100.0
-  }
-  let projectionMatrix = getProjectionMatrix display
+  let projectionMatrix = getProjectionMatrix dis
 
   let Vertex2 a b = statewit^.lily
   let c = Camera {

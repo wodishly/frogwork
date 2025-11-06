@@ -5,13 +5,12 @@ module FrogState where
 import Control.Lens (makeLenses)
 import Control.Monad.State (StateT, MonadTrans (lift))
 
-import SDL (Window)
-
 import Key
 import Time
+import Matrix (RenderView)
 
 
-type News = (KeySet, Window, Time)
+type News = (KeySet, RenderView, Time)
 
 data StateName = Play | Pause | Menu deriving (Show, Eq, Ord)
 
