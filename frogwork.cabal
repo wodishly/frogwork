@@ -86,13 +86,15 @@ executable frogwork
 
     Fasten
     FrogState
+    Game
 
   -- LANGUAGE extensions used by modules in this package.
   default-extensions:
-    TemplateHaskell
+    LambdaCase
+    LexicalNegation
     OverloadedStrings
     RankNTypes
-    LexicalNegation
+    TemplateHaskell
 
   -- Other library packages from which modules are imported.
   build-depends:

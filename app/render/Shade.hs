@@ -167,6 +167,18 @@ brewProfile profile = do
     fpath = filePath
   }
 
+begetMeshes :: IO [Mesh]
+begetMeshes = do
+  froggy <- createAssetMesh defaultAssetMeshProfile
+    >>= flip setMeshTransform (fromTranslation [0, -2, -5])
+
+  earth <- createSimpleMesh defaultSimpleMeshProfile
+
+  farsee <- createAssetMesh (createAsset "tv")
+    >>= flip setMeshTransform (fromTranslation [2, -2, -5])
+  
+  return [froggy, earth, farsee]
+
 useMesh :: Mesh -> IO ()
 useMesh (Mesh program vao tex _ _ _ _) = do
   currentProgram $= Just program

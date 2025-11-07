@@ -14,9 +14,9 @@ import Control.Lens (makeLenses)
 import Control.Monad.State (MonadTrans (lift), StateT)
 
 import Key (KeySet)
+import Light (Point)
 import Matrix (RenderView)
 import Time (Time)
-import Light (Point)
 
 
 type News = (KeySet, Point, RenderView, Time)
