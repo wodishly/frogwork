@@ -1,6 +1,7 @@
 module Happen (
     Keywit
   , unwrapHappenKeys
+  , unwrapHappenMouse
   , unwrapHappenWindow
   , waxwane
 ) where
@@ -9,21 +10,27 @@ import Data.Maybe (mapMaybe)
 
 import SDL (
     Event (eventPayload)
-  , EventPayload (KeyboardEvent, WindowResizedEvent)
+  , EventPayload (KeyboardEvent, WindowResizedEvent, MouseMotionEvent)
   , InputMotion
   , KeyboardEventData (keyboardEventKeyMotion, keyboardEventKeysym)
   , Keysym (keysymScancode)
-  , Scancode, Window, V2 (V2), windowSize
+  , Scancode, Window, V2 (V2), windowSize, MouseMotionEventData (mouseMotionEventPos)
   )
 
 import Mean (doBoth)
 import Matrix (RenderView (..))
 import Rime (cast)
-import Graphics.Rendering.OpenGL (Size(Size), Position (Position), ComparisonFunction (Lequal), HasSetter (($=)))
+import Graphics.Rendering.OpenGL (Size(Size), Position (Position), ComparisonFunction (Lequal), HasSetter (($=)), GLfloat, Vertex2)
 import qualified Graphics.Rendering.OpenGL as GL (get, depthFunc, viewport)
+import Light (frogpoint)
 
 
 type Keywit = (Scancode, InputMotion)
+
+unwrapHappenMouse :: [Event] -> [Vertex2 GLfloat]
+unwrapHappenMouse = mapMaybe (\event -> case eventPayload event of
+  MouseMotionEvent e -> Just (frogpoint $ mouseMotionEventPos e)
+  _ -> Nothing)
 
 unwrapHappenKeys :: [Event] -> [Keywit]
 unwrapHappenKeys = mapMaybe (\event -> case eventPayload event of

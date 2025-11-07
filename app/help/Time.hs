@@ -4,6 +4,9 @@ module Time (
 , beginTime
 , keepTime
 , throttle
+, deltaTime
+, deltas
+, lifetime
 ) where
 
 import Control.Lens (makeLenses, (^.))

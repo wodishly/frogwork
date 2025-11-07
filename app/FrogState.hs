@@ -16,9 +16,10 @@ import Control.Monad.State (MonadTrans (lift), StateT)
 import Key (KeySet)
 import Matrix (RenderView)
 import Time (Time)
+import Light (Point)
 
 
-type News = (KeySet, RenderView, Time)
+type News = (KeySet, Point, RenderView, Time)
 
 data StateName = PlayName | PauseName | MenuName deriving (Show, Eq, Ord)
 

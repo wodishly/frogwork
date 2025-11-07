@@ -34,7 +34,7 @@ makeMenuState = MenuState {
 }
 
 menu :: News -> StateT MenuState IO ()
-menu (keyset, _, _) = do
+menu (keyset, _, _, _) = do
   _ <- get
   bg (clerp (1/4) white)
   menuFare keyset

@@ -96,4 +96,5 @@ frogLookAt eye target =
       right = normalize (cross frogUp dir)
       up = cross dir right
   in hew $ setElem 1 (4, 4) 
-    (extendTo 0 4 4 (M.fromLists [right,up,dir])) * fromTranslation (sub frogZero eye)
+    (extendTo 0 4 4 (M.fromLists [right, up, dir]))
+    * fromTranslation (sub frogZero eye)

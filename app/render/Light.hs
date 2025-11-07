@@ -7,6 +7,7 @@ import Graphics.Rendering.OpenGL
 import Mean
 import Rime
 import Control.Monad.State (StateT, MonadTrans (lift))
+import qualified SDL (V2 (V2), Point (P))
 
 type FrogColor = Color4 GLfloat
 type Point = Vertex2 GLfloat
@@ -28,6 +29,9 @@ drawFaces count = do drawElements Triangles count UnsignedInt (bufferOffset 0)
 
 evenNooks :: Int -> Polygon
 evenNooks n = map (dir . (* (2*pi / cast n)). cast) (flight n)
+
+frogpoint :: (Enum a, Num a) => SDL.Point SDL.V2 a -> Point
+frogpoint (SDL.P (SDL.V2 x y)) = Vertex2 (cast x) (cast y)
 
 -- radians
 dir :: GLfloat -> Point

@@ -21,6 +21,10 @@ ly' = (. twin) . (uncurry trace .) . (first . (show .))
 ly :: Show a => a -> a
 ly = ly' id
 
+-- | generalized loudly on "wah"
+sadly :: a -> a
+sadly = ly' (const ("wah" :: String))
+
 -- | wah
 weep :: IO ()
 weep = print ("wah" :: String)

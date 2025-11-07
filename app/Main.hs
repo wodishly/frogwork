@@ -1,4 +1,4 @@
-module Main (main, context) where
+module Main (main, context, events) where
 
 import Control.Lens (Lens', makeLenses, set, (^.))
 import Control.Monad (unless, when)
@@ -11,7 +11,7 @@ import SDL (
   , Mode (Normal)
   , Profile (Core)
   , V4 (V4)
-  , Window
+  , Window, Event
   )
 import SDL.Input.Keyboard.Codes
 
@@ -28,12 +28,13 @@ import PlayState
 import PauseState
 import MenuState
 
-import Happen (unwrapHappenWindow, waxwane)
+import Happen (unwrapHappenWindow, waxwane, unwrapHappenMouse)
 import Key (KeySet, keyBegun, listen, unkeys)
 import Matrix (RenderView, fromTranslation)
-import Mean (ly', weep)
+import Mean (ly', weep, full)
 import Shade
 import Time (Time, beginTime, keepTime)
+import Light (Point)
 
 
 openGLConfig :: SDL.OpenGLConfig
@@ -49,12 +50,15 @@ openGLWindow :: SDL.WindowConfig
 openGLWindow = SDL.defaultWindow {
     SDL.windowGraphicsContext = SDL.OpenGLContext openGLConfig
   , SDL.windowResizable = True
+  , SDL.windowInputGrabbed = False--True
 }
 
 data Allwit = Allwit {
     _time :: Time
   , _settings :: Settings
   , _keyset :: KeySet
+  , _mouse :: Point
+  , _events :: [Event]
   , _window :: Window
   , _display :: RenderView
   , _context :: GLContext
@@ -66,13 +70,13 @@ data Allwit = Allwit {
 makeLenses ''Allwit
 
 news :: Allwit -> News
-news allwit = (allwit^.keyset, allwit^.display, allwit^.time)
+news allwit = (allwit^.keyset, allwit^.mouse, allwit^.display, allwit^.time)
 
 mkAllwit
   :: Window -> RenderView -> GLContext
   -> PlayState -> PauseState -> MenuState -> StateName
   -> Allwit
-mkAllwit = Allwit beginTime makeSettings unkeys
+mkAllwit = Allwit beginTime makeSettings unkeys (GL.Vertex2 0 0) []
 
 main :: IO ()
 main = do
@@ -113,6 +117,11 @@ updateWindow = do
   dis <- lift (waxwane $ allwit^.window)
   put allwit { _display = dis }
 
+updateMouse :: [Event] -> Point -> Point
+updateMouse es oldMouse =
+  let newMouse = unwrapHappenMouse es
+  in (if full newMouse then head newMouse else oldMouse)
+
 live :: StateT Allwit IO ()
 live = do
   allwit <- get
@@ -121,9 +130,12 @@ live = do
   now <- SDL.ticks
 
   put allwit {
-      _keyset = listen es (allwit^.keyset)
+      _events = es
+    , _keyset = listen es (allwit^.keyset)
+    , _mouse = updateMouse es (allwit^.mouse)
     , _time = keepTime (allwit^.time) now
   }
+
 
   when (or $ unwrapHappenWindow es) updateWindow
   when (allwit^.settings.isShowingKeys) (preent $ allwit^.keyset)
