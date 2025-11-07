@@ -4,29 +4,19 @@ import Control.Lens (Lens', makeLenses, set, (^.))
 import Control.Monad (unless, when)
 import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT, execStateT)
 import Data.Function (applyWhen)
-import Data.Maybe (fromMaybe)
 
-import SDL (
-    GLContext
-  , Mode (Normal)
-  , Profile (Core)
-  , V4 (V4)
-  , Window, Event
-  )
+import Foreign (Word32)
+import SDL (Mode (Normal), Profile (Core), V4 (V4))
 import SDL.Input.Keyboard.Codes
 
 import qualified Graphics.Rendering.OpenGL as GL
 import qualified SDL (
-    initializeAll, quit, getKeyboardState, ticks, pollEvents
-  , WindowConfig (..), defaultWindow, createWindow, destroyWindow
-  , OpenGLConfig (..), glCreateContext, glDeleteContext, glSwapWindow
-  , WindowGraphicsContext (OpenGLContext)
+    initializeAll, quit, getKeyboardState, ticks
+  , Event, pollEvents
+  , Window, WindowConfig (..), defaultWindow, createWindow, destroyWindow
+  , OpenGLConfig (..)
+  , GLContext, WindowGraphicsContext (OpenGLContext), glCreateContext, glDeleteContext, glSwapWindow
   )
-
-import FrogState
-import PlayState
-import PauseState
-import MenuState
 
 import Happen (unwrapHappenWindow, waxwane, unwrapHappenMouse)
 import Key (KeySet, keyBegun, listen, unkeys)
@@ -35,6 +25,22 @@ import Mean (ly', weep, full)
 import Shade
 import Time (Time, beginTime, keepTime)
 import Light (Point)
+
+import FrogState (
+    News
+  , Stately
+  , StateName (..)
+  , Settings
+  , makeSettings
+  , isShowingKeys
+  , isRunningTests
+  , isShowingTicks
+  , preent
+  , _update
+  )
+import PlayState (PlayState, makePlayState)
+import PauseState (PauseState, makePauseState)
+import MenuState (MenuState, makeMenuState, hand, finger)
 
 
 openGLConfig :: SDL.OpenGLConfig
@@ -50,22 +56,22 @@ openGLWindow :: SDL.WindowConfig
 openGLWindow = SDL.defaultWindow {
     SDL.windowGraphicsContext = SDL.OpenGLContext openGLConfig
   , SDL.windowResizable = True
-  , SDL.windowInputGrabbed = False--True
+--  , SDL.windowInputGrabbed = True
 }
 
 data Allwit = Allwit {
-    _time :: Time
-  , _settings :: Settings
-  , _keyset :: KeySet
-  , _mouse :: Point
-  , _events :: [Event]
-  , _window :: Window
-  , _display :: RenderView
-  , _context :: GLContext
-  , _playState :: PlayState
-  , _pauseState :: PauseState
-  , _menuState :: MenuState
-  , _nowState :: StateName
+  _time :: Time
+, _settings :: Settings
+, _keyset :: KeySet
+, _mouse :: Point
+, _events :: [SDL.Event]
+, _window :: SDL.Window
+, _display :: RenderView
+, _context :: SDL.GLContext
+, _playState :: PlayState
+, _pauseState :: PauseState
+, _menuState :: MenuState
+, _nowState :: StateName
 }
 makeLenses ''Allwit
 
@@ -73,7 +79,7 @@ news :: Allwit -> News
 news allwit = (allwit^.keyset, allwit^.mouse, allwit^.display, allwit^.time)
 
 mkAllwit
-  :: Window -> RenderView -> GLContext
+  :: SDL.Window -> RenderView -> SDL.GLContext
   -> PlayState -> PauseState -> MenuState -> StateName
   -> Allwit
 mkAllwit = Allwit beginTime makeSettings unkeys (GL.Vertex2 0 0) []
@@ -87,22 +93,13 @@ main = do
 
   birth wind ctx >>= execStateT live >> die wind ctx
 
-birth :: Window -> GLContext -> IO Allwit
+birth :: SDL.Window -> SDL.GLContext -> IO Allwit
 birth wind ctx = do
   dis <- waxwane wind
-
-  froggy <- createAssetMesh defaultAssetMeshProfile
-    >>= flip setMeshTransform (fromTranslation [0, -2, -5])
-
-  earth <- createSimpleMesh defaultSimpleMeshProfile
-
-  farsee <- createAssetMesh (createAsset "tv")
-    >>= flip setMeshTransform (fromTranslation [2, -2, -5])
-
-  let m = [froggy, earth, farsee]
+  ms <- begetMeshes
 
   let allwit = mkAllwit wind dis ctx
-        (set meshes m makePlayState)
+        (makePlayState ms)
         makePauseState
         makeMenuState
         MenuName
@@ -111,86 +108,108 @@ birth wind ctx = do
 
   return allwit
 
-updateWindow :: StateT Allwit IO ()
-updateWindow = do
-  allwit <- get
-  dis <- lift (waxwane $ allwit^.window)
-  put allwit { _display = dis }
+begetMeshes :: IO [Mesh]
+begetMeshes = do
+  froggy <- createAssetMesh defaultAssetMeshProfile
+    >>= flip setMeshTransform (fromTranslation [0, -2, -5])
 
-updateMouse :: [Event] -> Point -> Point
-updateMouse es oldMouse =
-  let newMouse = unwrapHappenMouse es
-  in (if full newMouse then head newMouse else oldMouse)
+  earth <- createSimpleMesh defaultSimpleMeshProfile
+
+  farsee <- createAssetMesh (createAsset "tv")
+    >>= flip setMeshTransform (fromTranslation [2, -2, -5])
+  
+  return [froggy, earth, farsee]
+
+updateWindow :: StateT Allwit IO ()
+updateWindow = get
+  >>= \allwit -> when (or.unwrapHappenWindow $ allwit^.events)
+    (lift (waxwane $ allwit^.window) >>= \dis -> put allwit { _display = dis })
+
+updateMouse :: StateT Allwit IO ()
+updateMouse = get
+  >>= \allwit -> do
+    let m = unwrapHappenMouse (allwit^.events)
+    when (full m) (put allwit { _mouse = head m })
+
+updateKeys :: StateT Allwit IO ()
+updateKeys = get
+  >>= \allwit -> put allwit { _keyset = listen (allwit^.events) (allwit^.keyset) }
+
+updateTime :: IO Word32 -> StateT Allwit IO ()
+updateTime now = get
+  >>= \allwit -> lift now
+  >>= \now' -> put allwit { _time = keepTime (allwit^.time) now' }
+
+updateEvents :: IO [SDL.Event] -> StateT Allwit IO ()
+updateEvents es = get
+  >>= \allwit -> lift es
+  >>= \es' -> put allwit { _events = es' }
+
+showLeechwit :: StateT Allwit IO ()
+showLeechwit = get >>= \allwit -> do
+  when (allwit^.settings.isShowingKeys) (preent $ allwit^.keyset)
+  when (allwit^.settings.isShowingTicks) (preent $ allwit^.time)
+
+updateEverything :: StateT Allwit IO ()
+updateEverything = do
+  updateEvents SDL.pollEvents
+  updateTime SDL.ticks
+  updateKeys
+  updateMouse
+  updateWindow
+  updateSettings
 
 live :: StateT Allwit IO ()
 live = do
   allwit <- get
 
-  es <- SDL.pollEvents
-  now <- SDL.ticks
+  updateEverything
+  showLeechwit
 
-  put allwit {
-      _events = es
-    , _keyset = listen es (allwit^.keyset)
-    , _mouse = updateMouse es (allwit^.mouse)
-    , _time = keepTime (allwit^.time) now
-  }
-
-
-  when (or $ unwrapHappenWindow es) updateWindow
-  when (allwit^.settings.isShowingKeys) (preent $ allwit^.keyset)
-  when (allwit^.settings.isShowingTicks) (preent $ allwit^.time)
-
-  toggleSettings
-  togglePause ScancodeP
-
+  settleState
   case allwit^.nowState of
     PlayName -> goto playState
     PauseName -> goto pauseState
-    MenuName -> menu
+    MenuName -> goto menuState
 
   SDL.glSwapWindow (allwit^.window)
 
   unless (keyBegun (allwit^.keyset) ScancodeQ) live
 
-goto :: Stately a => Lens' Allwit a -> StateT Allwit IO ()
-goto lens = get >>= \allwit -> lift (execStateT (_update $ news allwit) (allwit^.lens))
-  >>= \state -> put (set lens state allwit)
-
-menu :: StateT Allwit IO ()
-menu = get >>= \allwit -> lift (execStateT (_update $ news allwit) (allwit^.menuState))
-  >>= \state -> put allwit {
-    _menuState = state
-  , _nowState = fromMaybe (allwit^.nowState) (state^.choosen)
+settleState :: StateT Allwit IO ()
+settleState = do
+  allwit <- get
+  put allwit { _nowState =
+    if keyBegun (allwit^.keyset) ScancodeP && (allwit^.nowState) == PlayName
+      then PauseName
+    else if keyBegun (allwit^.keyset) ScancodeP && (allwit^.nowState) == PauseName
+      then PlayName
+    else if keyBegun (allwit^.keyset) ScancodeReturn && (allwit^.nowState) == MenuName
+      then fst ((allwit^.menuState.hand)!!(allwit^.menuState.finger))
+      else allwit^.nowState
   }
 
-die :: Window -> GLContext -> IO ()
-die w c = do
+goto :: Stately a => Lens' Allwit a -> StateT Allwit IO ()
+goto lens = get
+  >>= \allwit -> lift (execStateT (_update $ news allwit) (allwit^.lens))
+  >>= \state -> put (set lens state allwit)
+
+die :: SDL.Window -> SDL.GLContext -> IO ()
+die wind ctx = do
   GL.finish
-  SDL.glDeleteContext c
-  SDL.destroyWindow w
+  SDL.glDeleteContext ctx
+  SDL.destroyWindow wind
   SDL.quit
 
-toggleSettings :: StateT Allwit IO ()
-toggleSettings = do
-  toggleOnlyOneSetting ScancodeK isShowingKeys
-  toggleOnlyOneSetting ScancodeT isShowingTicks
+updateSettings :: StateT Allwit IO ()
+updateSettings = do
+  toggleSetting ScancodeK isShowingKeys
+  toggleSetting ScancodeT isShowingTicks
 
-toggleOnlyOneSetting :: Scancode -> Lens' Settings Bool -> StateT Allwit IO ()
-toggleOnlyOneSetting keycode lens = do
-  allwit <- get
-  put allwit {
+toggleSetting :: Scancode -> Lens' Settings Bool -> StateT Allwit IO ()
+toggleSetting keycode lens = get
+  >>= \allwit -> put allwit {
     _settings = applyWhen (keyBegun (allwit^.keyset) keycode)
       (ly' (const ("setting toggled!" :: String)) $ set lens (not $ allwit^.settings.lens))
       (allwit^.settings)
   }
-
-togglePause :: Scancode -> StateT Allwit IO ()
-togglePause key = do
-  allwit <- get
-  when (keyBegun (allwit^.keyset) key) $
-    put allwit {
-      _nowState = case allwit^.nowState of
-        PlayName -> ly' (const ("paused." :: String)) PauseName
-        _ -> ly' (const ("not paused." :: String)) PlayName
-    }

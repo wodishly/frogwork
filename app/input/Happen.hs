@@ -16,12 +16,20 @@ import SDL (
   , Keysym (keysymScancode)
   , Scancode, Window, V2 (V2), windowSize, MouseMotionEventData (mouseMotionEventPos)
   )
+import Graphics.Rendering.OpenGL (
+    ComparisonFunction (Lequal)
+  , GLfloat
+  , HasSetter (($=))
+  , Position (Position)
+  , Size (Size)
+  , Vertex2
+  )
+
+import qualified Graphics.Rendering.OpenGL as GL (depthFunc, get, viewport)
 
 import Mean (doBoth)
 import Matrix (RenderView (..))
 import Rime (cast)
-import Graphics.Rendering.OpenGL (Size(Size), Position (Position), ComparisonFunction (Lequal), HasSetter (($=)), GLfloat, Vertex2)
-import qualified Graphics.Rendering.OpenGL as GL (get, depthFunc, viewport)
 import Light (frogpoint)
 
 

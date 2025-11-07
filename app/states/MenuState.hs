@@ -2,6 +2,8 @@ module MenuState (
   MenuState
 , makeMenuState
 , choosen
+, hand
+, finger
 ) where
 
 import Control.Lens (makeLenses, (^.))
@@ -16,9 +18,9 @@ import Light (bg, clerp, white)
 
 
 data MenuState = MenuState {
-    _hand :: [(StateName, String)]
-  , _finger :: Int
-  , _choosen :: Maybe StateName
+  _hand :: [(StateName, String)]
+, _finger :: Int
+, _choosen :: Maybe StateName
 } deriving (Show, Eq)
 makeLenses ''MenuState
 
@@ -28,9 +30,9 @@ instance Stately MenuState where
 
 makeMenuState :: MenuState
 makeMenuState = MenuState {
-    _hand = [(PlayName, "play"), (PlayName, "frog")]
-  , _finger = 0
-  , _choosen = Nothing
+  _hand = [(PlayName, "play"), (PlayName, "frog")]
+, _finger = 0
+, _choosen = Nothing
 }
 
 menu :: News -> StateT MenuState IO ()
@@ -43,14 +45,11 @@ menuFare :: KeySet -> StateT MenuState IO ()
 menuFare keyset = do
   menuwit <- get
   if keyBegun keyset ScancodeReturn
-  then do
-    put $ menuwit {
-      _choosen = Just . fst $ (menuwit^.hand)!!(menuwit^.finger)
-    }
-  else put $ menuwit {
+  then put menuwit { _choosen = Just . fst $ (menuwit^.hand)!!(menuwit^.finger) }
+  else put menuwit {
     _finger = if keyBegun keyset ScancodeUp
         then mod (succ $ menuwit^.finger) (length $ menuwit^.hand)
       else if keyBegun keyset ScancodeDown
         then mod (pred $ menuwit^.finger) (length $ menuwit^.hand)
-      else menuwit^.finger
+        else menuwit^.finger
     }

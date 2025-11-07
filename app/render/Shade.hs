@@ -1,5 +1,4 @@
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
-{- HLINT ignore "Redundant bracket" -}
 
 module Shade where
 
@@ -7,11 +6,11 @@ import Control.Monad (unless)
 import Data.Word (Word32)
 import Data.Maybe (fromJust)
 import Data.Binary.Get (runGet)
-import Foreign (Storable, sizeOf, withArray, Int32)
 import Text.Printf (printf)
-import Foreign.Marshal (new)
 import Data.HashMap.Strict (HashMap, (!))
 
+import Foreign (Storable, sizeOf, withArray, Int32)
+import Foreign.Marshal (new)
 import Graphics.Rendering.OpenGL as GL
 import qualified Graphics.GL as GLRaw
 import qualified Data.ByteString as BS (readFile)
@@ -97,7 +96,7 @@ createAsset name = AssetMeshProfile {
 }
 
 setMeshTransform :: Mesh -> FrogMatrix -> IO Mesh
-setMeshTransform m transform = return $ m { transform = hew transform }
+setMeshTransform m transform = return m { transform = hew transform }
 
 defaultSimpleMeshProfile :: SimpleMeshProfile
 defaultSimpleMeshProfile = SimpleMeshProfile {
@@ -195,10 +194,9 @@ drawMesh mesh projectionMatrix viewMatrix = do
   S.unsafeWith viewMatrix (GLRaw.glUniformMatrix4fv viewLocation 1 1)
 
   timeLocation <- uniforms ! "u_time"
-  t <- time
-  let timeMs = t :: GLfloat
   let u = uniform timeLocation :: StateVar GLfloat
-  u $= timeMs
+  t <- time
+  u $= t
 
   let tex0Location = HM.lookup "u_texture" uniforms
   case tex0Location of
@@ -338,10 +336,10 @@ createSimpleMesh mprofile = do
 
 floorVbuffer :: Polyhedron
 floorVbuffer = [
-    Vertex3 (-1) (-0  ) ( 1.0) --SW
-  , Vertex3 (-1) (-1.0) ( 1.0) --NW
-  , Vertex3 ( 1) (-1.0) ( 1.0) --NE
-  , Vertex3 ( 1) (-0  ) ( 1.0) --SE
+    Vertex3 -1 -0   1.0 --SW
+  , Vertex3 -1 -1.0 1.0 --NW
+  , Vertex3  1 -1.0 1.0 --NE
+  , Vertex3  1 -0   1.0 --SE
   ]
 
 floorIbuffer :: [Word32]

@@ -7,8 +7,8 @@ module File (
 
 import Control.Monad (replicateM)
 import Data.Binary.Get (Get, getFloatle, getInt16le, getInt32le, getWord32le, getWord8)
-import Foreign (Int16, Int32, Word32, Word8)
 
+import Foreign (Int16, Int32, Word32, Word8)
 import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2), Vertex3 (Vertex3))
 
 import qualified Data.ByteString.Lazy as BL
