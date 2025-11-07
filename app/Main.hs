@@ -15,14 +15,12 @@ import SDL (
   )
 import SDL.Input.Keyboard.Codes
 
-import Happen (unwrapHappenWindow, waxwane)
-
 import qualified Graphics.Rendering.OpenGL as GL
 import qualified SDL (
     initializeAll, quit, getKeyboardState, ticks, pollEvents
-  , WindowConfig(..), defaultWindow, createWindow, destroyWindow
-  , OpenGLConfig(..), glCreateContext, glDeleteContext, glSwapWindow
-  , WindowGraphicsContext(OpenGLContext)
+  , WindowConfig (..), defaultWindow, createWindow, destroyWindow
+  , OpenGLConfig (..), glCreateContext, glDeleteContext, glSwapWindow
+  , WindowGraphicsContext (OpenGLContext)
   )
 
 import FrogState
@@ -30,11 +28,13 @@ import PlayState
 import PauseState
 import MenuState
 
+import Happen (unwrapHappenWindow, waxwane)
 import Key (KeySet, keyBegun, listen, unkeys)
 import Matrix (RenderView, fromTranslation)
 import Mean (ly', weep)
 import Shade
 import Time (Time, beginTime, keepTime)
+
 
 openGLConfig :: SDL.OpenGLConfig
 openGLConfig = SDL.OpenGLConfig {
@@ -47,41 +47,32 @@ openGLConfig = SDL.OpenGLConfig {
 
 openGLWindow :: SDL.WindowConfig
 openGLWindow = SDL.defaultWindow {
-  SDL.windowGraphicsContext = SDL.OpenGLContext openGLConfig,
-  SDL.windowResizable = True
+    SDL.windowGraphicsContext = SDL.OpenGLContext openGLConfig
+  , SDL.windowResizable = True
 }
-
-type StateTuple = (PlayState, PauseState, MenuState)
 
 data Allwit = Allwit {
-  _time :: Time,
-  _settings :: Settings,
-  _keyset :: KeySet,
-  _window :: Window,
-  _display :: RenderView,
-  _context :: GLContext,
-  _stateList :: StateTuple,
-  _nowState :: StateName
+    _time :: Time
+  , _settings :: Settings
+  , _keyset :: KeySet
+  , _window :: Window
+  , _display :: RenderView
+  , _context :: GLContext
+  , _playState :: PlayState
+  , _pauseState :: PauseState
+  , _menuState :: MenuState
+  , _nowState :: StateName
 }
 makeLenses ''Allwit
-
-getPlay :: StateTuple -> PlayState
-getPlay (x, _, _) = x
-
-getPause :: StateTuple -> PauseState
-getPause (_, x, _) = x
-
-getMenu :: StateTuple -> MenuState
-getMenu (_, _, x) = x
 
 news :: Allwit -> News
 news allwit = (allwit^.keyset, allwit^.display, allwit^.time)
 
-mkAllwit :: Window -> RenderView -> GLContext -> StateTuple -> StateName -> Allwit
-mkAllwit = Allwit
-  beginTime
-  makeSettings
-  unkeys
+mkAllwit
+  :: Window -> RenderView -> GLContext
+  -> PlayState -> PauseState -> MenuState -> StateName
+  -> Allwit
+mkAllwit = Allwit beginTime makeSettings unkeys
 
 main :: IO ()
 main = do
@@ -96,21 +87,21 @@ birth :: Window -> GLContext -> IO Allwit
 birth wind ctx = do
   dis <- waxwane wind
 
-  playerMesh <- createAssetMesh defaultAssetMeshProfile
+  froggy <- createAssetMesh defaultAssetMeshProfile
     >>= flip setMeshTransform (fromTranslation [0, -2, -5])
 
-  floorMesh <- createSimpleMesh defaultSimpleMeshProfile
+  earth <- createSimpleMesh defaultSimpleMeshProfile
 
-  froggy <- createAssetMesh (createAsset "tv")
+  farsee <- createAssetMesh (createAsset "tv")
     >>= flip setMeshTransform (fromTranslation [2, -2, -5])
 
-  let m = [playerMesh, floorMesh, froggy]
+  let m = [froggy, earth, farsee]
 
-  let allwit = mkAllwit wind dis ctx (
-        set meshes m makePlayState,
-        makePauseState,
+  let allwit = mkAllwit wind dis ctx
+        (set meshes m makePlayState)
+        makePauseState
         makeMenuState
-        ) Menu
+        MenuName
 
   when (allwit^.settings.isRunningTests) weep
 
@@ -119,10 +110,8 @@ birth wind ctx = do
 updateWindow :: StateT Allwit IO ()
 updateWindow = do
   allwit <- get
-  dis <- lift (waxwane (allwit^.window))
-  put allwit {
-    _display = dis
-  }
+  dis <- lift (waxwane $ allwit^.window)
+  put allwit { _display = dis }
 
 live :: StateT Allwit IO ()
 live = do
@@ -136,7 +125,7 @@ live = do
     , _time = keepTime (allwit^.time) now
   }
 
-  when (or (unwrapHappenWindow es)) updateWindow
+  when (or $ unwrapHappenWindow es) updateWindow
   when (allwit^.settings.isShowingKeys) (preent $ allwit^.keyset)
   when (allwit^.settings.isShowingTicks) (preent $ allwit^.time)
 
@@ -144,13 +133,24 @@ live = do
   togglePause ScancodeP
 
   case allwit^.nowState of
-    Play -> doPlayState
-    Pause -> doPauseState
-    Menu -> doMenuState
+    PlayName -> goto playState
+    PauseName -> goto pauseState
+    MenuName -> menu
 
   SDL.glSwapWindow (allwit^.window)
 
   unless (keyBegun (allwit^.keyset) ScancodeQ) live
+
+goto :: Stately a => Lens' Allwit a -> StateT Allwit IO ()
+goto lens = get >>= \allwit -> lift (execStateT (_update $ news allwit) (allwit^.lens))
+  >>= \state -> put (set lens state allwit)
+
+menu :: StateT Allwit IO ()
+menu = get >>= \allwit -> lift (execStateT (_update $ news allwit) (allwit^.menuState))
+  >>= \state -> put allwit {
+    _menuState = state
+  , _nowState = fromMaybe (allwit^.nowState) (state^.choosen)
+  }
 
 die :: Window -> GLContext -> IO ()
 die w c = do
@@ -158,31 +158,6 @@ die w c = do
   SDL.glDeleteContext c
   SDL.destroyWindow w
   SDL.quit
-
-doPlayState :: StateT Allwit IO ()
-doPlayState = do
-  allwit <- get
-  newPlay <- lift $ execStateT (_update (news allwit)) $ getPlay (allwit^.stateList)
-  put allwit {
-    _stateList = (newPlay, getPause (allwit^.stateList), getMenu (allwit^.stateList))
-  }
-
-doPauseState :: StateT Allwit IO ()
-doPauseState = do
-  allwit <- get
-  newPause <- lift $ execStateT (_update (news allwit)) $ getPause (allwit^.stateList)
-  put allwit {
-    _stateList = (getPlay (allwit^.stateList), newPause, getMenu (allwit^.stateList))
-  }
-
-doMenuState :: StateT Allwit IO ()
-doMenuState = do
-  allwit <- get
-  newMenu <- lift $ execStateT (_update (news allwit)) $ getMenu (allwit^.stateList)
-  put allwit {
-    _stateList = (getPlay (allwit^.stateList), getPause (allwit^.stateList), newMenu),
-    _nowState = fromMaybe (allwit^.nowState) (newMenu^.choosen)
-  }
 
 toggleSettings :: StateT Allwit IO ()
 toggleSettings = do
@@ -204,6 +179,6 @@ togglePause key = do
   when (keyBegun (allwit^.keyset) key) $
     put allwit {
       _nowState = case allwit^.nowState of
-        Play -> ly' (const ("paused." :: String)) Pause
-        _ -> ly' (const ("not paused." :: String)) Play
+        PlayName -> ly' (const ("paused." :: String)) PauseName
+        _ -> ly' (const ("not paused." :: String)) PlayName
     }

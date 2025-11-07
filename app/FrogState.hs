@@ -20,7 +20,7 @@ import Time (Time)
 
 type News = (KeySet, RenderView, Time)
 
-data StateName = Play | Pause | Menu deriving (Show, Eq, Ord)
+data StateName = PlayName | PauseName | MenuName deriving (Show, Eq, Ord)
 
 data Settings = Settings {
   _isShowingTicks :: Bool

@@ -1,25 +1,25 @@
-{-# LANGUAGE TemplateHaskell #-}
+module PauseState (
+  PauseState (..)
+, makePauseState
+) where
 
-module PauseState where
+import Control.Lens (makeLenses)
+import Control.Monad.State (StateT)
 
-import Control.Lens
-import Control.Monad.State
+import FrogState (Stately (..), News, StateName (..))
 
-import FrogState
-import Light
+import Light (blue, bg)
 
-data PauseState = PauseState {
-}
+data PauseState = PauseState
 makeLenses ''PauseState
 
 instance Stately PauseState where
-  _name _ = Pause
-  _update = pauseState
+  _name _ = PauseName
+  _update = pause
 
 makePauseState :: PauseState
-makePauseState = PauseState {
-}
+makePauseState = PauseState
 
-pauseState :: News -> StateT PauseState IO ()
-pauseState _ = do
+pause :: News -> StateT PauseState IO ()
+pause _ = do
   bg blue

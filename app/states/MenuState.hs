@@ -5,13 +5,14 @@ module MenuState (
 ) where
 
 import Control.Lens (makeLenses, (^.))
-import Control.Monad.State (StateT, MonadState (get, put))
+import Control.Monad.State (MonadState (get, put), StateT)
 
 import SDL.Input.Keyboard.Codes
 
-import FrogState (StateName (..), Stately (..), News)
+import FrogState (News, StateName (..), Stately (..))
+
 import Key (KeySet, keyBegun)
-import Light (bg, white, clerp)
+import Light (bg, clerp, white)
 
 
 data MenuState = MenuState {
@@ -22,18 +23,18 @@ data MenuState = MenuState {
 makeLenses ''MenuState
 
 instance Stately MenuState where
-  _name _ = Menu
-  _update = menuState
+  _name _ = MenuName
+  _update = menu
 
 makeMenuState :: MenuState
 makeMenuState = MenuState {
-    _hand = [(Play, "play"), (Play, "frog")]
+    _hand = [(PlayName, "play"), (PlayName, "frog")]
   , _finger = 0
   , _choosen = Nothing
 }
 
-menuState :: News -> StateT MenuState IO ()
-menuState (keyset, _, _) = do
+menu :: News -> StateT MenuState IO ()
+menu (keyset, _, _) = do
   _ <- get
   bg (clerp (1/4) white)
   menuFare keyset

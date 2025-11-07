@@ -12,7 +12,8 @@ import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT)
 
 import Graphics.Rendering.OpenGL as GL hiding (get)
 
-import FrogState (News, StateName (Play), Stately (..))
+import FrogState (News, Stately (..), StateName (..))
+
 import Key (KeySet, wayward)
 import Light (Point, bg, black)
 import Matrix (FrogVector, frogLookAt, frogZero, getProjectionMatrix)
@@ -41,8 +42,8 @@ data PlayState = PlayState {
 makeLenses ''PlayState
 
 instance Stately PlayState where
-  _name _ = Play
-  _update = playState
+  _name _ = PlayName
+  _update = play
 
 instance Show PlayState where
   show (PlayState _ _ l p c) = show l ++ show p ++ show c
@@ -56,8 +57,8 @@ makePlayState = PlayState {
   , _camera = makeCamera
 }
 
-playState :: News -> StateT PlayState IO ()
-playState (keys, dis, time) = do
+play :: News -> StateT PlayState IO ()
+play (keys, dis, time) = do
   statewit <- get
 
   move keys time
