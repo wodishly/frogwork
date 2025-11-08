@@ -24,6 +24,7 @@ import Light
 import Mean
 import Matrix
 import SDL (time)
+import Numeric.LinearAlgebra (ident, flatten)
 
 data ShaderKind = Vertex | Fragment deriving (Show, Eq)
 
@@ -65,7 +66,7 @@ data Mesh = Mesh {
   file :: Maybe FrogFile,
   uniformMap :: UniformMap,
   elementCount :: Int32,
-  transform :: StorableMatrix
+  transform :: FrogMatrix
 }
 
 type UniformMap = HashMap [Char] (GettableStateVar UniformLocation)
@@ -96,7 +97,7 @@ createAsset name = AssetMeshProfile {
 }
 
 setMeshTransform :: Mesh -> FrogMatrix -> IO Mesh
-setMeshTransform m transform = return m { transform = hew transform }
+setMeshTransform m transform = return m { transform = transform }
 
 defaultSimpleMeshProfile :: SimpleMeshProfile
 defaultSimpleMeshProfile = SimpleMeshProfile {
@@ -185,7 +186,7 @@ useMesh (Mesh program vao tex _ _ _ _) = do
   bindVertexArrayObject $= Just vao
   textureBinding Texture2D $= tex
 
-drawMesh :: Mesh -> StorableMatrix -> StorableMatrix -> IO ()
+drawMesh :: Mesh -> FrogMatrix -> FrogMatrix -> IO ()
 drawMesh mesh projectionMatrix viewMatrix = do
   let uniforms = uniformMap mesh
   let _ = elementCount mesh
@@ -197,13 +198,13 @@ drawMesh mesh projectionMatrix viewMatrix = do
   -- withMatrix m $ const $ uniformv projLocation 1
 
   (UniformLocation mLocation) <- get (uniforms ! "u_model_matrix")
-  S.unsafeWith (transform mesh) (GLRaw.glUniformMatrix4fv mLocation 1 1)
+  S.unsafeWith (flatten $ transform mesh) (GLRaw.glUniformMatrix4fv mLocation 1 1)
 
   -- TODO: move these to a Uniform Buffer Object
   (UniformLocation projLocation) <- get (uniforms ! "u_projection_matrix")
-  S.unsafeWith projectionMatrix (GLRaw.glUniformMatrix4fv projLocation 1 1)
+  S.unsafeWith (flatten projectionMatrix) (GLRaw.glUniformMatrix4fv projLocation 1 1)
   (UniformLocation viewLocation) <- get (uniforms ! "u_view_matrix")
-  S.unsafeWith viewMatrix (GLRaw.glUniformMatrix4fv viewLocation 1 1)
+  S.unsafeWith (flatten viewMatrix) (GLRaw.glUniformMatrix4fv viewLocation 1 1)
 
   timeLocation <- uniforms ! "u_time"
   let u = uniform timeLocation :: StateVar GLfloat
@@ -309,7 +310,7 @@ createAssetMesh mprofile = do
     (Just frogFile)
     hmap
     (indexCount frogFile)
-    identity
+    (ident 4)
 
 createSimpleMesh :: SimpleMeshProfile -> IO Mesh
 createSimpleMesh mprofile = do
@@ -344,7 +345,7 @@ createSimpleMesh mprofile = do
     Nothing
     hmap
     (fromIntegral $ length ibuffer)
-    identity
+    (ident 4)
 
 floorVbuffer :: Polyhedron
 floorVbuffer = [
