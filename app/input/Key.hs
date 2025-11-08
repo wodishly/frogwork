@@ -1,6 +1,14 @@
 {- HLINT ignore "Use infix" -}
 
-module Key where
+module Key (
+  KeySet
+, unkeys
+, listen
+, keyBegun
+, keyEnded -- unused
+, arrow
+, wasd
+) where
 
 import Control.Lens (makeLenses, (^.))
 
@@ -10,7 +18,7 @@ import SDL.Input.Keyboard.Codes
 import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2))
 
 import Happen (Keywit, unwrapHappenKeys)
-import Matrix (Point)
+import Matrix (Point, hat)
 import Mean (allIn)
 
 
@@ -34,7 +42,7 @@ hearableKeys = [
   , ScancodeA
   , ScancodeS
   , ScancodeD
-  , ScancodeSpace
+  , ScancodeSpace -- leap
   , ScancodeReturn
   , ScancodeP -- pause
   , ScancodeQ -- quit
@@ -71,23 +79,19 @@ listen events keyset = let news = unwrapHappenKeys events in KeySet
   (filter (allIn [not.keyUp news, keyContinuing keyset]) hearableKeys)
   (filter (allIn [keyUp news, keyContinuing keyset]) hearableKeys)
 
-wayUpDown :: KeySet -> (KeySet -> Scancode -> Bool) -> GLfloat
-wayUpDown = way' (ScancodeW, ScancodeS)
-
-wayLeftRight :: KeySet -> (KeySet -> Scancode -> Bool) -> GLfloat
-wayLeftRight = way' (ScancodeA, ScancodeD)
-
+-- | Uses a 2-tuple of antipodal keycodes to compute a vector.
 way' :: (Scancode, Scancode) -> KeySet -> (KeySet -> Scancode -> Bool) -> GLfloat
-way' (lower, higher) keySet keyListener
-  | keyListener keySet lower = -1
-  | keyListener keySet higher = 1
+way' (wane, wax) keySet keyListener
+  | keyListener keySet wane && not (keyListener keySet wax) = -1
+  | keyListener keySet wax && not (keyListener keySet wane) = 1
   | otherwise = 0
 
-wayward :: KeySet -> Point
-wayward keySet = hat $ Vertex2 (wayLeftRight keySet keyContinuing) (wayUpDown keySet keyContinuing)
+arrow :: KeySet -> Point
+arrow keySet = hat $ Vertex2
+  (way' (ScancodeLeft, ScancodeRight) keySet keyContinuing)
+  (way' (ScancodeUp, ScancodeDown) keySet keyContinuing)
 
-norm :: Point -> GLfloat
-norm (Vertex2 x y) = sqrt (x*x + y*y)
-
-hat :: Point -> Point
-hat z = if norm z == 0 then z else fmap (/norm z) z
+wasd :: KeySet -> Point
+wasd keySet = hat $ Vertex2
+  (way' (ScancodeA, ScancodeD) keySet keyContinuing)
+  (way' (ScancodeW, ScancodeS) keySet keyContinuing)

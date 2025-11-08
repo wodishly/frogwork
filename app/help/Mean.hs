@@ -4,6 +4,7 @@ import Debug.Trace (trace)
 import Data.Bifunctor (first, bimap)
 import Control.Exception (assert)
 import Data.List (singleton)
+import Data.Function (applyWhen)
 
 type Shed a = [a] -> a
 type Shell a = a -> [a]
@@ -45,11 +46,11 @@ samely l r = assert (l == r) l
 
 -- @region For working with twains.
 
--- given that `f thing` holds, return `thing`
--- otherwise, return `bad`
+-- | Given that @f thing@ holds, return @thing@.
+-- Otherwise, return the argument.
 {-# INLINE given #-}
 given :: (a -> Bool) -> a -> a -> a
-given f thing bad = if f thing then thing else bad
+given f thing = applyWhen (f thing) (const thing)
 
 -- | Lifts the argument into a twain.
 --

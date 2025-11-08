@@ -139,8 +139,8 @@ useMesh mesh = do
   bindVertexArrayObject $= Just (_vao mesh)
   textureBinding Texture2D $= _tex mesh
 
-drawMesh :: Mesh -> FrogMatrix -> FrogMatrix -> IO ()
-drawMesh mesh projectionMatrix viewMatrix = do
+drawMesh :: FrogMatrix -> FrogMatrix -> Mesh -> IO ()
+drawMesh projectionMatrix viewMatrix mesh = do
   useMesh mesh
 
   -- the bindings seem to be broken here? :(

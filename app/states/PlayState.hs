@@ -1,3 +1,4 @@
+{- HLINT ignore "Use head" -}
 module PlayState (
   PlayState (..)
 , makePlayState
@@ -9,35 +10,26 @@ module PlayState (
 
 import Control.Lens (makeLenses, (^.))
 import Control.Monad (when)
-import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT)
+import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT (runStateT))
 import Numeric.LinearAlgebra (Extractor (..), flatten, fromColumns, fromList, toColumns, (!), (??), (¿))
 
-import SDL.Input.Keyboard.Codes
-import Graphics.Rendering.OpenGL as GL hiding (get)
+import Graphics.Rendering.OpenGL as GL (Program, Vertex2 (Vertex2), VertexArrayObject, Vertex3 (Vertex3))
 
-import FrogState (News, Stately (..), StateName (..))
+import Frog (Frogwit (..), makeFrog, moveFrog, position)
+import FrogState (News, StateName (..), Stately (..))
 
 import Blee (bg, black)
-import Key (KeySet, hat, keyBegun, wayward)
-import Matrix (FrogVector, Point, frogLookAt, frogZero, getProjectionMatrix)
-import Mean (hit)
+import Matrix (FrogVector, Point, frogLookAt, frogZero, getProjectionMatrix, Point3)
+import Mean (hit, ly)
 import Random (FrogSeed, defaultSeed)
 import Rime (clamp)
 import Shade (Mesh, drawMesh, setMeshTransform)
-import Time (Time, delta)
+import Key (KeySet, arrow)
 
 data Camera = Camera {
   cPosition :: FrogVector
 , cTarget :: FrogVector
 } deriving (Show, Eq)
-
-data Frog = Frog {
-    s :: Point
-  , v :: Point
-} deriving (Show, Eq)
-
-earthWeight :: Point
-earthWeight = Vertex2 0 1
 
 makeCamera :: Camera
 makeCamera = Camera {
@@ -48,7 +40,7 @@ makeCamera = Camera {
 data PlayState = PlayState {
   _seed :: FrogSeed
 , _meshes :: [Mesh]
-, _lily :: Point
+, _frog :: Frogwit
 , _euler :: Point
 , _programs :: [(Program, VertexArrayObject)]
 , _camera :: Camera
@@ -60,40 +52,40 @@ instance Stately PlayState where
   _update = play
 
 instance Show PlayState where
-  show (PlayState _ _ l _ p c) = show l ++ show p ++ show c
+  show (PlayState _ _ f _ p c) = show f ++ show p ++ show c
 
 makePlayState :: [Mesh] -> PlayState
 makePlayState ms = PlayState {
   _seed = defaultSeed
 , _meshes = ms
-, _lily = Vertex2 0 0
+, _frog = makeFrog
 , _euler = Vertex2 0.3 1.57079633
 , _programs = []
 , _camera = makeCamera
 }
 
 play :: News -> StateT PlayState IO ()
-play (keys, mouse, dis, time) = do
+play news@(keys, _mouse, dis, _time) = do
   statewit <- get
-  cam <- updateCamera mouse
-
-  leap keys
+  cam <- updateCamera keys
 
   let viewMatrix = frogLookAt (cPosition cam) (cTarget cam)
-  let fwd = flatten $ (viewMatrix ¿ [2]) ?? (Take 3, All)
-  moveFrog keys time fwd
+  let forward = flatten $ (viewMatrix ¿ [2]) ?? (Take 3, All)
 
+  updateFrog news forward
+  
   bg black
-  lift $ mapM_ (\m -> drawMesh m (getProjectionMatrix dis) viewMatrix) (statewit^.meshes)
+  lift $ mapM_ (drawMesh (getProjectionMatrix dis) viewMatrix) (statewit^.meshes)
 
-updateCamera :: Point -> StateT PlayState IO Camera
-updateCamera (Vertex2 dx dy) = do
+updateCamera :: KeySet -> StateT PlayState IO Camera
+updateCamera keys = do
   statewit <- get
-  let Vertex2 x z = statewit^.lily
-  let Vertex2 pitch yaw = statewit^.euler
-  let pitch' = clamp (0, 1) $ pitch + dy / 100.0
-  let yaw' = yaw + dx / 100.0
-  let fx = 5 * cos yaw * cos pitch
+  let Vertex3 x _ z = statewit^.frog.position
+  let Vertex2 dx dy = arrow keys
+      Vertex2 pitch yaw = statewit^.euler
+      pitch' = clamp (0, 1) $ pitch + dy / 100.0
+      yaw' = yaw + dx / 100.0
+      fx = 5 * cos yaw * cos pitch
       fy = 5 * sin pitch
       fz = 5 * sin yaw * cos pitch
   let c = Camera {
@@ -103,39 +95,28 @@ updateCamera (Vertex2 dx dy) = do
   put statewit { _camera = c, _euler = Vertex2 pitch' yaw' }
   return c
 
-leap :: KeySet -> StateT PlayState IO ()
-leap keys = do
+updateFrog :: News -> FrogVector -> StateT PlayState IO ()
+updateFrog (keys, _, _, time) forward = do
   statewit <- get
-  when (keyBegun keys ScancodeSpace)
-    (put statewit { _lily = liftA2 (+) (statewit^.lily) (Vertex2 0 0.1) })
+  (didMove, newFrog) <- lift $ runStateT (moveFrog keys time forward) (statewit^.frog)
+  put statewit { _frog = newFrog }
+  when didMove (updateMesh (statewit^.frog.position) forward)
 
-moveFrog :: KeySet -> Time -> FrogVector -> StateT PlayState IO ()
-moveFrog keys time fwd = do
-  statewit <- get
-  let d = Vertex2 (fwd ! 0 ) -(fwd ! 2)
-  let Vertex2 _ wy = wayward keys
-
-  let lily' = liftA2 (+)
-        ((* (fromIntegral (time^.delta)/1000*5)) <$> hat d)
-        (statewit^.lily)
-  when (wy < 0) $ put statewit { _lily = lily' }
-  when (wy < 0) $ updateMesh lily' fwd
-
-updateMesh :: Point -> FrogVector -> StateT PlayState IO ()
-updateMesh (Vertex2 x z) fwd = do
+updateMesh :: Point3 -> FrogVector -> StateT PlayState IO ()
+updateMesh (Vertex3 x y z) forward = do
   statewit <- get
 
-  let frogPosition = fromList [x, 0, z]
-      frogTarget = frogPosition + fromList [fwd!0, 0, fwd!2]
+  let frogPosition = ly $ fromList [x, y, z]
+      frogTarget = frogPosition + fromList [forward!0, 0, forward!2]
       transform = frogLookAt frogPosition frogTarget
       columns = toColumns transform
       -- awful lol
-      c0 = head columns
+      c0 = columns !! 0
       c1 = columns !! 1
       c2 = columns !! 2
       transform' = fromColumns [ c0, c1, c2, fromList [x, 0, z, 1] ]
 
-  newFrog <- lift $ setMeshTransform
+  newFrogMesh <- lift $ setMeshTransform
     (head $ statewit^.meshes)
     transform'
-  put statewit { _meshes = hit 0 (const newFrog) (statewit^.meshes) }
+  put statewit { _meshes = hit 0 (const newFrogMesh) (statewit^.meshes) }

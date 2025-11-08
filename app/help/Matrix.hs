@@ -14,6 +14,10 @@ module Matrix (
 , frogZero -- unused?
 , frogLookAt
 , row -- unused
+, norm
+, norm3
+, hat
+, hat3
 ) where
 
 import Numeric.LinearAlgebra (
@@ -30,7 +34,7 @@ import Numeric.LinearAlgebra (
   , (|||)
   )
 
-import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2), Vertex3)
+import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2), Vertex3 (Vertex3))
 import qualified SDL
 import Foreign (Int32)
 
@@ -53,6 +57,26 @@ data RenderView = RenderView {
   , _far :: GLfloat
 }
 
+{-# INLINE norm #-}
+norm :: Point -> GLfloat
+norm (Vertex2 x y) = sqrt (x*x + y*y)
+
+{-# INLINE norm3 #-}
+norm3 :: Point3 -> GLfloat
+norm3 (Vertex3 x y z) = sqrt (x*x + y*y + z*z)
+
+{-# INLINE hat #-}
+hat :: Point -> Point
+hat z
+  | norm z == 0 = z
+  | otherwise = fmap (/norm z) z
+
+{-# INLINE hat3 #-}
+hat3 :: Point3 -> Point3
+hat3 z
+  | norm3 z == 0 = z
+  | otherwise = fmap (/norm3 z) z
+
 -- | Converts SDL's @P V2 Int32@ to OpenGL's @Vertex2 GLfloat@.
 {-# INLINE asFrog #-}
 asFrog :: SDL.Point SDL.V2 Int32 -> Point
@@ -71,10 +95,10 @@ fromTranslation _ = error "we need 3 dimensions"
 {-# INLINE getProjectionMatrix #-}
 getProjectionMatrix :: RenderView -> FrogMatrix
 getProjectionMatrix (RenderView asp fov near far) = (4><4) [
-    1/(asp*tan (fov/2)),            0,                     0,                     0
+   1/(asp*tan (fov/2)),             0,                     0,                     0
   ,                  0, 1/tan (fov/2),                     0,                     0
-  ,                  0,            0, (near+far)/(near-far), 2*far*near/(near-far)
-  ,                  0,            0,                    -1,                     0
+  ,                  0,             0, (near+far)/(near-far), 2*far*near/(near-far)
+  ,                  0,             0,                    -1,                     0
   ]
 
 {-# INLINE frogZero #-}
