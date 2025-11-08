@@ -114,7 +114,7 @@ updateMesh (Vertex3 x y z) forward = do
       c0 = columns !! 0
       c1 = columns !! 1
       c2 = columns !! 2
-      transform' = fromColumns [ c0, c1, c2, fromList [x, 0, z, 1] ]
+      transform' = fromColumns [ c0, c1, c2, fromList [x, y, z, 1] ]
 
   newFrogMesh <- lift $ setMeshTransform
     (head $ statewit^.meshes)
