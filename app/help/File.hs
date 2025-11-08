@@ -14,6 +14,7 @@ import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2), Vertex3 (Vertex3))
 import qualified Data.ByteString.Lazy as BL
 
 import Matrix (Polygon, Polyhedron)
+import Control.Lens (makeLenses)
 
 
 getFrogBytes :: String -> IO BL.ByteString
@@ -35,6 +36,7 @@ data FrogFile = FrogFile {
   -- rgba texture block
   bitmapBuffer :: [Word8]
 } deriving (Show, Eq)
+makeLenses ''FrogFile
 
 data FrogVertex = FrogVertex {
   position :: Vertex3 GLfloat

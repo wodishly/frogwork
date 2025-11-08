@@ -102,8 +102,8 @@ col :: Element t => [t] -> Matrix t
 col = asColumn.fromList
 
 {-# INLINE normalize #-}
-normalize :: (Fractional t, Element t) => Vector t -> Vector t
+normalize :: (Fractional t, Element t, Floating t) => Vector t -> Vector t
 normalize v =
   let l = toList v
-      d = sum $ map (^(2::Integer)) l
+      d = sqrt $ sum $ map (^(2::Integer)) l
   in fromList (map (/d) l)

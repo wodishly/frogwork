@@ -19,7 +19,7 @@ import Game (
   , fand, updateAll, showLeechwit
   , settleState, blit, again
   )
-import Fasten (openGLWindow)
+import FastenMain (openGLWindow)
 import Happen (waxwane)
 import Shade (begetMeshes)
 

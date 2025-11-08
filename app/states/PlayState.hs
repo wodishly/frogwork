@@ -22,7 +22,8 @@ import Shade (Mesh, drawMesh, setMeshTransform)
 import Time (Time, delta)
 import Mean (hit)
 import Rime (cast)
-import Numeric.LinearAlgebra (fromList)
+import Numeric.LinearAlgebra (fromList, det, cmap)
+import GHC.Float (float2Double)
 
 data Camera = Camera {
   cPosition :: FrogVector
@@ -68,6 +69,8 @@ play (keys, mouse, dis, time) = do
   moveFrog keys time
 
   let viewMatrix = frogLookAt (cPosition cam) (cTarget cam)
+
+  let lapl = det (cmap float2Double viewMatrix)
 
   bg black
   lift $ mapM_ (\m -> drawMesh m (getProjectionMatrix dis) viewMatrix) (statewit^.meshes)

@@ -59,6 +59,9 @@ executable frogwork
 
   -- Modules included in this executable, other than Main.
   other-modules:
+    FastenShade
+    FastenMain
+
     File
     Mean
     Random
@@ -84,7 +87,6 @@ executable frogwork
     PauseState
     PlayState
 
-    Fasten
     FrogState
     Game
 
@@ -114,6 +116,7 @@ executable frogwork
 
   -- Directories containing source files.
   hs-source-dirs: app
+    app/fasten
     app/help
     app/input
     app/render

@@ -1,4 +1,4 @@
-module Fasten where
+module FastenMain where
 
 import SDL (Mode (Normal), Profile (Core), V4 (V4))
 import qualified SDL (
