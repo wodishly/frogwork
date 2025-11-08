@@ -14,7 +14,7 @@ import Graphics.Rendering.OpenGL as GL hiding (get)
 
 import FrogState (News, Stately (..), StateName (..))
 
-import Key (KeySet, wayward)
+import Key (KeySet, wayward, hat)
 import Blee (bg, black)
 import Matrix (Point, FrogVector, frogLookAt, frogZero, getProjectionMatrix)
 import Random (FrogSeed, defaultSeed)
@@ -99,7 +99,7 @@ moveFrog keys time fwd = do
   let Vertex2 _ wy = wayward keys
 
   let lily' = liftA2 (+)
-        ((* (fromIntegral (time^.delta)/1000*5)) <$> d)
+        ((* (fromIntegral (time^.delta)/1000*5)) <$> hat d)
         (statewit^.lily)
   when (wy < 0) $ put statewit { _lily = lily' }
   when (wy < 0) $ updateMesh lily' fwd
