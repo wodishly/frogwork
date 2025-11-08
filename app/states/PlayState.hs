@@ -8,26 +8,23 @@ module PlayState (
 ) where
 
 import Control.Lens (makeLenses, (^.))
+import Control.Monad (when)
 import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT)
+import Numeric.LinearAlgebra (Extractor (..), flatten, fromColumns, fromList, toColumns, (!), (??), (¿))
 
+import SDL.Input.Keyboard.Codes
 import Graphics.Rendering.OpenGL as GL hiding (get)
 
 import FrogState (News, Stately (..), StateName (..))
 
-import Key (KeySet, wayward, keyBegun, hat)
 import Blee (bg, black)
-import Matrix (Point, FrogVector, frogLookAt, frogZero, getProjectionMatrix)
+import Key (KeySet, hat, keyBegun, wayward)
+import Matrix (FrogVector, Point, frogLookAt, frogZero, getProjectionMatrix)
+import Mean (hit)
 import Random (FrogSeed, defaultSeed)
+import Rime (clamp)
 import Shade (Mesh, drawMesh, setMeshTransform)
 import Time (Time, delta)
-import Mean (hit)
-import Rime (cast)
-import Numeric.LinearAlgebra (fromList)
-import Control.Monad (when)
-import SDL.Input.Keyboard.Codes
-import Numeric.LinearAlgebra.HMatrix
-import Control.Monad (when)
-import Rime (clamp)
 
 data Camera = Camera {
   cPosition :: FrogVector
@@ -112,7 +109,7 @@ leap keys = do
   when (keyBegun keys ScancodeSpace)
     (put statewit { _lily = liftA2 (+) (statewit^.lily) (Vertex2 0 0.1) })
 
-moveFrog :: KeySet -> Time -> Vector GLfloat -> StateT PlayState IO ()
+moveFrog :: KeySet -> Time -> FrogVector -> StateT PlayState IO ()
 moveFrog keys time fwd = do
   statewit <- get
   let d = Vertex2 (fwd ! 0 ) -(fwd ! 2)
@@ -124,7 +121,7 @@ moveFrog keys time fwd = do
   when (wy < 0) $ put statewit { _lily = lily' }
   when (wy < 0) $ updateMesh lily' fwd
 
-updateMesh :: Point -> Vector GLfloat -> StateT PlayState IO ()
+updateMesh :: Point -> FrogVector -> StateT PlayState IO ()
 updateMesh (Vertex2 x z) fwd = do
   statewit <- get
 
