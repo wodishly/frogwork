@@ -99,6 +99,7 @@ executable frogwork
   -- Other library packages from which modules are imported.
   build-depends:
       base ^>=4.18.3.0
+    , hmatrix ^>=0.20.2
     , containers ^>=0.6.7
     , unordered-containers
     , lens
@@ -110,7 +111,6 @@ executable frogwork
     , OpenGLRaw
     , random
     , vector
-    , hmatrix
 
   -- Directories containing source files.
   hs-source-dirs: app
