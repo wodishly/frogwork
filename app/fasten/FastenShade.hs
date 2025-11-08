@@ -69,10 +69,10 @@ defaultSimpleShaderProfile = ShaderProfile {
 
 floorVbuffer :: Polyhedron
 floorVbuffer = [
-    Vertex3 -1 -0   1.0 --SW
-  , Vertex3 -1 -1.0 1.0 --NW
-  , Vertex3  1 -1.0 1.0 --NE
-  , Vertex3  1 -0   1.0 --SE
+    Vertex3  20  0  20.0 --NE
+  , Vertex3  20 -0 -20.0 --SE
+  , Vertex3 -20 -0 -20.0 --SW
+  , Vertex3 -20  0  20.0 --NW
   ]
 
 floorIbuffer :: [Word32]
