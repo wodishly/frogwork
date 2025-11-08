@@ -31,7 +31,7 @@ import SDL.Input.Keyboard.Codes
 import qualified Graphics.Rendering.OpenGL as GL
 import qualified SDL (Event, Window, GLContext, ticks, pollEvents, glSwapWindow)
 
-import FrogState (
+import State (
     News
   , Stately
   , StateName (..)

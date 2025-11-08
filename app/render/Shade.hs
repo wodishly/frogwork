@@ -8,7 +8,7 @@ module Shade (
 import Control.Lens ((^.))
 import Control.Monad (unless)
 import Control.Monad.Identity (Identity (runIdentity))
-import Data.Bifunctor (Bifunctor (second))
+import Data.Bifunctor (Bifunctor (second, first))
 import Data.Binary.Get (runGet)
 import Data.HashMap.Lazy ((!))
 import Data.Maybe (fromJust)
@@ -28,17 +28,17 @@ import FastenMain (assetsBasePath, shaderBasePath)
 import FastenShade
 import File
 import Matrix (FrogMatrix, fromTranslation)
-import Mean (twimap, twin)
+import Mean (twimap, twin, Twain)
 
 
 drawFaces :: Int32 -> IO ()
 drawFaces count = drawElements Triangles count UnsignedInt (bufferOffset 0)
 
-paths :: ShaderProfile -> (FilePath, FilePath)
+paths :: ShaderProfile -> Twain FilePath
 paths = twimap (printf "%s/%s.glsl" shaderBasePath) . names
 
 asset :: FilePath -> FilePath
-asset = printf "%s/%s.frog" assetsBasePath 
+asset = printf "%s/%s.frog" assetsBasePath
 
 bufferOffset :: Int -> Ptr Int
 bufferOffset = plusPtr nullPtr . fromIntegral
@@ -48,12 +48,12 @@ bufferSize buffer = fromIntegral (length buffer * (sizeOf.head) buffer)
 
 data Mesh = Mesh {
     _program :: Program
-  , _vao :: VertexArrayObject
-  , _tex :: Maybe TextureObject
-  , _file :: Maybe FrogFile
+  , vao :: VertexArrayObject
+  , tex :: Maybe TextureObject
+  , file :: Maybe FrogFile
   , _uniformMap :: UniformMap
-  , _elementCount :: Int32
-  , _transform :: FrogMatrix
+  , elementCount :: Int32
+  , transform :: FrogMatrix
 }
 
 instance Programful Mesh where
@@ -72,28 +72,32 @@ instance Pathlikeful Maybe Concoction where
 makeAsset :: String -> AssetMeshProfile
 makeAsset = AssetMeshProfile
 
-setMeshTransform :: Mesh -> FrogMatrix -> IO Mesh
-setMeshTransform m t = return m { _transform = t }
+setMeshTransform :: FrogMatrix -> Mesh -> IO Mesh
+setMeshTransform t m = return m { transform = t }
 
--- | Compiles ("kneads") a shader of type @t@ from path @path@.
+-- | Compiles ("kneads") the given kind of shader from the given path.
 knead :: ShaderType -> FilePath -> IO Shader
-knead t path = do
-  shader <- createShader t
+knead kind path = do
+  shader <- createShader kind
   BS.readFile path >>= (shaderSourceBS shader $=)
 
   compileShader shader
 
-  get (compileStatus shader)
-    >>= \status -> get (shaderInfoLog shader) >>= print
-    >> unless status (error ((if t==VertexShader then "vertex" else "fragment")++" shader failed to compile :("))
+  status <- get (compileStatus shader)
+  get (shaderInfoLog shader) >>= print
+  unless status (error $ (case kind of
+      VertexShader -> "vertex"
+      FragmentShader -> "fragment"
+      _ -> "tfw the error throws an error"
+    ) ++ " shader failed to compile :(")
 
   return shader
 
 -- | A boilerplate function to initialize a shader.
 -- But `boil` < Lat. `bulliō`, and `well` (< OE `weallan`)
 -- is too overloaded, whence `brew` (< OE `brēowan`).
-brew :: FilePath -> FilePath -> IO Program
-brew vsPath fsPath = do
+brew :: Twain FilePath -> IO Program
+brew (vsPath, fsPath) = do
   -- load sources + compile, attach, and link shaders
   vertexShader <- knead VertexShader vsPath
   fragmentShader <- knead FragmentShader fsPath
@@ -110,13 +114,10 @@ brewProfile :: MeshProfile -> IO Concoction
 brewProfile mProfile = do
   -- parse profile
   let (sProfile, path) = case mProfile of
-        Left assetful -> (
-            shaderProfile assetful
-          , Just (asset $ runIdentity (filePath assetful))
-          )
+        Left assetful -> (shaderProfile assetful, Just . asset . runIdentity . filePath $ assetful)
         Right assetless -> (shaderProfile assetless, Nothing)
 
-  p <- uncurry brew (paths sProfile)
+  p <- brew (paths sProfile)
   currentProgram $= Just p
   let u = HM.fromList $ map (second (uniformLocation p) . twin) (uniforms sProfile)
   return (Concoction p u path)
@@ -124,20 +125,20 @@ brewProfile mProfile = do
 begetMeshes :: IO [Mesh]
 begetMeshes = do
   froggy <- makeAssetMesh defaultAssetMeshProfile
-    >>= flip setMeshTransform (fromTranslation [0, 0, 0])
+    >>= setMeshTransform (fromTranslation [0, 0, 0])
 
   earth <- makeSimpleMesh defaultSimpleMeshProfile
 
   farsee <- makeAssetMesh (makeAsset "tv")
-    >>= flip setMeshTransform (fromTranslation [-2, 1, 2])
+    >>= setMeshTransform (fromTranslation [-2, 1, 2])
 
   return [froggy, earth, farsee]
 
 useMesh :: Mesh -> IO ()
 useMesh mesh = do
   currentProgram $= Just (program mesh)
-  bindVertexArrayObject $= Just (_vao mesh)
-  textureBinding Texture2D $= _tex mesh
+  bindVertexArrayObject $= Just (vao mesh)
+  textureBinding Texture2D $= tex mesh
 
 drawMesh :: FrogMatrix -> FrogMatrix -> Mesh -> IO ()
 drawMesh projectionMatrix viewMatrix mesh = do
@@ -149,7 +150,7 @@ drawMesh projectionMatrix viewMatrix mesh = do
   -- withMatrix m $ const $ uniformv projLocation 1
 
   UniformLocation mLocation <- get (uniformMap mesh ! "u_model_matrix")
-  S.unsafeWith (flatten $ _transform mesh) (GLRaw.glUniformMatrix4fv mLocation 1 1)
+  S.unsafeWith (flatten $ transform mesh) (GLRaw.glUniformMatrix4fv mLocation 1 1)
 
   -- TODO: move these to a Uniform Buffer Object
   UniformLocation projLocation <- get (uniformMap mesh ! "u_projection_matrix")
@@ -168,7 +169,7 @@ drawMesh projectionMatrix viewMatrix mesh = do
       uniformv location 1 tex0Pointer
     _ -> return ()
 
-  drawFaces (_elementCount mesh)
+  drawFaces (elementCount mesh)
 
 makeAssetMesh :: AssetMeshProfile -> IO Mesh
 makeAssetMesh mprofile = do
@@ -245,12 +246,12 @@ makeAssetMesh mprofile = do
   -- ✿*,(*´◕ω◕`*)+✿.*
   return Mesh {
       _program = pro
-    , _vao = vao
-    , _tex = Just texObject
-    , _file = Just frogFile
+    , vao = vao
+    , tex = Just texObject
+    , file = Just frogFile
     , _uniformMap = hmap
-    , _elementCount = frogFile^.indexCount
-    , _transform = ident 4
+    , elementCount = frogFile^.indexCount
+    , transform = ident 4
   }
 
 makeSimpleMesh :: SimpleMeshProfile -> IO Mesh
@@ -279,10 +280,10 @@ makeSimpleMesh profile = do
 
   return Mesh {
       _program = pro
-    , _vao = vao
-    , _tex = Nothing
-    , _file = Nothing
+    , vao = vao
+    , tex = Nothing
+    , file = Nothing
     , _uniformMap = hmap
-    , _elementCount = fromIntegral (length ib)
-    , _transform = ident 4
+    , elementCount = fromIntegral (length ib)
+    , transform = ident 4
   }

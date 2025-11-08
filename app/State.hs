@@ -1,4 +1,4 @@
-module FrogState (
+module State (
   News
 , Settings (..)
 , StateName (..)

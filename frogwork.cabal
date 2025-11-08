@@ -87,7 +87,7 @@ executable frogwork
     PauseState
     PlayState
 
-    FrogState
+    State
     Frog
     Game
 

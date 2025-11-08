@@ -9,6 +9,7 @@ import Data.Function (applyWhen)
 type Shed a = [a] -> a
 type Shell a = a -> [a]
 type Shift a = a -> a
+type Twain a = (a, a)
 
 -- @region For working with bugs.
 

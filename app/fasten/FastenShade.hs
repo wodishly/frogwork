@@ -7,6 +7,7 @@ import Foreign (Word32)
 import Graphics.Rendering.OpenGL (GettableStateVar, Program, UniformLocation, Vertex3 (Vertex3))
 
 import Matrix (Polyhedron)
+import Mean (Twain)
 
 
 type MeshProfile = Either AssetMeshProfile SimpleMeshProfile
@@ -41,7 +42,7 @@ instance Shaderful SimpleMeshProfile where
 
 data ShaderProfile = ShaderProfile {
   -- name of (vertex, fragment) shader GLSL files (without extension)
-    names :: (String, String)
+    names :: Twain FilePath
   -- uniform symbol names
   , uniforms :: [String]
 } deriving (Show, Eq)

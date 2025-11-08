@@ -9,7 +9,7 @@ import qualified SDL (
   , GLContext, glCreateContext, glDeleteContext, LocationMode (RelativeLocation)
   )
 
-import FrogState (StateName (..))
+import State (StateName (..))
 import MenuState (makeMenuState)
 import PauseState (makePauseState)
 import PlayState (makePlayState)
@@ -38,7 +38,7 @@ birth :: SDL.Window -> SDL.GLContext -> IO Allwit
 birth window context = do
   display <- waxwane window
   meshes <- begetMeshes
-  _ <- setMouseLocationMode SDL.RelativeLocation
+  -- _ <- setMouseLocationMode SDL.RelativeLocation
 
   let allwit = makeAllwit window display context
         (makePlayState meshes)

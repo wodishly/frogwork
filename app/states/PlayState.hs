@@ -16,7 +16,7 @@ import Numeric.LinearAlgebra (Extractor (..), flatten, fromColumns, fromList, to
 import Graphics.Rendering.OpenGL as GL (Program, Vertex2 (Vertex2), VertexArrayObject, Vertex3 (Vertex3))
 
 import Frog (Frogwit (..), makeFrog, moveFrog, position)
-import FrogState (News, StateName (..), Stately (..))
+import State (News, StateName (..), Stately (..))
 
 import Blee (bg, black)
 import Matrix (FrogVector, Point, frogLookAt, frogZero, getProjectionMatrix, Point3)
@@ -116,7 +116,5 @@ updateMesh (Vertex3 x y z) forward = do
       c2 = columns !! 2
       transform' = fromColumns [ c0, c1, c2, fromList [x, y, z, 1] ]
 
-  newFrogMesh <- lift $ setMeshTransform
-    (head $ statewit^.meshes)
-    transform'
+  newFrogMesh <- lift $ setMeshTransform transform' (head $ statewit^.meshes)
   put statewit { _meshes = hit 0 (const newFrogMesh) (statewit^.meshes) }

@@ -6,7 +6,7 @@ module PauseState (
 import Control.Lens (makeLenses)
 import Control.Monad.State (StateT)
 
-import FrogState (News, StateName (..), Stately (..))
+import State (News, StateName (..), Stately (..))
 
 import Blee (bg, blue)
 

@@ -11,7 +11,7 @@ import Control.Monad.State (MonadState (get, put), StateT)
 
 import SDL.Input.Keyboard.Codes
 
-import FrogState (News, StateName (..), Stately (..))
+import State (News, StateName (..), Stately (..))
 
 import Key (KeySet, keyBegun)
 import Blee (bg, clerp, white)
