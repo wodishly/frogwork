@@ -20,12 +20,10 @@ import State (News, StateName (..), Stately (..))
 
 import Blee (bg, black)
 import Matrix (FrogVector, Point, frogLookAt, frogZero, getProjectionMatrix, Point3)
-import Mean (hit, ly)
+import Mean (hit)
 import Random (FrogSeed, defaultSeed)
 import Rime (clamp)
 import Shade (Mesh, drawMesh, setMeshTransform)
-import Key (KeySet)
-import Time (throttle)
 
 data Camera = Camera {
   cPosition :: FrogVector
@@ -79,13 +77,13 @@ play news@(_, _, display, _) = do
   lift $ mapM_ (drawMesh (getProjectionMatrix display) viewMatrix) (statewit^.meshes)
 
 updateCamera :: News -> StateT PlayState IO Camera
-updateCamera (_, mouse, _, time) = do
+updateCamera (_, mouse, _, _) = do
   statewit <- get
   let Vertex3 x _ z = statewit^.frog.position
   let Vertex2 dx dy = mouse -- arrow keys
       Vertex2 pitch yaw = statewit^.euler
-      pitch' = clamp (0, 1) $ pitch + throttle time (dy / 10)
-      yaw' = yaw + throttle time (dx / 10)
+      pitch' = clamp (0, 1) $ pitch + dy / 100.0
+      yaw' = yaw + dx / 100.0
       fx = 5 * cos yaw * cos pitch
       fy = 5 * sin pitch
       fz = 5 * sin yaw * cos pitch
