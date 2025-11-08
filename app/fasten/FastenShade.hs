@@ -1,25 +1,41 @@
 module FastenShade where
-import Foreign (Word32)
-import Matrix (Polyhedron)
-import Graphics.Rendering.OpenGL (Vertex3(Vertex3))
 
-data ShaderKind = Vertex | Fragment deriving (Show, Eq)
+import Control.Monad.Identity (Identity (Identity))
+import Data.HashMap.Lazy (HashMap)
+
+import Foreign (Word32)
+import Graphics.Rendering.OpenGL (GettableStateVar, Program, UniformLocation, Vertex3 (Vertex3))
+
+import Matrix (Polyhedron)
+
+
 type MeshProfile = Either AssetMeshProfile SimpleMeshProfile
+type UniformMap = HashMap [Char] (GettableStateVar UniformLocation)
 
 class Shaderful a where
   shaderProfile :: a -> ShaderProfile
 
+class Monad m => Pathlikeful m a where
+  filePath :: a -> m String
+
+class Programful a where
+  program :: a -> Program
+  uniformMap :: a -> UniformMap
+
 -- data sent to the renderer when requesting a mesh
-data AssetMeshProfile = AssetMeshProfile {
-    aMeshFileName :: String
-}
+newtype AssetMeshProfile = AssetMeshProfile String deriving (Show, Eq)
+
 instance Shaderful AssetMeshProfile where
   shaderProfile _ = defaultAssetShaderProfile
+
+instance Pathlikeful Identity AssetMeshProfile where
+  filePath (AssetMeshProfile s) = Identity s
 
 data SimpleMeshProfile = SimpleMeshProfile {
     vbuffer :: Polyhedron
   , ibuffer :: [Word32]
-}
+} deriving (Show, Eq)
+
 instance Shaderful SimpleMeshProfile where
   shaderProfile _ = defaultSimpleShaderProfile
 
@@ -28,12 +44,10 @@ data ShaderProfile = ShaderProfile {
     names :: (String, String)
   -- uniform symbol names
   , uniforms :: [String]
-}
+} deriving (Show, Eq)
 
 defaultAssetMeshProfile :: AssetMeshProfile
-defaultAssetMeshProfile = AssetMeshProfile {
-  aMeshFileName = "test"
-}
+defaultAssetMeshProfile = AssetMeshProfile "test"
 
 defaultAssetShaderProfile :: ShaderProfile
 defaultAssetShaderProfile = ShaderProfile {

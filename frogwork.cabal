@@ -94,6 +94,7 @@ executable frogwork
   default-extensions:
     LambdaCase
     LexicalNegation
+    MultiParamTypeClasses
     OverloadedStrings
     RankNTypes
     TemplateHaskell

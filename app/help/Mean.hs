@@ -5,7 +5,6 @@ import Data.Bifunctor (first, bimap)
 import Control.Exception (assert)
 import Data.List (singleton)
 
-
 type Shed a = [a] -> a
 type Shell a = a -> [a]
 type Shift a = a -> a

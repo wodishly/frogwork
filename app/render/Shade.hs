@@ -1,28 +1,35 @@
-module Shade where
+module Shade (
+  Mesh
+, begetMeshes
+, drawMesh
+, setMeshTransform
+) where
 
+import Control.Lens ((^.))
 import Control.Monad (unless)
-import Data.Maybe (fromJust)
+import Control.Monad.Identity (Identity (runIdentity))
+import Data.Bifunctor (Bifunctor (second))
 import Data.Binary.Get (runGet)
+import Data.HashMap.Lazy ((!))
+import Data.Maybe (fromJust)
+import Numeric.LinearAlgebra (flatten, ident)
 import Text.Printf (printf)
-import Data.HashMap.Strict (HashMap, (!))
 
-import Foreign (Storable, Int32, Ptr, nullPtr, plusPtr, sizeOf, withArray)
-import Foreign.Marshal (new)
+import Foreign (Int32, Ptr, Storable, new, nullPtr, plusPtr, sizeOf, withArray)
 import Graphics.Rendering.OpenGL as GL
-import qualified Data.HashMap.Lazy as HM (fromList, lookup)
-import qualified Graphics.GL as GLRaw
-import qualified Data.ByteString as BS (readFile)
-
 import SDL (time)
-import Numeric.LinearAlgebra (ident, flatten)
-import FastenShade (ShaderProfile (..), AssetMeshProfile (..), MeshProfile, SimpleMeshProfile (..), Shaderful (..), defaultSimpleMeshProfile, defaultAssetMeshProfile)
-import File (FrogFile (..), getFrogBytes, parseFrogFile)
-import Matrix (FrogMatrix, fromTranslation)
-import FastenMain (shaderBasePath, assetsBasePath)
+
+import qualified Data.ByteString as BS (readFile)
+import qualified Data.HashMap.Lazy as HM (fromList, lookup)
 import qualified Data.Vector.Storable as S (unsafeWith)
+import qualified Graphics.GL as GLRaw (glUniformMatrix4fv)
+
+import FastenMain (assetsBasePath, shaderBasePath)
+import FastenShade
+import File
+import Matrix (FrogMatrix, fromTranslation)
 import Mean (twimap, twin)
-import Data.Bifunctor (Bifunctor(second))
-import Control.Lens (makeLenses, (^.))
+
 
 drawFaces :: Int32 -> IO ()
 drawFaces count = drawElements Triangles count UnsignedInt (bufferOffset 0)
@@ -30,13 +37,14 @@ drawFaces count = drawElements Triangles count UnsignedInt (bufferOffset 0)
 paths :: ShaderProfile -> (FilePath, FilePath)
 paths = twimap (printf "%s/%s.glsl" shaderBasePath) . names
 
+asset :: FilePath -> FilePath
+asset = printf "%s/%s.frog" assetsBasePath 
+
 bufferOffset :: Int -> Ptr Int
 bufferOffset = plusPtr nullPtr . fromIntegral
 
 bufferSize :: Storable a => [a] -> GLsizeiptr
 bufferSize buffer = fromIntegral (length buffer * (sizeOf.head) buffer)
-
-type UniformMap = HashMap [Char] (GettableStateVar UniformLocation)
 
 data Mesh = Mesh {
     _program :: Program
@@ -47,21 +55,25 @@ data Mesh = Mesh {
   , _elementCount :: Int32
   , _transform :: FrogMatrix
 }
-makeLenses ''Mesh
 
-createAsset :: String -> AssetMeshProfile
-createAsset name = AssetMeshProfile {
-  aMeshFileName = name
-}
+instance Programful Mesh where
+  program = _program
+  uniformMap (Mesh _ _ _ _ u _ _) = u
+
+data Concoction = Concoction Program UniformMap (Maybe String)
+
+instance Programful Concoction where
+  program (Concoction p _ _) = p
+  uniformMap (Concoction _ u _) = u
+
+instance Pathlikeful Maybe Concoction where
+  filePath (Concoction _ _ p) = p
+
+makeAsset :: String -> AssetMeshProfile
+makeAsset = AssetMeshProfile
 
 setMeshTransform :: Mesh -> FrogMatrix -> IO Mesh
 setMeshTransform m t = return m { _transform = t }
-
-data Concoction = Concoction {
-    prog :: Program
-  , umap :: UniformMap
-  , fpath :: Maybe String
-}
 
 -- | Compiles ("kneads") a shader of type @t@ from path @path@.
 knead :: ShaderType -> FilePath -> IO Shader
@@ -98,16 +110,16 @@ brewProfile :: MeshProfile -> IO Concoction
 brewProfile mProfile = do
   -- parse profile
   let (sProfile, path) = case mProfile of
-        Left assetful -> (shaderProfile assetful, Just $ printf "%s/%s.frog" assetsBasePath (aMeshFileName assetful))
-        Right simple -> (shaderProfile simple, Nothing)
+        Left assetful -> (
+            shaderProfile assetful
+          , Just (asset $ runIdentity (filePath assetful))
+          )
+        Right assetless -> (shaderProfile assetless, Nothing)
 
   p <- uncurry brew (paths sProfile)
   currentProgram $= Just p
-  return Concoction {
-      prog = p
-    , umap = HM.fromList $ map (second (uniformLocation p) . twin) (uniforms sProfile)
-    , fpath = path
-  }
+  let u = HM.fromList $ map (second (uniformLocation p) . twin) (uniforms sProfile)
+  return (Concoction p u path)
 
 begetMeshes :: IO [Mesh]
 begetMeshes = do
@@ -116,20 +128,19 @@ begetMeshes = do
 
   earth <- makeSimpleMesh defaultSimpleMeshProfile
 
-  farsee <- createAssetMesh (createAsset "tv")
+  farsee <- createAssetMesh (makeAsset "tv")
     >>= flip setMeshTransform (fromTranslation [2, -2, -5])
 
   return [froggy, earth, farsee]
 
 useMesh :: Mesh -> IO ()
 useMesh mesh = do
-  currentProgram $= Just (mesh^.program)
-  bindVertexArrayObject $= Just (mesh^.vao)
-  textureBinding Texture2D $= (mesh^.tex)
+  currentProgram $= Just (program mesh)
+  bindVertexArrayObject $= Just (_vao mesh)
+  textureBinding Texture2D $= _tex mesh
 
 drawMesh :: Mesh -> FrogMatrix -> FrogMatrix -> IO ()
 drawMesh mesh projectionMatrix viewMatrix = do
-  let uniforms = mesh^.uniformMap
   useMesh mesh
 
   -- the bindings seem to be broken here? :(
@@ -137,20 +148,19 @@ drawMesh mesh projectionMatrix viewMatrix = do
   -- m <- newMatrix ColumnMajor (S.toList projectionMatrix) :: IO (GLmatrix GLfloat)
   -- withMatrix m $ const $ uniformv projLocation 1
 
-  (UniformLocation mLocation) <- get (uniforms ! "u_model_matrix")
-  S.unsafeWith (flatten $ mesh^.transform) (GLRaw.glUniformMatrix4fv mLocation 1 1)
+  UniformLocation mLocation <- get (uniformMap mesh ! "u_model_matrix")
+  S.unsafeWith (flatten $ _transform mesh) (GLRaw.glUniformMatrix4fv mLocation 1 1)
 
   -- TODO: move these to a Uniform Buffer Object
-  (UniformLocation projLocation) <- get (uniforms ! "u_projection_matrix")
+  UniformLocation projLocation <- get (uniformMap mesh ! "u_projection_matrix")
   S.unsafeWith (flatten projectionMatrix) (GLRaw.glUniformMatrix4fv projLocation 1 1)
-  (UniformLocation viewLocation) <- get (uniforms ! "u_view_matrix")
+  UniformLocation viewLocation <- get (uniformMap mesh ! "u_view_matrix")
   S.unsafeWith (flatten viewMatrix) (GLRaw.glUniformMatrix4fv viewLocation 1 1)
 
-  timeLocation <- uniforms ! "u_time"
-  let u = uniform timeLocation :: StateVar GLfloat
-  time >>= (u $=)
+  timeLocation <- uniformMap mesh ! "u_time"
+  time >>= ((uniform timeLocation :: StateVar GLfloat) $=)
 
-  case HM.lookup "u_texture" uniforms of
+  case HM.lookup "u_texture" (uniformMap mesh) of
     Just a -> do
       activeTexture $= TextureUnit 0
       tex0Pointer <- new (TextureUnit 0)
@@ -158,22 +168,15 @@ drawMesh mesh projectionMatrix viewMatrix = do
       uniformv location 1 tex0Pointer
     _ -> return ()
 
-  drawFaces (mesh^.elementCount)
+  drawFaces (_elementCount mesh)
 
 createAssetMesh :: AssetMeshProfile -> IO Mesh
 createAssetMesh mprofile = do
-  (Concoction pro hmap filePath) <- brewProfile (Left mprofile)
+  (Concoction pro hmap path) <- brewProfile (Left mprofile)
 
   -- read all the data
-  fbytes <- getFrogBytes (fromJust filePath)
+  fbytes <- getFrogBytes (fromJust path)
   let frogFile = runGet parseFrogFile fbytes
-      vbuffer = positionBuffer frogFile
-      nbuffer = normalBuffer frogFile
-      ibuffer = indexBuffer frogFile
-      ubuffer = uvBuffer frogFile
-      bitmap = bitmapBuffer frogFile
-      texw = texWidth frogFile
-      texh = texHeight frogFile
 
   -- position attribute
   vao <- genObjectName
@@ -184,8 +187,8 @@ createAssetMesh mprofile = do
 
   -- bespokeness
 
-  withArray vbuffer $ \ptr ->
-    bufferData ArrayBuffer $= (bufferSize vbuffer, ptr, StaticDraw)
+  withArray (frogFile^.positionBuffer) $ \ptr ->
+    bufferData ArrayBuffer $= (bufferSize (frogFile^.positionBuffer), ptr, StaticDraw)
 
   vertexAttribPointer (AttribLocation 0)
     $= (ToFloat, VertexArrayDescriptor 3 Float 0 (bufferOffset 0))
@@ -195,8 +198,8 @@ createAssetMesh mprofile = do
   uvbo <- genObjectName
   bindBuffer ArrayBuffer $= Just uvbo
 
-  withArray ubuffer $ \ptr ->
-    bufferData ArrayBuffer $= (bufferSize ubuffer, ptr, StaticDraw)
+  withArray (frogFile^.uvBuffer) $ \ptr ->
+    bufferData ArrayBuffer $= (bufferSize (frogFile^.uvBuffer), ptr, StaticDraw)
 
   vertexAttribPointer (AttribLocation 1)
     $= (ToFloat, VertexArrayDescriptor 2 Float 0 (bufferOffset 0))
@@ -206,8 +209,8 @@ createAssetMesh mprofile = do
   nbo <- genObjectName
   bindBuffer ArrayBuffer $= Just nbo
 
-  withArray nbuffer $ \ptr ->
-    bufferData ArrayBuffer $= (bufferSize nbuffer, ptr, StaticDraw)
+  withArray (frogFile^.normalBuffer) $ \ptr ->
+    bufferData ArrayBuffer $= (bufferSize (frogFile^.normalBuffer), ptr, StaticDraw)
 
   vertexAttribPointer (AttribLocation 2)
     $= (ToFloat, VertexArrayDescriptor 3 Float 0 (bufferOffset 0))
@@ -216,8 +219,8 @@ createAssetMesh mprofile = do
   -- index buffer
   ebo <- genObjectName
   bindBuffer ElementArrayBuffer $= Just ebo
-  withArray ibuffer $ \ptr ->
-    bufferData ElementArrayBuffer $= (bufferSize ibuffer, ptr, StaticDraw)
+  withArray (frogFile^.indexBuffer) $ \ptr ->
+    bufferData ElementArrayBuffer $= (bufferSize (frogFile^.indexBuffer), ptr, StaticDraw)
 
   -- texture uniform
   texObject <- genObjectName
@@ -226,13 +229,13 @@ createAssetMesh mprofile = do
   textureWrapMode Texture2D S $= (Repeated, ClampToEdge)
   textureWrapMode Texture2D T $= (Repeated, ClampToEdge)
 
-  withArray bitmap $ \ptr ->
+  withArray (frogFile^.bitmapBuffer) $ \ptr ->
     texImage2D
       Texture2D
       NoProxy
       0 -- mipmaps
       RGBA8 -- internal type
-      (TextureSize2D (fromIntegral texw) (fromIntegral texh))
+      (uncurry TextureSize2D (twimap fromIntegral $ frogFile^.texSize))
       0
       (PixelData RGBA UnsignedByte ptr)
 
@@ -246,7 +249,7 @@ createAssetMesh mprofile = do
     , _tex = Just texObject
     , _file = Just frogFile
     , _uniformMap = hmap
-    , _elementCount = indexCount frogFile
+    , _elementCount = frogFile^.indexCount
     , _transform = ident 4
   }
 

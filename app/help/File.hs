@@ -3,6 +3,15 @@ module File (
 , parseFrogFile
 , FrogFile (..)
 , FrogVertex (..)
+, positionBuffer
+, uvBuffer
+, normalBuffer
+, indexBuffer
+, bitmapBuffer
+, texSize
+, indexCount
+, normalCount -- unused
+, vertexCount -- unused
 ) where
 
 import Control.Monad (replicateM)
@@ -22,19 +31,18 @@ getFrogBytes = BL.readFile
 
 data FrogFile = FrogFile {
   -- header
-  vertexCount :: Int32,
-  normalCount :: Int32,
-  indexCount :: Int32,
-  texWidth :: Int16,
-  texHeight :: Int16,
+  _vertexCount :: Int32,
+  _normalCount :: Int32,
+  _indexCount :: Int32,
+  _texSize :: (Int16, Int16),
   -- vertex attributes
-  positionBuffer :: Polyhedron,
-  uvBuffer :: Polygon,
-  normalBuffer :: Polyhedron,
+  _positionBuffer :: Polyhedron,
+  _uvBuffer :: Polygon,
+  _normalBuffer :: Polyhedron,
   -- face indices
-  indexBuffer :: [Word32],
+  _indexBuffer :: [Word32],
   -- rgba texture block
-  bitmapBuffer :: [Word8]
+  _bitmapBuffer :: [Word8]
 } deriving (Show, Eq)
 makeLenses ''FrogFile
 
@@ -74,14 +82,14 @@ parseFrogFile = do
   bmp <- replicateM tsize getWord8
 
   return $!
-    FrogFile
-      vcount
-      ncount
-      icount
-      twidth
-      theight
-      fverts
-      fuvs
-      fnormals
-      findices
-      bmp
+    FrogFile {
+        _vertexCount = vcount
+      , _normalCount = ncount
+      , _indexCount = icount
+      , _texSize = (twidth, theight)
+      , _positionBuffer = fverts
+      , _uvBuffer = fuvs
+      , _normalBuffer = fnormals
+      , _indexBuffer = findices
+      , _bitmapBuffer = bmp
+    }
