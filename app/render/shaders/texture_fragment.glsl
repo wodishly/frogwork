@@ -18,5 +18,5 @@ void main() {
     float lighting = ambient + diffuse;
     vec3 color = texture(u_texture, v_uv).rgb;
 
-    pc_fragColor = vec4(color * lighting, 1.0);
+    pc_fragColor = vec4(color, 1.0);
 }

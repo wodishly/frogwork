@@ -71,8 +71,8 @@ fromTranslation _ = error "we need 3 dimensions"
 {-# INLINE getProjectionMatrix #-}
 getProjectionMatrix :: RenderView -> FrogMatrix
 getProjectionMatrix (RenderView asp fov near far) = (4><4) [
-    1/(asp*tan(fov/2)),            0,                     0,                     0
-  ,                  0, 1/tan(fov/2),                     0,                     0
+    1/(asp*tan (fov/2)),            0,                     0,                     0
+  ,                  0, 1/tan (fov/2),                     0,                     0
   ,                  0,            0, (near+far)/(near-far), 2*far*near/(near-far)
   ,                  0,            0,                    -1,                     0
   ]
@@ -87,11 +87,11 @@ frogUp = fromList [0, 1, 0]
 
 frogLookAt :: FrogVector -> FrogVector -> FrogMatrix
 frogLookAt eye target =
-  let dir = normalize (target-eye)
-      right = normalize (cross frogUp dir)
-      up = cross dir right
-  in (fromRows [right, up, dir, fromList (replicate 3 0)] ||| col [0, 0, 0, 1])
-      * fromTranslation (toList -eye)
+  let dir = normalize (eye - target)
+      right =normalize (cross frogUp dir)
+      up =cross dir right
+  in  (fromRows [right, up, dir, fromList (replicate 3 0)] ||| col [0, 0, 0, 1]) <> fromTranslation (toList -eye)
+
 
 {-# INLINE row #-}
 row :: Element t => [t] -> Matrix t
@@ -102,8 +102,8 @@ col :: Element t => [t] -> Matrix t
 col = asColumn.fromList
 
 {-# INLINE normalize #-}
-normalize :: (Fractional t, Element t) => Vector t -> Vector t
+normalize :: (Fractional t, Element t, Floating t) => Vector t -> Vector t
 normalize v =
   let l = toList v
-      d = sum $ map (^(2::Integer)) l
+      d = sqrt $ sum $ map (^(2::Integer)) l
   in fromList (map (/d) l)

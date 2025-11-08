@@ -75,9 +75,10 @@ play (keys, mouse, dis, time) = do
 updateCamera :: Point -> StateT PlayState IO Camera
 updateCamera (Vertex2 _x _y) = do
   statewit <- get
+  let Vertex2 x z = statewit^.lily
   let c = Camera {
-      cTarget = fromList [0, -1, 0]
-    , cPosition = fromList [0, -1, -1]
+      cTarget = fromList [x, 1, z]
+    , cPosition = fromList [x, 3, z - 5]
   }
   put statewit { _camera = c }
   return c
@@ -97,5 +98,5 @@ updateMesh (Vertex2 x z) = do
   statewit <- get
   newFrog <- lift $ setMeshTransform
     (head $ statewit^.meshes)
-    (fromTranslation [x, -2, z - 5])
+    (fromTranslation [x, 1, z])
   put statewit { _meshes = hit 0 (const newFrog) (statewit^.meshes) }

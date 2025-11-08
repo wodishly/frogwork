@@ -176,12 +176,12 @@ brewProfile profile = do
 begetMeshes :: IO [Mesh]
 begetMeshes = do
   froggy <- createAssetMesh defaultAssetMeshProfile
-    >>= flip setMeshTransform (fromTranslation [0, -2, -5])
+    >>= flip setMeshTransform (fromTranslation [0, 0, 0])
 
   earth <- createSimpleMesh defaultSimpleMeshProfile
 
   farsee <- createAssetMesh (createAsset "tv")
-    >>= flip setMeshTransform (fromTranslation [2, -2, -5])
+    >>= flip setMeshTransform (fromTranslation [-2, 1, 2])
 
   return [froggy, earth, farsee]
 
@@ -354,10 +354,10 @@ createSimpleMesh mprofile = do
 
 floorVbuffer :: Polyhedron
 floorVbuffer = [
-    Vertex3 -1 -0   1.0 --SW
-  , Vertex3 -1 -1.0 1.0 --NW
-  , Vertex3  1 -1.0 1.0 --NE
-  , Vertex3  1 -0   1.0 --SE
+    Vertex3  20  0   20.0 --NE
+  , Vertex3  20 -0  -20.0 --SE
+  , Vertex3 -20 -0  -20.0 --SW
+  , Vertex3 -20  0   20.0 --NW
   ]
 
 floorIbuffer :: [Word32]
