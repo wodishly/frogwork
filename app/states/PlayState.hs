@@ -21,8 +21,6 @@ import Random (FrogSeed, defaultSeed)
 import Shade (Mesh, drawMesh, setMeshTransform)
 import Time (Time, delta)
 import Mean (hit)
-import Numeric.LinearAlgebra (fromList)
-import Rime (cast)
 import Numeric.LinearAlgebra.HMatrix
 import Control.Monad (when)
 
@@ -100,7 +98,7 @@ moveFrog keys time fwd = do
   let Vertex2 _ wy = wayward keys
 
   let lily' = liftA2 (+)
-        ((* (cast (time^.delta) / 1000 * 5)) <$> d)
+        ((* (fromIntegral (time^.delta)/1000*5)) <$> d)
         (statewit^.lily)
   when (wy < 0) $ put statewit { _lily = lily' }
 
