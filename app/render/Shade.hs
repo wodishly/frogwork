@@ -9,7 +9,7 @@ import Data.Binary.Get (runGet)
 import Text.Printf (printf)
 import Data.HashMap.Strict (HashMap, (!))
 
-import Foreign (Storable, sizeOf, withArray, Int32)
+import Foreign (Storable, Int32, Ptr, nullPtr, plusPtr, sizeOf, withArray)
 import Foreign.Marshal (new)
 import Graphics.Rendering.OpenGL as GL
 import qualified Graphics.GL as GLRaw
@@ -20,11 +20,13 @@ import qualified Data.Vector.Storable as S
 import File
 import Fasten
 import Rime
-import Light 
 import Mean
 import Matrix
 import SDL (time)
 import Numeric.LinearAlgebra (ident, flatten)
+
+drawFaces :: Int32 -> IO ()
+drawFaces count = drawElements Triangles count UnsignedInt (bufferOffset 0)
 
 data ShaderKind = Vertex | Fragment deriving (Show, Eq)
 
@@ -55,6 +57,9 @@ data ShaderProfile = ShaderProfile {
 
 pathsOf :: ShaderProfile -> (FilePath, FilePath)
 pathsOf = twimap (printf "%s/%s.glsl" shaderBasePath) . doBoth vertexShaderName fragmentShaderName
+
+bufferOffset :: Int -> Ptr Int
+bufferOffset = plusPtr nullPtr . fromIntegral
 
 bufferSize :: Storable a => [a] -> GLsizeiptr
 bufferSize buffer = fromIntegral (length buffer * (sizeOf.head) buffer)
@@ -177,7 +182,7 @@ begetMeshes = do
 
   farsee <- createAssetMesh (createAsset "tv")
     >>= flip setMeshTransform (fromTranslation [2, -2, -5])
-  
+
   return [froggy, earth, farsee]
 
 useMesh :: Mesh -> IO ()

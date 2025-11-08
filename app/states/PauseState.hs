@@ -8,7 +8,8 @@ import Control.Monad.State (StateT)
 
 import FrogState (News, StateName (..), Stately (..))
 
-import Light (bg, blue)
+import Blee (bg, blue)
+
 
 data PauseState = PauseState
 makeLenses ''PauseState

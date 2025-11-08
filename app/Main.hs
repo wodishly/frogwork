@@ -15,7 +15,7 @@ import PauseState (makePauseState)
 import PlayState (makePlayState)
 
 import Game (
-    Allwit (..), mkAllwit
+    Allwit (..), makeAllwit
   , fand, updateAll, showLeechwit
   , settleState, blit, again
   )
@@ -38,7 +38,7 @@ birth window context = do
   display <- waxwane window
   meshes <- begetMeshes
 
-  let allwit = mkAllwit window display context
+  let allwit = makeAllwit window display context
         (makePlayState meshes)
         makePauseState
         makeMenuState

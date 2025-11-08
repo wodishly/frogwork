@@ -1,11 +1,5 @@
-module Light (
-  Point
-, Polygon
-, Polyhedron
-, bufferOffset
-, drawFaces
-, frogpoint
-, white
+module Blee (
+  white
 , blue
 , black
 , clerp
@@ -14,21 +8,19 @@ module Light (
 
 import Control.Monad.State (StateT, MonadTrans (lift))
 
-import Foreign (Int32, Ptr, nullPtr, plusPtr)
-import Graphics.Rendering.OpenGL
-import qualified SDL (V2 (V2), Point (P))
+import Graphics.Rendering.OpenGL (
+    GLfloat
+  , Color4 (Color4)
+  , clearColor
+  , ClearBuffer (..)
+  , clear
+  , ($=)
+  )
 
-import Rime (cast, clamp)
+import Rime (clamp)
 
 
 type FrogColor = Color4 GLfloat
-type Point = Vertex2 GLfloat
-type Polygon = [Vertex2 GLfloat]
-type Polyhedron = [Vertex3 GLfloat]
--- type Faces = [Int]
-
-bufferOffset :: Int -> Ptr Int
-bufferOffset = plusPtr nullPtr . fromIntegral
 
 -- drawThreenook :: Polygon -> IO ()
 -- drawThreenook triangle = do drawArrays Triangles 0 (fromIntegral $ length triangle)
@@ -36,18 +28,8 @@ bufferOffset = plusPtr nullPtr . fromIntegral
 -- drawFournook :: Polygon -> IO ()
 -- drawFournook fournook = do drawArrays Quads 0 (fromIntegral $ length fournook)
 
-drawFaces :: Int32 -> IO ()
-drawFaces count = drawElements Triangles count UnsignedInt (bufferOffset 0)
-
 -- evenNooks :: Int -> Polygon
 -- evenNooks n = map (dir . (* (2*pi / cast n)). cast) (flight n)
-
-frogpoint :: (Enum a, Num a) => SDL.Point SDL.V2 a -> Point
-frogpoint (SDL.P (SDL.V2 x y)) = Vertex2 (cast x) (cast y)
-
--- radians
--- dir :: GLfloat -> Point
--- dir = uncurry Vertex2 . bimap cos sin . twin
 
 black :: FrogColor
 black = Color4 0 0 0 1

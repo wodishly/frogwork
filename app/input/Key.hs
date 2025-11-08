@@ -10,7 +10,7 @@ import SDL.Input.Keyboard.Codes
 import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2))
 
 import Happen (Keywit, unwrapHappenKeys)
-import Light (Point)
+import Matrix (Point)
 import Mean (allIn)
 
 

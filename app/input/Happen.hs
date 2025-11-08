@@ -28,16 +28,14 @@ import Graphics.Rendering.OpenGL (
 import qualified Graphics.Rendering.OpenGL as GL (depthFunc, get, viewport)
 
 import Mean (doBoth)
-import Matrix (RenderView (..))
-import Rime (cast)
-import Light (frogpoint)
+import Matrix (RenderView (..), asFrog)
 
 
 type Keywit = (Scancode, InputMotion)
 
 unwrapHappenMouse :: [Event] -> [Vertex2 GLfloat]
 unwrapHappenMouse = mapMaybe (\event -> case eventPayload event of
-  MouseMotionEvent e -> Just (frogpoint $ mouseMotionEventPos e)
+  MouseMotionEvent e -> Just (asFrog $ mouseMotionEventPos e)
   _ -> Nothing)
 
 unwrapHappenKeys :: [Event] -> [Keywit]
@@ -52,7 +50,7 @@ unwrapHappenWindow = mapMaybe (\event -> case eventPayload event of
 
 waxwane :: Window -> IO RenderView
 waxwane wind = do
-  V2 width height <- (cast <$>) <$> GL.get (SDL.windowSize wind)
+  V2 width height <- (fromIntegral <$>) <$> GL.get (SDL.windowSize wind)
   GL.viewport $= (Position 0 0, Size width height)
   GL.depthFunc $= Just Lequal
   return RenderView {

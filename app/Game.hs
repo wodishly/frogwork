@@ -1,6 +1,6 @@
 module Game (
   Allwit (..)
-, mkAllwit
+, makeAllwit
 , context -- unused
 , keyset
 , settings
@@ -49,8 +49,7 @@ import PlayState (PlayState)
 
 import Happen (unwrapHappenMouse, unwrapHappenWindow, waxwane)
 import Key (KeySet, keyBegun, listen, unkeys)
-import Light (Point)
-import Matrix (RenderView)
+import Matrix (Point, RenderView)
 import Mean (full, weep)
 import Time (Time, beginTime, keepTime)
 
@@ -71,9 +70,9 @@ data Allwit = Allwit {
 }
 makeLenses ''Allwit
 
-mkAllwit :: SDL.Window -> RenderView -> SDL.GLContext
+makeAllwit :: SDL.Window -> RenderView -> SDL.GLContext
   -> PlayState -> PauseState -> MenuState -> StateName -> Allwit
-mkAllwit = Allwit
+makeAllwit = Allwit
   beginTime
   makeSettings
   unkeys

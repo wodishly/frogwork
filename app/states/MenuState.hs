@@ -14,7 +14,7 @@ import SDL.Input.Keyboard.Codes
 import FrogState (News, StateName (..), Stately (..))
 
 import Key (KeySet, keyBegun)
-import Light (bg, clerp, white)
+import Blee (bg, clerp, white)
 
 
 data MenuState = MenuState {
