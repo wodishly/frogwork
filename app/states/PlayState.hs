@@ -113,7 +113,7 @@ updateMesh (Vertex2 x z) fwd = do
       transform = frogLookAt frogPosition frogTarget
       columns = toColumns transform
       -- awful lol
-      c0 = columns !! 0
+      c0 = head columns
       c1 = columns !! 1
       c2 = columns !! 2
       transform' = fromColumns [ c0, c1, c2, fromList [x, 0, z, 1] ]
