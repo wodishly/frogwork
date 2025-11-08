@@ -110,7 +110,7 @@ updateMesh (Vertex3 x y z) forward = do
       frogTarget = frogPosition + fromList [forward!0, 0, forward!2]
       transform = frogLookAt frogPosition frogTarget
       columns = toColumns transform
-      -- awful lol
+      -- awesome lol
       c0 = columns !! 0
       c1 = columns !! 1
       c2 = columns !! 2
