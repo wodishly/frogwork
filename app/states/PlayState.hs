@@ -14,7 +14,7 @@ import Graphics.Rendering.OpenGL as GL hiding (get)
 
 import FrogState (News, Stately (..), StateName (..))
 
-import Key (KeySet, wayward)
+import Key (KeySet, wayward, keyBegun)
 import Blee (bg, black)
 import Matrix (Point, FrogVector, frogLookAt, frogZero, getProjectionMatrix, fromTranslation)
 import Random (FrogSeed, defaultSeed)
@@ -22,11 +22,21 @@ import Shade (Mesh, drawMesh, setMeshTransform)
 import Time (Time, delta)
 import Mean (hit)
 import Numeric.LinearAlgebra (fromList)
+import Control.Monad (when)
+import SDL.Input.Keyboard.Codes
 
 data Camera = Camera {
   cPosition :: FrogVector
 , cTarget :: FrogVector
 } deriving (Show, Eq)
+
+data Frog = Frog {
+    s :: Point
+  , v :: Point
+} deriving (Show, Eq)
+
+earthWeight :: Point
+earthWeight = Vertex2 0 1
 
 makeCamera :: Camera
 makeCamera = Camera {
@@ -64,6 +74,7 @@ play (keys, mouse, dis, time) = do
   statewit <- get
   cam <- updateCamera mouse
 
+  leap keys
   moveFrog keys time
 
   let viewMatrix = frogLookAt (cPosition cam) (cTarget cam)
@@ -81,6 +92,12 @@ updateCamera (Vertex2 _x _y) = do
   }
   put statewit { _camera = c }
   return c
+
+leap :: KeySet -> StateT PlayState IO ()
+leap keys = do
+  statewit <- get
+  when (keyBegun keys ScancodeSpace)
+    (put statewit { _lily = liftA2 (+) (statewit^.lily) (Vertex2 0 0.1) })
 
 moveFrog :: KeySet -> Time -> StateT PlayState IO ()
 moveFrog keys time = do
