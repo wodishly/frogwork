@@ -17,7 +17,7 @@ import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2), Vertex3 (Vertex3))
 import Key (KeySet, keyBegun, wasd)
 import Matrix (FrogVector, Point3, hat3)
 import Mean (given)
-import Time (Time, delta)
+import Time (Time, throttle)
 
 
 data Frogwit = Frogwit {
@@ -56,9 +56,6 @@ fall time = do
     , _position = Vertex3 x y' z
   }
   return (frogwit^.dy /= 0)
-
-throttle :: Time -> GLfloat -> GLfloat
-throttle time = (*) (fromIntegral (time^.delta) / 1000)
 
 walk :: KeySet -> Time -> FrogVector -> StateT Frogwit IO Bool
 walk keys time forward = do

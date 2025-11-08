@@ -4,10 +4,12 @@ module Time (
 , keepTime
 , lifetime
 , delta
+, throttle
 ) where
 
 import Control.Lens (makeLenses, (^.))
 import Data.Word (Word32)
+import Graphics.Rendering.OpenGL (GLfloat)
 
 
 data Time = Time {
@@ -24,3 +26,6 @@ keepTime time now = Time {
     _lifetime = now
   , _delta = now - (time^.lifetime)
 }
+
+throttle :: Time -> GLfloat -> GLfloat
+throttle time = (*) (fromIntegral (time^.delta) / 1000)

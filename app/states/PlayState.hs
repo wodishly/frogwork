@@ -24,7 +24,8 @@ import Mean (hit, ly)
 import Random (FrogSeed, defaultSeed)
 import Rime (clamp)
 import Shade (Mesh, drawMesh, setMeshTransform)
-import Key (KeySet, arrow)
+import Key (KeySet)
+import Time (throttle)
 
 data Camera = Camera {
   cPosition :: FrogVector
@@ -65,9 +66,9 @@ makePlayState ms = PlayState {
 }
 
 play :: News -> StateT PlayState IO ()
-play news@(keys, mouse, dis, _time) = do
+play news@(_, _, display, _) = do
   statewit <- get
-  cam <- updateCamera mouse keys
+  cam <- updateCamera news
 
   let viewMatrix = frogLookAt (cPosition cam) (cTarget cam)
   let forward = flatten $ (viewMatrix ¿ [2]) ?? (Take 3, All)
@@ -75,16 +76,16 @@ play news@(keys, mouse, dis, _time) = do
   updateFrog news forward
   
   bg black
-  lift $ mapM_ (drawMesh (getProjectionMatrix dis) viewMatrix) (statewit^.meshes)
+  lift $ mapM_ (drawMesh (getProjectionMatrix display) viewMatrix) (statewit^.meshes)
 
-updateCamera :: Point -> KeySet -> StateT PlayState IO Camera
-updateCamera mouse _keys = do
+updateCamera :: News -> StateT PlayState IO Camera
+updateCamera (_, mouse, _, time) = do
   statewit <- get
   let Vertex3 x _ z = statewit^.frog.position
   let Vertex2 dx dy = mouse -- arrow keys
       Vertex2 pitch yaw = statewit^.euler
-      pitch' = clamp (0, 1) $ pitch + dy / 100.0
-      yaw' = yaw + dx / 100.0
+      pitch' = clamp (0, 1) $ pitch + throttle time (dy / 10)
+      yaw' = yaw + throttle time (dx / 10)
       fx = 5 * cos yaw * cos pitch
       fy = 5 * sin pitch
       fz = 5 * sin yaw * cos pitch
@@ -106,7 +107,7 @@ updateMesh :: Point3 -> FrogVector -> StateT PlayState IO ()
 updateMesh (Vertex3 x y z) forward = do
   statewit <- get
 
-  let frogPosition = ly $ fromList [x, y, z]
+  let frogPosition = fromList [x, y, z]
       frogTarget = frogPosition + fromList [forward!0, 0, forward!2]
       transform = frogLookAt frogPosition frogTarget
       columns = toColumns transform
