@@ -59,18 +59,18 @@ executable frogwork
 
   -- Modules included in this executable, other than Main.
   other-modules:
-    FastenMain
     FastenShade
+    FastenMain
 
     File
-    Matrix
     Mean
     Random
     Rime
     Time
+    Matrix
 
-    Happen
     Key
+    Happen
 
     Blee
     Shade
@@ -98,7 +98,6 @@ executable frogwork
     OverloadedStrings
     RankNTypes
     TemplateHaskell
-    TupleSections
 
   -- Other library packages from which modules are imported.
   build-depends:

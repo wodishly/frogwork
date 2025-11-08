@@ -1,13 +1,12 @@
-{- HLINT ignore "Use section" -}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use section" #-}
+
 module Mark where
-
+import Mean
+import Data.Maybe (isJust, fromJust)
 import Control.Monad (join)
-import Data.Foldable (find)
 import Data.Function (applyWhen)
-import Data.Maybe (fromJust, isJust)
-
-import Mean (Shift)
-
+import Data.Foldable (find)
 
 class (Show a, Eq a) => Mark a where
   isAxled, isSteadfast :: a -> Bool

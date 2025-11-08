@@ -21,6 +21,7 @@ import Random (FrogSeed, defaultSeed)
 import Shade (Mesh, drawMesh, setMeshTransform)
 import Time (Time, delta)
 import Mean (hit)
+import Rime (cast)
 import Numeric.LinearAlgebra (fromList)
 import Control.Monad (when)
 import SDL.Input.Keyboard.Codes
@@ -103,7 +104,7 @@ moveFrog :: KeySet -> Time -> StateT PlayState IO ()
 moveFrog keys time = do
   statewit <- get
   let lily' = liftA2 (+)
-        ((* (fromIntegral (time^.delta)/1000)) <$> wayward keys)
+        ((* (cast (time^.delta)/1000)) <$> wayward keys)
         (statewit^.lily)
 
   put statewit { _lily = lily' }
