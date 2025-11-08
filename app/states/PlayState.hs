@@ -23,6 +23,7 @@ import Time (Time, delta)
 import Mean (hit)
 import Numeric.LinearAlgebra.HMatrix
 import Control.Monad (when)
+import Rime (clamp)
 
 data Camera = Camera {
   cPosition :: FrogVector
@@ -79,7 +80,7 @@ updateCamera (Vertex2 dx dy) = do
   statewit <- get
   let Vertex2 x z = statewit^.lily
   let Vertex2 pitch yaw = statewit^.euler
-  let pitch' = pitch + dy / 100.0
+  let pitch' = clamp (0, 1) $ pitch + dy / 100.0
   let yaw' = yaw + dx / 100.0
   let fx = 5 * cos yaw * cos pitch
       fy = 5 * sin pitch
@@ -101,8 +102,7 @@ moveFrog keys time fwd = do
         ((* (fromIntegral (time^.delta)/1000*5)) <$> d)
         (statewit^.lily)
   when (wy < 0) $ put statewit { _lily = lily' }
-
-  updateMesh lily' fwd
+  when (wy < 0) $ updateMesh lily' fwd
 
 updateMesh :: Point -> Vector GLfloat -> StateT PlayState IO ()
 updateMesh (Vertex2 x z) fwd = do
@@ -117,7 +117,6 @@ updateMesh (Vertex2 x z) fwd = do
       c1 = columns !! 1
       c2 = columns !! 2
       transform' = fromColumns [ c0, c1, c2, fromList [x, 0, z, 1] ]
-  -- let transform = fromTranslation [x, 0, z]
 
   newFrog <- lift $ setMeshTransform
     (head $ statewit^.meshes)
