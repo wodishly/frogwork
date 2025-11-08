@@ -123,12 +123,12 @@ brewProfile mProfile = do
 
 begetMeshes :: IO [Mesh]
 begetMeshes = do
-  froggy <- createAssetMesh defaultAssetMeshProfile
+  froggy <- makeAssetMesh defaultAssetMeshProfile
     >>= flip setMeshTransform (fromTranslation [0, -2, -5])
 
   earth <- makeSimpleMesh defaultSimpleMeshProfile
 
-  farsee <- createAssetMesh (makeAsset "tv")
+  farsee <- makeAssetMesh (makeAsset "tv")
     >>= flip setMeshTransform (fromTranslation [2, -2, -5])
 
   return [froggy, earth, farsee]
@@ -170,8 +170,8 @@ drawMesh mesh projectionMatrix viewMatrix = do
 
   drawFaces (_elementCount mesh)
 
-createAssetMesh :: AssetMeshProfile -> IO Mesh
-createAssetMesh mprofile = do
+makeAssetMesh :: AssetMeshProfile -> IO Mesh
+makeAssetMesh mprofile = do
   (Concoction pro hmap path) <- brewProfile (Left mprofile)
 
   -- read all the data
