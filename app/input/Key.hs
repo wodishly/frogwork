@@ -19,7 +19,7 @@ import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2))
 
 import Happen (Keywit, unwrapHappenKeys)
 import Matrix (Point, hat)
-import Mean (allIn)
+import Mean (allIn, none)
 
 
 data KeySet = KeySet {
@@ -34,11 +34,13 @@ instance Show KeySet where
 
 hearableKeys :: [Scancode]
 hearableKeys = [
-    ScancodeLeft
+    ScancodeLeft -- arrows to control camera
   , ScancodeRight
   , ScancodeUp
   , ScancodeDown
-  , ScancodeW
+  , ScancodeQ -- alternate camera control
+  , ScancodeE -- alternate camera control
+  , ScancodeW -- wasd to move
   , ScancodeA
   , ScancodeS
   , ScancodeD
@@ -79,19 +81,19 @@ listen events keyset = let news = unwrapHappenKeys events in KeySet
   (filter (allIn [not.keyUp news, keyContinuing keyset]) hearableKeys)
   (filter (allIn [keyUp news, keyContinuing keyset]) hearableKeys)
 
--- | Uses a 2-tuple of antipodal keycodes to compute a vector.
-way' :: (Scancode, Scancode) -> KeySet -> (KeySet -> Scancode -> Bool) -> GLfloat
-way' (wane, wax) keySet keyListener
-  | keyListener keySet wane && not (keyListener keySet wax) = -1
-  | keyListener keySet wax && not (keyListener keySet wane) = 1
+-- | Uses a 2-tuple of antipodal keycodes to compute a unit direction vector.
+way' :: ([Scancode], [Scancode]) -> KeySet -> (KeySet -> Scancode -> Bool) -> GLfloat
+way' (wanes, waxes) keySet keyListener
+  | any (keyListener keySet) wanes && none (keyListener keySet) waxes = -1
+  | any (keyListener keySet) waxes && none (keyListener keySet) wanes = 1
   | otherwise = 0
 
 arrow :: KeySet -> Point
 arrow keySet = hat $ Vertex2
-  (way' (ScancodeLeft, ScancodeRight) keySet keyContinuing)
-  (way' (ScancodeUp, ScancodeDown) keySet keyContinuing)
+  (way' ([ScancodeLeft, ScancodeQ], [ScancodeRight, ScancodeE]) keySet keyContinuing)
+  (way' ([ScancodeUp], [ScancodeDown]) keySet keyContinuing)
 
 wasd :: KeySet -> Point
 wasd keySet = hat $ Vertex2
-  (way' (ScancodeA, ScancodeD) keySet keyContinuing)
-  (way' (ScancodeW, ScancodeS) keySet keyContinuing)
+  (way' ([ScancodeA], [ScancodeD]) keySet keyContinuing)
+  (way' ([ScancodeW], [ScancodeS]) keySet keyContinuing)

@@ -65,9 +65,9 @@ makePlayState ms = PlayState {
 }
 
 play :: News -> StateT PlayState IO ()
-play news@(keys, _mouse, dis, _time) = do
+play news@(keys, mouse, dis, _time) = do
   statewit <- get
-  cam <- updateCamera keys
+  cam <- updateCamera mouse keys
 
   let viewMatrix = frogLookAt (cPosition cam) (cTarget cam)
   let forward = flatten $ (viewMatrix ¿ [2]) ?? (Take 3, All)
@@ -77,11 +77,11 @@ play news@(keys, _mouse, dis, _time) = do
   bg black
   lift $ mapM_ (drawMesh (getProjectionMatrix dis) viewMatrix) (statewit^.meshes)
 
-updateCamera :: KeySet -> StateT PlayState IO Camera
-updateCamera keys = do
+updateCamera :: Point -> KeySet -> StateT PlayState IO Camera
+updateCamera mouse _keys = do
   statewit <- get
   let Vertex3 x _ z = statewit^.frog.position
-  let Vertex2 dx dy = arrow keys
+  let Vertex2 dx dy = mouse -- arrow keys
       Vertex2 pitch yaw = statewit^.euler
       pitch' = clamp (0, 1) $ pitch + dy / 100.0
       yaw' = yaw + dx / 100.0

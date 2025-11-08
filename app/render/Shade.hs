@@ -162,10 +162,10 @@ drawMesh projectionMatrix viewMatrix mesh = do
   time >>= ((uniform timeLocation :: StateVar GLfloat) $=)
 
   case HM.lookup "u_texture" (uniformMap mesh) of
-    Just a -> do
+    Just uLoc -> do
       activeTexture $= TextureUnit 0
       tex0Pointer <- new (TextureUnit 0)
-      location <- a
+      location <- uLoc
       uniformv location 1 tex0Pointer
     _ -> return ()
 
@@ -176,15 +176,15 @@ makeAssetMesh mprofile = do
   (Concoction pro hmap path) <- brewProfile (Left mprofile)
 
   -- read all the data
-  fbytes <- getFrogBytes (fromJust path)
-  let frogFile = runGet parseFrogFile fbytes
+  bytes <- getFrogBytes (fromJust path)
+  let frogFile = runGet parseFrogFile bytes
 
   -- position attribute
-  vao <- genObjectName
-  bindVertexArrayObject $= Just vao
+  vao' <- genObjectName
+  bindVertexArrayObject $= Just vao'
 
-  vbo <- genObjectName
-  bindBuffer ArrayBuffer $= Just vbo
+  vbo' <- genObjectName
+  bindBuffer ArrayBuffer $= Just vbo'
 
   -- bespokeness
 
@@ -246,7 +246,7 @@ makeAssetMesh mprofile = do
   -- ✿*,(*´◕ω◕`*)+✿.*
   return Mesh {
       _program = pro
-    , vao = vao
+    , vao = vao'
     , tex = Just texObject
     , file = Just frogFile
     , _uniformMap = hmap
@@ -258,11 +258,11 @@ makeSimpleMesh :: SimpleMeshProfile -> IO Mesh
 makeSimpleMesh profile = do
   Concoction pro hmap _ <- brewProfile (Right profile)
 
-  vao <- genObjectName
-  bindVertexArrayObject $= Just vao
+  vao' <- genObjectName
+  bindVertexArrayObject $= Just vao'
 
-  vbo <- genObjectName
-  bindBuffer ArrayBuffer $= Just vbo
+  vbo' <- genObjectName
+  bindBuffer ArrayBuffer $= Just vbo'
 
   let vb = vbuffer profile
   withArray vb $ \ptr ->
@@ -280,7 +280,7 @@ makeSimpleMesh profile = do
 
   return Mesh {
       _program = pro
-    , vao = vao
+    , vao = vao'
     , tex = Nothing
     , file = Nothing
     , _uniformMap = hmap

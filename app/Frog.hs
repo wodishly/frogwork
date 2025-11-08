@@ -33,7 +33,7 @@ makeFrog :: Frogwit
 makeFrog = Frogwit {
     _position = Vertex3 0 0 0
   , _dy = 0
-  , _speed = 4
+  , _speed = 2
   , _aLeap = 4
   , _weight = -8
 }
