@@ -16,9 +16,8 @@ import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2), Vertex3 (Vertex3))
 
 import Key (KeySet, keyBegun, wasd)
 import Matrix (FrogVector, Point3, hat3)
-import Mean (given, ly)
+import Mean (given)
 import Time (Time, delta)
-import State (preent)
 
 
 data Frogwit = Frogwit {

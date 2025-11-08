@@ -8,7 +8,7 @@ module Shade (
 import Control.Lens ((^.))
 import Control.Monad (unless)
 import Control.Monad.Identity (Identity (runIdentity))
-import Data.Bifunctor (Bifunctor (second, first))
+import Data.Bifunctor (Bifunctor (second))
 import Data.Binary.Get (runGet)
 import Data.HashMap.Lazy ((!))
 import Data.Maybe (fromJust)
@@ -28,7 +28,7 @@ import FastenMain (assetsBasePath, shaderBasePath)
 import FastenShade
 import File
 import Matrix (FrogMatrix, fromTranslation)
-import Mean (twimap, twin, Twain)
+import Mean (Twain, twimap, twin)
 
 
 drawFaces :: Int32 -> IO ()
@@ -88,7 +88,7 @@ knead kind path = do
   unless status (error $ (case kind of
       VertexShader -> "vertex"
       FragmentShader -> "fragment"
-      _ -> "tfw the error throws an error"
+      _ -> error "tfw the error throws an error"
     ) ++ " shader failed to compile :(")
 
   return shader
