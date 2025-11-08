@@ -52,7 +52,7 @@ blue = Color4 0 0 255 1
 -- magenta :: FrogColor
 -- magenta = Color4 255 0 255 1
 
--- interpolates a color `c` by fraction `n`
+-- | Interpolates a color by a proper fraction.
 clerp :: GLfloat -> FrogColor -> FrogColor
 clerp = fmap . (*) . clamp (0.0, 1.0)
 

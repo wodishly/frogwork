@@ -1,16 +1,16 @@
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-{-# HLINT ignore "Use infix" #-}
-
+{- HLINT ignore "Use infix" -}
 module Breath where
 
-import Data.List (findIndex)
-import Data.Maybe (maybeToList, fromJust)
 import Data.Bifunctor (first)
+import Data.List (findIndex)
+import Data.Maybe (fromJust, maybeToList)
 
-import Mark
-import Token
-import Loud
-import Mean
+import Loud (Flight, Loudmark (..), clean, cleans, dirtys)
+import Mark (worth)
+import Token (sharps)
+
+import Mean (Shift, full, lif, multipleton, split)
+
 
 type Onset = Flight
 type Inset = Flight

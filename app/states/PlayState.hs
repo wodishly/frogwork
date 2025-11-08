@@ -21,7 +21,6 @@ import Random (FrogSeed, defaultSeed)
 import Shade (Mesh, drawMesh, setMeshTransform)
 import Time (Time, delta)
 import Mean (hit)
-import Rime (cast)
 import Numeric.LinearAlgebra (fromList)
 
 data Camera = Camera {
@@ -87,7 +86,7 @@ moveFrog :: KeySet -> Time -> StateT PlayState IO ()
 moveFrog keys time = do
   statewit <- get
   let lily' = liftA2 (+)
-        ((* (cast (time^.delta)/1000)) <$> wayward keys)
+        ((* (fromIntegral (time^.delta)/1000)) <$> wayward keys)
         (statewit^.lily)
 
   put statewit { _lily = lily' }

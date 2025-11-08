@@ -1,14 +1,16 @@
 {- HLINT ignore "Use section" -}
 module Loud where
 
-import Data.Maybe (fromMaybe)
-import Data.Function (applyWhen)
 import Data.Char (toUpper)
+import Data.Function (applyWhen)
+import Data.Maybe (fromMaybe)
 import Data.Tuple (swap)
 
-import Mark
-import Mean
-import Token
+import Mark (Branch, Mark (..), off, offs, ons, worth, worths)
+import Token (betoken, shades)
+
+import Mean (Shift, full, given, none)
+
 
 type Loud = Branch Loudmark
 type Flight = [Loud]

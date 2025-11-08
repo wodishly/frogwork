@@ -30,6 +30,7 @@ hearableKeys = [
   , ScancodeRight
   , ScancodeUp
   , ScancodeDown
+  , ScancodeSpace
   , ScancodeReturn
   , ScancodeP -- pause
   , ScancodeQ -- quit

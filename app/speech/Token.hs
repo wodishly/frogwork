@@ -1,8 +1,8 @@
 {- HLINT ignore "Use infix" -}
-
 module Token where
 
-import Mean
+import Mean (Shell, Shift, scoop, leave, shell)
+
 
 shades :: [(String, String)]
 shades = [
