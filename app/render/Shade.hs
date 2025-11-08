@@ -123,13 +123,13 @@ brewProfile mProfile = do
 
 begetMeshes :: IO [Mesh]
 begetMeshes = do
-  froggy <- makeAssetMesh defaultAssetMeshProfile
-    >>= flip setMeshTransform (fromTranslation [0, -2, -5])
+  froggy <- createAssetMesh defaultAssetMeshProfile
+    >>= flip setMeshTransform (fromTranslation [0, 0, 0])
 
   earth <- makeSimpleMesh defaultSimpleMeshProfile
 
-  farsee <- makeAssetMesh (makeAsset "tv")
-    >>= flip setMeshTransform (fromTranslation [2, -2, -5])
+  farsee <- createAssetMesh (createAsset "tv")
+    >>= flip setMeshTransform (fromTranslation [-2, 1, 2])
 
   return [froggy, earth, farsee]
 
