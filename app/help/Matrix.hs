@@ -90,7 +90,9 @@ frogLookAt eye target =
   let dir = normalize (eye - target)
       right = normalize (cross frogUp dir)
       up = cross dir right
-  in  (fromRows [right, up, dir, fromList (replicate 3 0)] ||| col [0, 0, 0, 1]) <> fromTranslation (toList -eye)
+      rotation = fromRows [right, up, dir, fromList (replicate 3 0)] ||| col [0, 0, 0, 1]
+      translation = fromTranslation (toList -eye)
+  in rotation <> translation
 
 
 {-# INLINE row #-}
