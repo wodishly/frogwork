@@ -52,6 +52,7 @@ import Key (KeySet, keyBegun, listen, unkeys)
 import Matrix (Point, RenderView)
 import Mean (full, weep)
 import Time (Time, beginTime, keepTime)
+import Graphics.Rendering.OpenGL (Vertex2(Vertex2))
 
 
 data Allwit = Allwit {
@@ -103,7 +104,9 @@ updateMouse :: StateT Allwit IO ()
 updateMouse = do
   allwit <- get
   let m = unwrapHappenMouse (allwit^.events)
-  when (full m) (put allwit { _mouse = head m })
+  if full m
+    then put allwit { _mouse = head m }
+    else put allwit { _mouse = Vertex2 0 0}
 
 updateWindow :: StateT Allwit IO ()
 updateWindow = do
@@ -148,11 +151,11 @@ settleState :: StateT Allwit IO ()
 settleState = do
   allwit <- get
   put allwit { _nowState =
-    if keyBegun (allwit^.keyset) ScancodeP && (allwit^.nowState) == PlayName
+    if keyBegun (allwit^.keyset) ScancodeP && allwit^.nowState == PlayName
       then PauseName
-    else if keyBegun (allwit^.keyset) ScancodeP && (allwit^.nowState) == PauseName
+    else if keyBegun (allwit^.keyset) ScancodeP && allwit^.nowState == PauseName
       then PlayName
-    else if keyBegun (allwit^.keyset) ScancodeReturn && (allwit^.nowState) == MenuName
+    else if keyBegun (allwit^.keyset) ScancodeReturn && allwit^.nowState == MenuName
       then fst ((allwit^.menuState.hand)!!(allwit^.menuState.finger))
       else allwit^.nowState
   }

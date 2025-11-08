@@ -30,6 +30,11 @@ hearableKeys = [
   , ScancodeRight
   , ScancodeUp
   , ScancodeDown
+  , ScancodeW
+  , ScancodeA
+  , ScancodeS
+  , ScancodeD
+  , ScancodeSpace
   , ScancodeReturn
   , ScancodeP -- pause
   , ScancodeQ -- quit
@@ -67,10 +72,10 @@ listen events keyset = let news = unwrapHappenKeys events in KeySet
   (filter (allIn [keyUp news, keyContinuing keyset]) hearableKeys)
 
 wayUpDown :: KeySet -> (KeySet -> Scancode -> Bool) -> GLfloat
-wayUpDown = way' (ScancodeUp, ScancodeDown)
+wayUpDown = way' (ScancodeW, ScancodeS)
 
 wayLeftRight :: KeySet -> (KeySet -> Scancode -> Bool) -> GLfloat
-wayLeftRight = way' (ScancodeLeft, ScancodeRight)
+wayLeftRight = way' (ScancodeA, ScancodeD)
 
 way' :: (Scancode, Scancode) -> KeySet -> (KeySet -> Scancode -> Bool) -> GLfloat
 way' (lower, higher) keySet keyListener

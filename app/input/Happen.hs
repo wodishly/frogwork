@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-unused-imports #-}
 module Happen (
     Keywit
   , unwrapHappenKeys
@@ -14,7 +15,7 @@ import SDL (
   , InputMotion
   , KeyboardEventData (keyboardEventKeyMotion, keyboardEventKeysym)
   , Keysym (keysymScancode)
-  , Scancode, Window, V2 (V2), windowSize, MouseMotionEventData (mouseMotionEventPos)
+  , Scancode, Window, V2 (V2), windowSize, MouseMotionEventData (mouseMotionEventPos, mouseMotionEventRelMotion)
   )
 import Graphics.Rendering.OpenGL (
     ComparisonFunction (Lequal)
@@ -29,13 +30,14 @@ import qualified Graphics.Rendering.OpenGL as GL (depthFunc, get, viewport)
 
 import Mean (doBoth)
 import Matrix (RenderView (..), asFrog)
+import SDL.Vect (Point(P))
 
 
 type Keywit = (Scancode, InputMotion)
 
 unwrapHappenMouse :: [Event] -> [Vertex2 GLfloat]
 unwrapHappenMouse = mapMaybe (\event -> case eventPayload event of
-  MouseMotionEvent e -> Just (asFrog $ mouseMotionEventPos e)
+  MouseMotionEvent e -> Just (asFrog $ P $ mouseMotionEventRelMotion e)
   _ -> Nothing)
 
 unwrapHappenKeys :: [Event] -> [Keywit]

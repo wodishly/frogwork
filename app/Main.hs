@@ -6,7 +6,7 @@ import qualified Graphics.Rendering.OpenGL as GL
 import qualified SDL (
     initializeAll, getKeyboardState, quit
   , Window, createWindow, destroyWindow
-  , GLContext, glCreateContext, glDeleteContext
+  , GLContext, glCreateContext, glDeleteContext, LocationMode (RelativeLocation)
   )
 
 import FrogState (StateName (..))
@@ -22,6 +22,7 @@ import Game (
 import FastenMain (openGLWindow)
 import Happen (waxwane)
 import Shade (begetMeshes)
+import SDL.Input.Mouse (setMouseLocationMode)
 
 
 main :: IO ()
@@ -37,6 +38,7 @@ birth :: SDL.Window -> SDL.GLContext -> IO Allwit
 birth window context = do
   display <- waxwane window
   meshes <- begetMeshes
+  _ <- setMouseLocationMode SDL.RelativeLocation
 
   let allwit = makeAllwit window display context
         (makePlayState meshes)
