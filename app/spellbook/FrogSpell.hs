@@ -19,7 +19,7 @@ import Graphics.Rendering.OpenGL
 import Foreign (Int16, Int32, Word32, Word8)
 import Matrix (Polygon, Polyhedron)
 import Control.Lens (makeLenses)
-import Spell ( f32x3, (✿) )
+import Spell ( f32x3, (✿), int )
 
 data FrogFile = FrogFile {
   -- header
@@ -63,7 +63,7 @@ parseFrogFile = do
   fnormals <- ncount ✿ f32x3
   findices <- icount ✿ getWord32le
 
-  let tsize = twidth * theight * 4
+  let tsize = int twidth * int theight * 4
   bmp <- tsize ✿ getWord8
 
   return $!
