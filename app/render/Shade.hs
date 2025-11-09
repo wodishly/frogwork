@@ -178,7 +178,7 @@ makeAssetMesh mprofile = do
 
   -- read all the data
   bytes <- summon (fromJust path)
-  let frogFile = runGet parseFrogFile bytes
+  let frogFile = runGet frogify bytes
 
   -- position attribute
   vao' <- genObjectName

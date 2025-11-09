@@ -1,5 +1,5 @@
 module FrogSpell (
-  parseFrogFile
+  frogify
 , FrogFile (..)
 , FrogVertex (..)
 , positionBuffer
@@ -44,8 +44,8 @@ data FrogVertex = FrogVertex {
 , normal :: Vertex3 GLfloat
 } deriving (Show, Eq)
 
-parseFrogFile :: Get FrogFile
-parseFrogFile = do
+frogify :: Get FrogFile
+frogify = do
   vcount <- s32
   ncount <- s32
   icount <- s32
