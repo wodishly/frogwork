@@ -62,7 +62,6 @@ executable frogwork
     FastenShade
     FastenMain
 
-    File
     Mean
     Random
     Rime
@@ -82,6 +81,10 @@ executable frogwork
     Shift
     Token
     Tung
+
+    FrogSpell
+    MothSpell
+    Spell
 
     MenuState
     PauseState
@@ -124,6 +127,7 @@ executable frogwork
     app/input
     app/render
     app/speech
+    app/spellbook
     app/states
 
   -- Base language which the package is written in.

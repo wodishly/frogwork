@@ -26,9 +26,9 @@ import qualified Graphics.GL as GLRaw (glUniformMatrix4fv)
 
 import FastenMain (assetsBasePath, shaderBasePath)
 import FastenShade
-import File
 import Matrix (FrogMatrix, fromTranslation)
 import Mean (Twain, twimap, twin, doBoth)
+import FrogSpell
 
 
 drawFaces :: Int32 -> IO ()
