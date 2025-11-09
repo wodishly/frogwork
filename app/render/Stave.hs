@@ -2,7 +2,7 @@ module Stave where
 
 import Control.Monad (unless)
 
-import Foreign (alloca, peek)
+import Foreign (alloca, peek, withArray, peekArray)
 import Foreign.C (withCString)
 import GHC.Ptr (Ptr (Ptr))
 
@@ -43,7 +43,8 @@ import qualified Graphics.Rendering.OpenGL as GL (
   , textureWrapMode
   )
 
-import Mean (twimap, twin, doBoth)
+import Mean (twimap, twin, doBoth, ly)
+import Data.Bifunctor (second)
 
 
 ordeal :: IO FT_Error -> IO ()
@@ -85,22 +86,22 @@ addPadding amount w idk xs = a ++ b ++ c where
   b = replicate amount idk
   c = addPadding amount w idk (drop w xs)
 
-newBoundTexUnit :: Int -> IO TextureObject
-newBoundTexUnit u = do
-  [tex] <- genObjectNames 1
+bindNew :: Int -> IO TextureObject
+bindNew unit = do
+  -- [tex] <- genObjectNames 1
+  tex <- genObjectName
   GL.texture Texture2D $= Enabled
-  GL.activeTexture $= TextureUnit (fromIntegral u)
+  GL.activeTexture $= TextureUnit (fromIntegral unit)
   GL.textureBinding Texture2D $= Just tex
   return tex
 
 -- | This is the test function to see if @loadStave@
 -- successfully begets a @TextureObject@.
 fearlessness :: IO TextureObject
-fearlessness = loadStave "assets/noto-sans.ttf" 'f' 10 1
+fearlessness = ly <$> loadStave "assets/noto-sans.ttf" 'o' 270 0
 
 -- | This is the main function.
--- Based on [this page](https://zyghost.com/articles/Haskell-font-rendering-with-freetype2-and-opengl.html)
--- and the documentation, especially for [@FreeType.Core.Base@](https://hackage.haskell.org/package/freetype2-0.2.0/docs/FreeType-Core-Base.html).
+-- Based on [this page](https://zyghost.com/articles/Haskell-font-rendering-with-freetype2-and-opengl.html).
 loadStave :: FilePath -> Char -> Int -> Int -> IO TextureObject
 loadStave path stave greatness texUnit = do
   -- load the stavebook
@@ -156,31 +157,30 @@ loadStave path stave greatness texUnit = do
   putStrLn $ "  palette_mode: " ++ show (bPalette_mode bitmap)
   putStrLn ""
 
-  let ((w, w'), (_h, h')) = twimap (twin . fromIntegral . ($ bitmap)) (bWidth, bRows)
+  -- we need `second fromIntegral` if we're using `withArray` in the `texImage2D` call.
+  let ((w, w'), (h, h')) = twimap (second fromIntegral . twin . fromIntegral . ($ bitmap)) (bWidth, bRows)
       pitch = 4 - mod w 4
       nw = fromIntegral (pitch + fromIntegral w')
   putStrLn "did some reckoning..."
 
-  -- this is segfaulting
-  -- bitmapData <- peekArray (w*h) (bBuffer bitmap)
-  -- putStrLn $ "unpadded bitmap data is: " ++ show bitmapData
-  -- let data' = addPadding pitch w 0 bitmapData
-  -- putStrLn $ "padded bitmap data is: " ++ show data'
-
   GL.texture Texture2D $= Enabled
-  tex <- newBoundTexUnit texUnit
+  tex <- bindNew texUnit
   putStrLn "made texture!"
 
-  -- withArray data' $ \pointer -> GL.texImage2D
-  GL.texImage2D
-    Texture2D
-    NoProxy
-    0
-    R8
-    (TextureSize2D nw h')
-    0
-    (PixelData Red UnsignedByte (bBuffer bitmap))
-  putStrLn "did whatever this is!"
+  -- notice that `bBuffer bitmap` is set at `nullPtr`
+  -- i think this is what's causing the segfault.
+  print $ bBuffer bitmap
+
+  -- this segfaults, but is how things look [here](https://zyghost.com/articles/Haskell-font-rendering-with-freetype2-and-opengl.html).
+  -- bitmapData <- peekArray (w*h) $ bBuffer bitmap
+  -- let bitmapData' = addPadding pitch w 0 bitmapData
+  -- withArray bitmapData' $ \pointer ->
+  --   GL.texImage2D Texture2D NoProxy 0 R8 (TextureSize2D nw h') 0
+  --   (PixelData Red UnsignedByte pointer)
+
+  -- this compiles, but renders goth, i.e. all black.
+  GL.texImage2D Texture2D NoProxy 0 R8 (TextureSize2D nw h') 0
+    (PixelData Red UnsignedByte $ bBuffer bitmap)
 
   GL.textureFilter Texture2D $= ((Linear', Nothing), Linear')
   GL.textureWrapMode Texture2D S $= (Repeated, ClampToEdge)
