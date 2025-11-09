@@ -52,7 +52,7 @@ fall time = do
       y' = max 0 (y + throttle time (frogwit^.dy))
       dy' = frogwit^.dy + throttle time (frogwit^.weight)
   put frogwit {
-      _dy = given (== 0) y' dy'
+      _dy = dy'
     , _position = Vertex3 x y' z
   }
   return (frogwit^.dy /= 0)
