@@ -14,6 +14,7 @@ module Matrix (
 , frogZero -- unused?
 , frogLookAt
 , row -- unused
+, aught
 , norm
 , norm3
 , hat
@@ -56,6 +57,14 @@ data RenderView = RenderView {
   , _near :: GLfloat
   , _far :: GLfloat
 }
+
+{-# INLINE nought #-}
+nought :: Point -> Bool
+nought (Vertex2 x y) = x == 0 && y == 0
+
+{-# INLINE aught #-}
+aught :: Point -> Bool
+aught = not.nought
 
 {-# INLINE norm #-}
 norm :: Point -> GLfloat

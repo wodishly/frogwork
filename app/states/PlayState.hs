@@ -19,11 +19,12 @@ import Frog (Frogwit (..), makeFrog, moveFrog, position)
 import State (News, StateName (..), Stately (..))
 
 import Blee (bg, black)
-import Matrix (FrogVector, Point, frogLookAt, frogZero, getProjectionMatrix, Point3)
-import Mean (hit)
+import Matrix (FrogVector, Point, frogLookAt, frogZero, getProjectionMatrix, Point3, aught)
+import Mean (hit, given)
 import Random (FrogSeed, defaultSeed)
 import Rime (clamp)
 import Shade (Mesh, drawMesh, setMeshTransform)
+import Key (arrow)
 
 data Camera = Camera {
   cPosition :: FrogVector
@@ -77,10 +78,10 @@ play news@(_, _, display, _) = do
   lift $ mapM_ (drawMesh (getProjectionMatrix display) viewMatrix) (statewit^.meshes)
 
 updateCamera :: News -> StateT PlayState IO Camera
-updateCamera (_, mouse, _, _) = do
+updateCamera (keys, mouse, _, _) = do
   statewit <- get
   let Vertex3 x _ z = statewit^.frog.position
-  let Vertex2 dx dy = mouse -- arrow keys
+  let Vertex2 dx dy = given aught mouse (arrow keys)
       Vertex2 pitch yaw = statewit^.euler
       pitch' = clamp (0, 1) $ pitch + dy / 100.0
       yaw' = yaw + dx / 100.0
@@ -95,9 +96,9 @@ updateCamera (_, mouse, _, _) = do
   return c
 
 updateFrog :: News -> FrogVector -> StateT PlayState IO ()
-updateFrog (keys, _, _, time) forward = do
+updateFrog news forward = do
   statewit <- get
-  (didMove, newFrog) <- lift $ runStateT (moveFrog keys time forward) (statewit^.frog)
+  (didMove, newFrog) <- lift $ runStateT (moveFrog news forward) (statewit^.frog)
   put statewit { _frog = newFrog }
   when didMove (updateMesh (statewit^.frog.position) forward)
 

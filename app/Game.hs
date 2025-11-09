@@ -27,8 +27,8 @@ import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT, ex
 import Data.Function (applyWhen)
 
 import SDL.Input.Keyboard.Codes
+import Graphics.Rendering.OpenGL (Vertex2 (Vertex2))
 
-import qualified Graphics.Rendering.OpenGL as GL
 import qualified SDL (Event, Window, GLContext, ticks, pollEvents, glSwapWindow)
 
 import State (
@@ -48,11 +48,10 @@ import PauseState (PauseState)
 import PlayState (PlayState)
 
 import Happen (unwrapHappenMouse, unwrapHappenWindow, waxwane)
-import Key (KeySet, keyBegun, listen, unkeys)
+import Key (KeySet, anyKeysBegun, keyBegun, listen, unkeys)
 import Matrix (Point, RenderView)
 import Mean (full, weep)
 import Time (Time, beginTime, keepTime)
-import Graphics.Rendering.OpenGL (Vertex2(Vertex2))
 
 
 data Allwit = Allwit {
@@ -77,7 +76,7 @@ makeAllwit = Allwit
   beginTime
   makeSettings
   unkeys
-  (GL.Vertex2 0 0)
+  (Vertex2 0 0)
   []
 
 news :: Allwit -> News
@@ -178,4 +177,4 @@ blit = do
 again :: StateT Allwit IO () -> StateT Allwit IO ()
 again f = do
   allwit <- get
-  unless (keyBegun (allwit^.keyset) ScancodeQ) f
+  unless (anyKeysBegun (allwit^.keyset) [ScancodeQ, ScancodeEscape]) f

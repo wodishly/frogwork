@@ -2,7 +2,6 @@ module Rime (
   average
 , cast
 , clamp
-, hardRound
 ) where
 
 import Graphics.Rendering.OpenGL (GLfloat)
@@ -18,7 +17,3 @@ cast = fromIntegral . fromEnum
 
 clamp :: Ord a => (a, a) -> a -> a
 clamp (low, high) = min high . max low
-
--- | Rounds to type @Int@ rather than to an inferred @Integral a@.
-hardRound :: RealFrac a => a -> Int
-hardRound x = round x :: Int

@@ -19,6 +19,7 @@ import Matrix (FrogVector, Point3, hat3)
 import Time (Time, throttle)
 import Control.Monad (when)
 import Mean (doBoth)
+import State (News)
 
 
 data Frogwit = Frogwit {
@@ -43,16 +44,13 @@ makeFrog = Frogwit {
   , _utleaps = 2
 }
 
-isFalling :: Frogwit -> Bool
-isFalling = (<= 0) . (^.dy)
-
 hasLeapsLeft :: Frogwit -> Bool
 hasLeapsLeft = uncurry (<) . doBoth (^.leapCount) (^.utleaps)
 
 leap :: KeySet -> StateT Frogwit IO Bool
 leap keys = do
   frogwit <- get
-  if keyBegun keys ScancodeSpace && isFalling frogwit && hasLeapsLeft frogwit
+  if keyBegun keys ScancodeSpace && hasLeapsLeft frogwit
     then do
       put frogwit {
           _dy = frogwit^.aLeap
@@ -74,8 +72,8 @@ fall time = do
   when (y' == 0) $ put frogwit { _leapCount = 0 }
   return (frogwit^.dy /= 0)
 
-walk :: KeySet -> Time -> FrogVector -> StateT Frogwit IO Bool
-walk keys time forward = do
+walk :: News -> FrogVector -> StateT Frogwit IO Bool
+walk (keys, _, _, time) forward = do
   frogwit <- get
   let direction = hat3 $ Vertex3 (forward!0) 0 -(forward!2)
       didWalk = dz < 0 where Vertex2 _ dz = wasd keys
@@ -87,6 +85,6 @@ walk keys time forward = do
     then put frogwit { _position = position' } >> return True
     else return False
 
-moveFrog :: KeySet -> Time -> FrogVector -> StateT Frogwit IO Bool
-moveFrog keys time forward = do
-  or <$> sequence [walk keys time forward, leap keys, fall time]
+moveFrog :: News -> FrogVector -> StateT Frogwit IO Bool
+moveFrog news@(keys, _, _, time) forward = do
+  or <$> sequence [walk news forward, leap keys, fall time]

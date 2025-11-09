@@ -101,6 +101,10 @@ uncurry3 f (x, y, z) = f x y z
 
 -- @region For working with lists.
 
+{-# INLINE has #-}
+has :: (Foldable t, Eq a) => t a -> a -> Bool
+has = flip elem
+
 -- | >>> flight 4
 -- [0,1,2,3]
 {-# INLINE flight #-}

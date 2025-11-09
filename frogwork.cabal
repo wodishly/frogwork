@@ -99,6 +99,7 @@ executable frogwork
     OverloadedStrings
     RankNTypes
     TemplateHaskell
+    TupleSections
 
   -- Other library packages from which modules are imported.
   build-depends:

@@ -1,15 +1,15 @@
-{- HLINT ignore "Use infix" -}
-
 module Key (
   KeySet
 , unkeys
 , listen
 , keyBegun
+, anyKeysBegun
 , keyEnded -- unused
 , arrow
 , wasd
 ) where
 
+import Control.Arrow ((>>>))
 import Control.Lens (makeLenses, (^.))
 
 import SDL (InputMotion (Pressed, Released), Event)
@@ -19,18 +19,18 @@ import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2))
 
 import Happen (Keywit, unwrapHappenKeys)
 import Matrix (Point, hat)
-import Mean (allIn, none)
+import Mean (allIn, has, none, doBoth)
 
 
 data KeySet = KeySet {
-  _keysBegin :: [Scancode]
-, _keysContinue :: [Scancode]
-, _keysEnd :: [Scancode]
+  _begunKeys :: [Scancode]
+, _continuingKeys :: [Scancode]
+, _endedKeys :: [Scancode]
 } deriving (Eq)
 makeLenses ''KeySet
 
 instance Show KeySet where
-  show ks = concatMap (show . map unwrapScancode . (ks^.)) [keysBegin, keysContinue, keysEnd]
+  show ks = concatMap (show . map unwrapScancode . (ks^.)) [begunKeys, continuingKeys, endedKeys]
 
 hearableKeys :: [Scancode]
 hearableKeys = [
@@ -38,16 +38,15 @@ hearableKeys = [
   , ScancodeRight
   , ScancodeUp
   , ScancodeDown
-  , ScancodeQ -- alternate camera control
-  , ScancodeE -- alternate camera control
   , ScancodeW -- wasd to move
   , ScancodeA
   , ScancodeS
   , ScancodeD
   , ScancodeSpace -- leap
-  , ScancodeReturn
-  , ScancodeP -- pause
+  , ScancodeReturn -- choose
+  , ScancodeEscape -- quit
   , ScancodeQ -- quit
+  , ScancodeP -- pause
   , ScancodeT -- show time
   , ScancodeK -- show keys
   ]
@@ -57,23 +56,27 @@ unkeys = KeySet [] [] []
 
 -- | Checks @wits@ to see if @code@ is @Pressed@.
 keyDown :: [Keywit] -> Scancode -> Bool
-keyDown wits code = elem (code, Pressed) wits
+keyDown = (>>>) (, Pressed) . has
 
 -- | Checks @wits@ to see if @code@ is @Released@.
 keyUp :: [Keywit] -> Scancode -> Bool
-keyUp wits code = elem (code, Released) wits
+keyUp = (>>>) (, Released) . has
 
--- | Checks @keySet@ to see if @code@ began being depressed on this frame.
+-- | Checks if the given code began being depressed on this frame.
 keyBegun :: KeySet -> Scancode -> Bool
-keyBegun keySet code = elem code (keySet^.keysBegin)
+keyBegun = has . (^.begunKeys)
 
--- | Checks @keySet@ to see if @code@ continues being depressed since an earlier frame.
+-- | Like @keyBegun@, but for a set of codes.
+anyKeysBegun :: KeySet -> [Scancode] -> Bool
+anyKeysBegun = any . keyBegun
+
+-- | Checks if the given code continues being depressed since an earlier frame.
 keyContinuing :: KeySet -> Scancode -> Bool
-keyContinuing keySet code = elem code (keySet^.keysBegin ++ keySet^.keysContinue)
+keyContinuing = has . uncurry (++) . doBoth (^.begunKeys) (^.continuingKeys)
 
--- | Checks @keySet@ to see if @code@ ended being depressed on this frame.
+-- | Checks if the given code ended being depressed on this frame.
 keyEnded :: KeySet -> Scancode -> Bool
-keyEnded keySet code = elem code (keySet^.keysEnd)
+keyEnded = has . (^.endedKeys)
 
 listen :: [Event] -> KeySet -> KeySet
 listen events keyset = let news = unwrapHappenKeys events in KeySet
@@ -90,7 +93,7 @@ way' (wanes, waxes) keySet keyListener
 
 arrow :: KeySet -> Point
 arrow keySet = hat $ Vertex2
-  (way' ([ScancodeLeft, ScancodeQ], [ScancodeRight, ScancodeE]) keySet keyContinuing)
+  (way' ([ScancodeLeft], [ScancodeRight]) keySet keyContinuing)
   (way' ([ScancodeUp], [ScancodeDown]) keySet keyContinuing)
 
 wasd :: KeySet -> Point
