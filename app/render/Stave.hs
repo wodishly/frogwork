@@ -1,20 +1,11 @@
 module Stave where
 
-import Control.Monad (unless)
+import Data.Bifunctor (second)
 
-import Foreign (alloca, peek, withArray, peekArray)
-import Foreign.C (withCString)
-import GHC.Ptr (Ptr (Ptr))
+import Foreign (peek, peekArray, withArray)
 
-import FreeType.Core.Base (FT_Face, FT_FaceRec (..), FT_GlyphSlotRec (..), FT_Library, ft_Get_Char_Index)
-import FreeType.Core.Base.Internal (
-    ft_Init_FreeType'
-  , ft_Load_Glyph'
-  , ft_New_Face'
-  , ft_Render_Glyph'
-  , ft_Set_Pixel_Sizes'
-  )
-import FreeType.Core.Types (FT_Bitmap (..), FT_Error, FT_Glyph_Format)
+import FreeType.Core.Base
+import FreeType.Core.Types
 
 import Graphics.Rendering.OpenGL (
     Capability (..)
@@ -44,47 +35,22 @@ import qualified Graphics.Rendering.OpenGL as GL (
   )
 
 import Mean (twimap, twin, doBoth, ly)
-import Data.Bifunctor (second)
 
 
-ordeal :: IO FT_Error -> IO ()
-ordeal = (>>= flip unless (error "freetype error") . (== 0))
-
-makeStavebook :: IO FT_Library
-makeStavebook = alloca $ \pointer -> do
-  putStrLn "making stavebook..."
-  ordeal (ft_Init_FreeType' pointer)
-  putStrLn "stavebook withstood the ordeal `init_freetype`!"
-  p <- peek pointer
-  putStrLn $ "stavebook points to: " ++ show p
-  putStrLn ""
-  return p
-
-makeFeather :: FT_Library -> FilePath -> IO FT_Face
-makeFeather library path = withCString path $ \cstring@(Ptr char) -> alloca $ \pointer -> do
-  putStrLn $ "making feather from " ++ show cstring ++ "..."
-  ordeal (ft_New_Face' library (Ptr char) 0 pointer)
-  putStrLn "feather withstood the ordeal `new_face`!"
-  p <- peek pointer
-  putStrLn $ "feather points to: " ++ show p
-  putStrLn ""
-  return p
-
--- | See [source](https://hackage.haskell.org/package/freetype2-0.2.0/docs/src/FreeType.Core.Types.html#line-139).
 staveShapeName :: FT_Glyph_Format -> String
 staveShapeName format = "ft_GLYPH_FORMAT_" ++ case format of
-    1651078259 -> "BITMAP"
-    1668246896 -> "COMPOSITE"
-    1869968492 -> "OUTLINE"
-    1886154612 -> "PLOTTER"
+    FT_GLYPH_FORMAT_BITMAP -> "BITMAP"
+    FT_GLYPH_FORMAT_COMPOSITE -> "COMPOSITE"
+    FT_GLYPH_FORMAT_OUTLINE -> "OUTLINE"
+    FT_GLYPH_FORMAT_PLOTTER -> "PLOTTER"
     _ -> "NONE"
 
-addPadding :: Int -> Int -> a -> [a] -> [a]
-addPadding _ _ _ [] = []
-addPadding amount w idk xs = a ++ b ++ c where
-  a = take w xs
-  b = replicate amount idk
-  c = addPadding amount w idk (drop w xs)
+pad :: Int -> Int -> a -> [a] -> [a]
+pad _ _ _ [] = []
+pad amount width something bitmapData = aLeft ++ b ++ c where
+  (aLeft, aRight) = splitAt width bitmapData
+  b = replicate amount something
+  c = pad amount width something aRight
 
 bindNew :: Int -> IO TextureObject
 bindNew unit = do
@@ -104,50 +70,40 @@ fearlessness = ly <$> loadStave "assets/noto-sans.ttf" 'o' 270 0
 -- Based on [this page](https://zyghost.com/articles/Haskell-font-rendering-with-freetype2-and-opengl.html).
 loadStave :: FilePath -> Char -> Int -> Int -> IO TextureObject
 loadStave path stave greatness texUnit = do
-  -- load the stavebook
-  stavebook <- makeStavebook
+  stavebook <- ft_Init_FreeType
+  putStrLn "made stavebook!"
 
-  -- load the feather
-  feather <- makeFeather stavebook path
-  ordeal (ft_Set_Pixel_Sizes' feather (fromIntegral greatness) 0)
-  putStrLn "feather withstood the ordeal `set_pixel_sizes`!"
+  feather <- ft_New_Face stavebook path 0
+  ft_Set_Pixel_Sizes feather (fromIntegral greatness) 0
   feather' <- peek feather
-  putStrLn "feather record peeked!"
-  putStrLn ""
+  putStrLn "made feather!"
 
-  -- load the glyph from the unicodepoint
   finger <- ft_Get_Char_Index feather (fromIntegral $ fromEnum stave)
-  ordeal (ft_Load_Glyph' feather finger 0)
-  putStrLn "finger withstood the ordeal `load_glyph`!"
+  ft_Load_Glyph feather finger FT_LOAD_RENDER
+  putStrLn "made finger!"
   putStrLn $ "finger is: " ++ show finger
-  putStrLn ""
 
   let slot = frGlyph feather'
-  putStrLn $ "slot is: " ++ show slot
   slot' <- peek slot
-  putStrLn "slot record peeked!"
-  putStrLn ""
-
   let staveTell = frNum_glyphs feather'
-  putStrLn $ "stave tell is: " ++ show staveTell
   let shape = gsrFormat slot'
+  putStrLn "made slot!"
+  putStrLn $ "slot is: " ++ show slot
+  putStrLn $ "stave tell is: " ++ show staveTell
   putStrLn $ "stave shape is: " ++ staveShapeName shape
-  putStrLn ""
 
-  -- this is segfaulting
+  -- this is segfaulting, but is just for logging purposes so it can be ignored.
   -- let greatnessTell = frNum_fixed_sizes feather'
   --     sizesPtr = frAvailable_sizes feather'
   -- _sizes <- forM [0 .. (fromIntegral greatnessTell)]
   --   (\i -> peek . plusPtr sizesPtr . fromIntegral $ i :: IO FT_Bitmap_Size)
   -- putStrLn "greatnesses grabbed!"
 
-  -- See [source](https://hackage.haskell.org/package/freetype2-0.2.0/docs/src/FreeType.Core.Base.html#line-705).
-  ordeal (ft_Render_Glyph' slot 0)
-  putStrLn "slot withstood the ordeal `render_glyph`!"
+  ft_Render_Glyph slot FT_RENDER_MODE_NORMAL
 
   let bitmap = gsrBitmap slot'
       (l, t) = doBoth gsrBitmap_left gsrBitmap_top slot'
-  putStrLn "heres what the bitmap looks like:"
+  putStrLn "here's what the bitmap looks like:"
   putStrLn $ "  lefttop: " ++ show (l, t)
   putStrLn $ "  width: " ++ show (bWidth bitmap)
   putStrLn $ "  rows: " ++ show (bRows bitmap)
@@ -157,7 +113,6 @@ loadStave path stave greatness texUnit = do
   putStrLn $ "  palette_mode: " ++ show (bPalette_mode bitmap)
   putStrLn ""
 
-  -- we need `second fromIntegral` if we're using `withArray` in the `texImage2D` call.
   let ((w, w'), (h, h')) = twimap (second fromIntegral . twin . fromIntegral . ($ bitmap)) (bWidth, bRows)
       pitch = 4 - mod w 4
       nw = fromIntegral (pitch + fromIntegral w')
@@ -167,20 +122,10 @@ loadStave path stave greatness texUnit = do
   tex <- bindNew texUnit
   putStrLn "made texture!"
 
-  -- notice that `bBuffer bitmap` is set at `nullPtr`
-  -- i think this is what's causing the segfault.
-  print $ bBuffer bitmap
-
-  -- this segfaults, but is how things look [here](https://zyghost.com/articles/Haskell-font-rendering-with-freetype2-and-opengl.html).
-  -- bitmapData <- peekArray (w*h) $ bBuffer bitmap
-  -- let bitmapData' = addPadding pitch w 0 bitmapData
-  -- withArray bitmapData' $ \pointer ->
-  --   GL.texImage2D Texture2D NoProxy 0 R8 (TextureSize2D nw h') 0
-  --   (PixelData Red UnsignedByte pointer)
-
-  -- this compiles, but renders goth, i.e. all black.
-  GL.texImage2D Texture2D NoProxy 0 R8 (TextureSize2D nw h') 0
-    (PixelData Red UnsignedByte $ bBuffer bitmap)
+  bitmapData <- pad pitch w 0 <$> peekArray (w*h) (bBuffer bitmap)
+  withArray bitmapData $ \pointer ->
+    GL.texImage2D Texture2D NoProxy 0 R8 (TextureSize2D nw h') 0
+    (PixelData Red UnsignedByte pointer)
 
   GL.textureFilter Texture2D $= ((Linear', Nothing), Linear')
   GL.textureWrapMode Texture2D S $= (Repeated, ClampToEdge)

@@ -7,7 +7,7 @@ import qualified SDL (
     initializeAll, getKeyboardState, quit
   , Window, createWindow, destroyWindow
   , GLContext, glCreateContext, glDeleteContext
-  , LocationMode (RelativeLocation), setMouseLocationMode
+  -- , LocationMode (RelativeLocation), setMouseLocationMode
   )
 
 import State (StateName (..))
@@ -38,7 +38,7 @@ birth :: SDL.Window -> SDL.GLContext -> IO Allwit
 birth window context = do
   display <- waxwane window
   meshes <- begetMeshes
-  _ <- SDL.setMouseLocationMode SDL.RelativeLocation
+  -- _ <- SDL.setMouseLocationMode SDL.RelativeLocation
 
   let allwit = makeAllwit window display context
         (makePlayState meshes)
