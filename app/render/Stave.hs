@@ -8,37 +8,26 @@ import FreeType.Core.Base
 import FreeType.Core.Types
 
 import Graphics.Rendering.OpenGL (
-    Capability (..)
-  , Clamping (..)
-  , DataType (..)
-  , GeneratableObjectName (..)
-  , PixelData (..)
+    Clamping (..)
   , PixelFormat (..)
-  , PixelInternalFormat (..)
-  , Proxy (..)
   , Repetition (..)
   , TextureCoordName (..)
   , TextureFilter (..)
   , TextureObject
-  , TextureSize2D (..)
   , TextureTarget2D (..)
-  , TextureUnit (..)
   , ($=)
   )
 import qualified Graphics.Rendering.OpenGL as GL (
-    activeTexture
-  , texImage2D
-  , texture
-  , textureBinding
-  , textureFilter
+    textureFilter
   , textureWrapMode
   )
 
-import Mean (twimap, twin, doBoth, ly)
+import Mean (twimap, twin, doBoth)
+import Shade (helpMe)
 
 
-staveShapeName :: FT_Glyph_Format -> String
-staveShapeName format = "ft_GLYPH_FORMAT_" ++ case format of
+glyphFormatName :: FT_Glyph_Format -> String
+glyphFormatName format = "ft_GLYPH_FORMAT_" ++ case format of
     FT_GLYPH_FORMAT_BITMAP -> "BITMAP"
     FT_GLYPH_FORMAT_COMPOSITE -> "COMPOSITE"
     FT_GLYPH_FORMAT_OUTLINE -> "OUTLINE"
@@ -52,32 +41,22 @@ pad amount width something bitmapData = aLeft ++ b ++ c where
   b = replicate amount something
   c = pad amount width something aRight
 
-bindNew :: Int -> IO TextureObject
-bindNew unit = do
-  -- [tex] <- genObjectNames 1
-  tex <- genObjectName
-  GL.texture Texture2D $= Enabled
-  GL.activeTexture $= TextureUnit (fromIntegral unit)
-  GL.textureBinding Texture2D $= Just tex
-  return tex
-
 -- | This is the test function to see if @loadStave@
 -- successfully begets a @TextureObject@.
-fearlessness :: IO TextureObject
-fearlessness = ly <$> loadStave "assets/noto-sans.ttf" 'o' 270 0
+loadGlyphWithFile :: IO TextureObject
+loadGlyphWithFile = loadStave "assets/noto-sans.ttf" 'o' 24
 
--- | This is the main function.
--- Based on [this page](https://zyghost.com/articles/Haskell-font-rendering-with-freetype2-and-opengl.html).
-loadStave :: FilePath -> Char -> Int -> Int -> IO TextureObject
-loadStave path stave greatness texUnit = do
+-- | Based on [this page](https://zyghost.com/articles/Haskell-font-rendering-with-freetype2-and-opengl.html).
+loadStave :: FilePath -> Char -> Int -> IO TextureObject
+loadStave path stave greatness = do
   stavebook <- ft_Init_FreeType
   putStrLn "made stavebook!"
 
   feather <- ft_New_Face stavebook path 0
-  ft_Set_Pixel_Sizes feather (fromIntegral greatness) 0
+  ft_Set_Pixel_Sizes feather 0 (fromIntegral greatness)
   feather' <- peek feather
   putStrLn "made feather!"
-
+  -- mapM [61..
   finger <- ft_Get_Char_Index feather (fromIntegral $ fromEnum stave)
   ft_Load_Glyph feather finger FT_LOAD_RENDER
   putStrLn "made finger!"
@@ -90,7 +69,7 @@ loadStave path stave greatness texUnit = do
   putStrLn "made slot!"
   putStrLn $ "slot is: " ++ show slot
   putStrLn $ "stave tell is: " ++ show staveTell
-  putStrLn $ "stave shape is: " ++ staveShapeName shape
+  putStrLn $ "stave shape is: " ++ glyphFormatName shape
 
   -- this is segfaulting, but is just for logging purposes so it can be ignored.
   -- let greatnessTell = frNum_fixed_sizes feather'
@@ -118,18 +97,15 @@ loadStave path stave greatness texUnit = do
       nw = fromIntegral (pitch + fromIntegral w')
   putStrLn "did some reckoning..."
 
-  GL.texture Texture2D $= Enabled
-  tex <- bindNew texUnit
-  putStrLn "made texture!"
+  tex <- flip withArray (helpMe Red (nw, h')) . pad pitch w 0 =<< peekArray (w*h) (bBuffer bitmap)
 
-  bitmapData <- pad pitch w 0 <$> peekArray (w*h) (bBuffer bitmap)
-  withArray bitmapData $ \pointer ->
-    GL.texImage2D Texture2D NoProxy 0 R8 (TextureSize2D nw h') 0
-    (PixelData Red UnsignedByte pointer)
-
+  -- GL.texture Texture2D $= Enabled -- this doesnt seem to do anything
   GL.textureFilter Texture2D $= ((Linear', Nothing), Linear')
   GL.textureWrapMode Texture2D S $= (Repeated, ClampToEdge)
   GL.textureWrapMode Texture2D T $= (Repeated, ClampToEdge)
-  putStrLn "we did it!"
+  putStrLn "made texture!"
+
+  ft_Done_Face feather
+  ft_Done_FreeType stavebook
 
   return tex

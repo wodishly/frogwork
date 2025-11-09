@@ -11,6 +11,8 @@ module Game (
 , menuState
 , nowState
 
+, begetMeshes
+
 , fand
 , goto
 , again
@@ -47,11 +49,14 @@ import MenuState (MenuState, finger, hand)
 import PauseState (PauseState)
 import PlayState (PlayState)
 
-import Happen (unwrapHappenMouse, unwrapHappenWindow, waxwane, unwrapHappenWheel)
+import Happen (unwrapHappenMouse, unwrapHappenWheel, unwrapHappenWindow, waxwane)
 import Key (KeySet, anyKeysBegun, keyBegun, listen, unkeys)
-import Matrix (Point, RenderView)
+import Matrix (Point, RenderView, fromTranslation)
 import Mean (full, weep)
 import Time (Time, beginTime, keepTime)
+import FastenShade (defaultAssetMeshProfile, defaultSimpleMeshProfile, SimpleMeshProfile (..), iBuffer, staveVBuffer, ShaderProfile (..))
+import Shade (Mesh, makeAssetMesh, makeSimpleMesh, setMeshTransform, makeAsset)
+import Stave (loadGlyphWithFile)
 
 
 data Allwit = Allwit {
@@ -80,6 +85,26 @@ makeAllwit = Allwit
   (Vertex2 0 0)
   (Vertex2 0 0)
   []
+
+begetMeshes :: IO [Mesh]
+begetMeshes = do
+  froggy <- makeAssetMesh defaultAssetMeshProfile
+    >>= setMeshTransform (fromTranslation [0, 0, 0])
+
+  earth <- makeSimpleMesh defaultSimpleMeshProfile
+
+  farsee <- makeAssetMesh (makeAsset "tv")
+    >>= setMeshTransform (fromTranslation [-2, 1, 2])
+
+  x <- loadGlyphWithFile
+  stave <- makeSimpleMesh $ SimpleMeshProfile {
+      vbuffer = staveVBuffer
+    , ibuffer = iBuffer
+    , meshShaderProfile = ShaderProfile ("vertex_stave", "fragment_stave") ["u_texture"]
+    , texObject = Just x
+  }
+
+  return [froggy, earth, farsee, stave]
 
 news :: Allwit -> News
 news allwit = (allwit^.keyset, allwit^.mouse, allwit^.wheel, allwit^.display, allwit^.time)

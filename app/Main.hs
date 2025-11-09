@@ -18,11 +18,10 @@ import PlayState (makePlayState)
 import Game (
     Allwit (..), makeAllwit
   , fand, updateAll, showLeechwit
-  , settleState, blit, again
+  , settleState, blit, again, begetMeshes
   )
 import FastenMain (openGLWindow)
 import Happen (waxwane)
-import Shade (begetMeshes)
 
 
 main :: IO ()

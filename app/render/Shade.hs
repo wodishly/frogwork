@@ -1,8 +1,11 @@
 module Shade (
   Mesh
-, begetMeshes
 , drawMesh
 , setMeshTransform
+, makeAsset
+, makeAssetMesh
+, makeSimpleMesh
+, helpMe
 ) where
 
 import Control.Lens ((^.))
@@ -15,7 +18,7 @@ import Data.Maybe (fromJust)
 import Numeric.LinearAlgebra (flatten, ident)
 import Text.Printf (printf)
 
-import Foreign (Int32, Ptr, Storable, new, nullPtr, plusPtr, sizeOf, withArray)
+import Foreign (Int32, Ptr, Storable, new, nullPtr, plusPtr, sizeOf, withArray, Word8)
 import Graphics.Rendering.OpenGL as GL
 import SDL (time)
 
@@ -27,9 +30,8 @@ import qualified Graphics.GL as GLRaw (glUniformMatrix4fv)
 import FastenMain (assetsBasePath, shaderBasePath)
 import FastenShade
 import File
-import Matrix (FrogMatrix, fromTranslation)
+import Matrix (FrogMatrix)
 import Mean (Twain, twimap, twin, doBoth)
-import Stave (fearlessness)
 
 
 drawFaces :: Int32 -> IO ()
@@ -108,6 +110,10 @@ brew (vsPath, fsPath) = do
   attachShader p fragmentShader
   bindFragDataLocation p "color" $= 0
   linkProgram p
+
+  get (shaderInfoLog vertexShader) >>= print
+  get (shaderInfoLog fragmentShader) >>= print
+
   get (linkStatus p) >>= flip unless (error "fuck")
   return p
 
@@ -122,18 +128,6 @@ brewProfile mProfile = do
   currentProgram $= Just p
   let u = HM.fromList $ map (second (uniformLocation p) . twin) (uniforms sProfile)
   return (Concoction p u path)
-
-begetMeshes :: IO [Mesh]
-begetMeshes = do
-  froggy <- makeAssetMesh defaultAssetMeshProfile
-    >>= setMeshTransform (fromTranslation [0, 0, 0])
-
-  earth <- makeSimpleMesh defaultSimpleMeshProfile
-
-  farsee <- makeAssetMesh (makeAsset "tv")
-    >>= setMeshTransform (fromTranslation [-2, 1, 2])
-
-  return [froggy, earth, farsee]
 
 useMesh :: Mesh -> IO ()
 useMesh mesh = do
@@ -150,17 +144,21 @@ drawMesh projectionMatrix viewMatrix mesh = do
   -- m <- newMatrix ColumnMajor (S.toList projectionMatrix) :: IO (GLmatrix GLfloat)
   -- withMatrix m $ const $ uniformv projLocation 1
 
-  UniformLocation mLocation <- get (uniformMap mesh ! "u_model_matrix")
-  S.unsafeWith (flatten $ transform mesh) (GLRaw.glUniformMatrix4fv mLocation 1 1)
 
-  -- TODO: move these to a Uniform Buffer Object
-  UniformLocation projLocation <- get (uniformMap mesh ! "u_projection_matrix")
-  S.unsafeWith (flatten projectionMatrix) (GLRaw.glUniformMatrix4fv projLocation 1 1)
-  UniformLocation viewLocation <- get (uniformMap mesh ! "u_view_matrix")
-  S.unsafeWith (flatten viewMatrix) (GLRaw.glUniformMatrix4fv viewLocation 1 1)
 
-  timeLocation <- uniformMap mesh ! "u_time"
-  time >>= ((uniform timeLocation :: StateVar GLfloat) $=)
+
+
+  -- UniformLocation mLocation <- get (uniformMap mesh ! "u_model_matrix")
+  -- S.unsafeWith (flatten $ transform mesh) (GLRaw.glUniformMatrix4fv mLocation 1 1)
+
+  -- -- TODO: move these to a Uniform Buffer Object
+  -- UniformLocation projLocation <- get (uniformMap mesh ! "u_projection_matrix")
+  -- S.unsafeWith (flatten projectionMatrix) (GLRaw.glUniformMatrix4fv projLocation 1 1)
+  -- UniformLocation viewLocation <- get (uniformMap mesh ! "u_view_matrix")
+  -- S.unsafeWith (flatten viewMatrix) (GLRaw.glUniformMatrix4fv viewLocation 1 1)
+
+  -- timeLocation <- uniformMap mesh ! "u_time"
+  -- time >>= ((uniform timeLocation :: StateVar GLfloat) $=)
 
   case HM.lookup "u_texture" (uniformMap mesh) of
     Just uLoc -> do
@@ -225,37 +223,40 @@ makeAssetMesh mprofile = do
     bufferData ElementArrayBuffer $= (bufferSize (frogFile^.indexBuffer), ptr, StaticDraw)
 
   -- texture uniform
-  texObject <- genObjectName
-  textureBinding Texture2D $= Just texObject
-  textureFilter Texture2D $= ((Nearest, Nothing), Nearest)
-  textureWrapMode Texture2D S $= (Repeated, ClampToEdge)
-  textureWrapMode Texture2D T $= (Repeated, ClampToEdge)
-
-  withArray (frogFile^.bitmapBuffer) $ \ptr ->
-    texImage2D
-      Texture2D
-      NoProxy
-      0 -- mipmaps
-      RGBA8 -- internal type
-      (uncurry TextureSize2D (twimap fromIntegral $ frogFile^.texSize))
-      0
-      (PixelData RGBA UnsignedByte ptr)
+  texy <- withArray (frogFile^.bitmapBuffer)
+    (helpMe RGBA (twimap fromIntegral $ frogFile^.texSize))
 
   print pro
   GL.get (activeUniforms pro) >>= print
-
-  -- see Stave.hs
-  texObject' <- fearlessness
 
   -- ✿*,(*´◕ω◕`*)+✿.*
   return $ Mesh
     pro
     vao'
-    (Just texObject')
+    (Just texy)
     (Just frogFile)
     hmap
     (frogFile^.indexCount)
     (ident 4)
+
+helpMe :: PixelFormat -> (GLsizei, GLsizei) -> Ptr Word8 -> IO TextureObject
+helpMe format (w, h) pointer = do
+  thingy <- genObjectName
+  textureBinding Texture2D $= Just thingy
+  textureFilter Texture2D $= ((Nearest, Nothing), Nearest)
+  textureWrapMode Texture2D S $= (Repeated, ClampToEdge)
+  textureWrapMode Texture2D T $= (Repeated, ClampToEdge)
+
+  texImage2D
+    Texture2D
+    NoProxy
+    0 -- mipmaps
+    (if format == Red then R8 else RGBA8) -- internal type
+    (TextureSize2D w h)
+    0
+    (PixelData format UnsignedByte pointer)
+  
+  return thingy
 
 makeSimpleMesh :: SimpleMeshProfile -> IO Mesh
 makeSimpleMesh profile = do
@@ -284,7 +285,7 @@ makeSimpleMesh profile = do
   return $ Mesh
     pro
     vao'
-    Nothing
+    (texObject profile)
     Nothing
     hmap
     (fromIntegral $ length ib)
