@@ -29,6 +29,7 @@ import FastenShade
 import Matrix (FrogMatrix, fromTranslation)
 import Mean (Twain, twimap, twin, doBoth)
 import FrogSpell
+import Spell (summon)
 
 
 drawFaces :: Int32 -> IO ()
@@ -176,7 +177,7 @@ makeAssetMesh mprofile = do
   (Concoction pro hmap path) <- brewProfile (Left mprofile)
 
   -- read all the data
-  bytes <- getFrogBytes (fromJust path)
+  bytes <- summon (fromJust path)
   let frogFile = runGet parseFrogFile bytes
 
   -- position attribute

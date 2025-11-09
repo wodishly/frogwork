@@ -23,6 +23,9 @@ import Game (
 import FastenMain (openGLWindow)
 import Happen (waxwane)
 import Shade (begetMeshes)
+import Data.Binary.Get (runGet)
+import MothSpell (mothify)
+import Spell (summon)
 
 
 main :: IO ()
@@ -39,6 +42,10 @@ birth window context = do
   display <- waxwane window
   meshes <- begetMeshes
   _ <- SDL.setMouseLocationMode SDL.RelativeLocation
+
+  cocoon <- summon "assets/bunny.moth"
+  let mothFile = runGet mothify cocoon
+  print mothFile
 
   let allwit = makeAllwit window display context
         (makePlayState meshes)

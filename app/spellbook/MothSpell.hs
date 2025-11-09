@@ -3,7 +3,7 @@ module MothSpell (
 ) where
 
 import Control.Monad (replicateM)
-import Data.Binary.Get (Get, getFloatle, getWord8)
+import Data.Binary.Get (Get, getFloatle, getWord8, getInt32le)
 
 import Foreign (Word8)
 import Graphics.Rendering.OpenGL (GLfloat, Vertex4 (..))
@@ -50,26 +50,30 @@ exoskeleton = do
   , matrix = (4><4) floats
   }
 
-tale :: Integer -> Get MothTale
-tale times = do
-  t <- threetale times
-  r <- fourtale times
-  s <- threetale times
+tale :: Get MothTale
+tale = do
+  t <- threetale
+  r <- fourtale
+  s <- threetale
   return $! MothTale
     t
     r
     s
 
-threetale :: Integer -> Get Mothly3
-threetale times = do
+threetale :: Get Mothly3
+threetale = do
+  talesize <- getInt32le
+  let times = int talesize
   v <- times ✿ f32x3 
   t <- times ✿ getFloatle
   return $! Mothly3
     v
     t
     
-fourtale :: Integer -> Get Mothly4
-fourtale times = do
+fourtale :: Get Mothly4
+fourtale = do
+  talesize <- getInt32le
+  let times = int talesize
   v <- times ✿ f32x4
   t <- times ✿ getFloatle
   return $! Mothly4
@@ -90,8 +94,8 @@ mothify = do
   bones <- bcount ✿ exoskeleton
 
   let times = int bcount
-      tell = times * 3
-  tales <- tell ✿ tale times
+      tell = times
+  tales <- tell ✿ tale
 
   return $!
     MothFile 

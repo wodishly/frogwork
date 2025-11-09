@@ -1,6 +1,5 @@
 module FrogSpell (
-  getFrogBytes
-, parseFrogFile
+  parseFrogFile
 , FrogFile (..)
 , FrogVertex (..)
 , positionBuffer
@@ -18,14 +17,9 @@ import Data.Binary.Get (Get, getFloatle, getInt16le, getInt32le, getWord32le, ge
 import Graphics.Rendering.OpenGL
 
 import Foreign (Int16, Int32, Word32, Word8)
-import qualified Data.ByteString.Lazy as BL
-
 import Matrix (Polygon, Polyhedron)
 import Control.Lens (makeLenses)
 import Spell ( f32x3, (✿) )
-
-getFrogBytes :: String -> IO BL.ByteString
-getFrogBytes = BL.readFile
 
 data FrogFile = FrogFile {
   -- header
