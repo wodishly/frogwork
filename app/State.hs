@@ -18,7 +18,7 @@ import Matrix (RenderView, Point)
 import Time (Time)
 
 
-type News = (KeySet, Point, RenderView, Time)
+type News = (KeySet, Point, Point, RenderView, Time)
 
 data StateName = PlayName | PauseName | MenuName deriving (Show, Eq, Ord)
 

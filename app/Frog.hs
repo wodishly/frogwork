@@ -73,7 +73,7 @@ fall time = do
   return (frogwit^.dy /= 0)
 
 walk :: News -> FrogVector -> StateT Frogwit IO Bool
-walk (keys, _, _, time) forward = do
+walk (keys, _, _, _, time) forward = do
   frogwit <- get
   let direction = hat3 $ Vertex3 (forward!0) 0 -(forward!2)
       didWalk = dz < 0 where Vertex2 _ dz = wasd keys
@@ -86,5 +86,5 @@ walk (keys, _, _, time) forward = do
     else return False
 
 moveFrog :: News -> FrogVector -> StateT Frogwit IO Bool
-moveFrog news@(keys, _, _, time) forward = do
+moveFrog news@(keys, _, _, _, time) forward = do
   or <$> sequence [walk news forward, leap keys, fall time]
