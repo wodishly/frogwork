@@ -3,3 +3,4 @@ dist-newstyle
 .vscode
 *.prof
 cabal.project.local
+serializer*
