@@ -1,3 +1,20 @@
 - fonts
-- animations
 - sound
+- animations (in progress, `*.moth` files)
+  - [⭐️] parser 
+  - [⭐️] serializer
+  - [🌗] store bone info in `*.frog` files
+  - [🌑] rest pose 
+  - [🌑] interpolate keyframes 
+  - [🌑] multiply in vertex shader
+- uniform buffer objects for shared data
+- lighting
+  - [⭐️] normals
+  - [🌗] blinn-phong
+  - [🌑] point lights
+  - [🌑] shadow maps
+  - [🌑] bloom
+  - [🌑] ssao
+- maps
+  - [🌑] map format
+  - [🌑] collision polygons

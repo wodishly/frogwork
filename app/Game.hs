@@ -47,7 +47,7 @@ import MenuState (MenuState, finger, hand)
 import PauseState (PauseState)
 import PlayState (PlayState)
 
-import Happen (unwrapHappenMouse, unwrapHappenWindow, waxwane)
+import Happen (unwrapHappenMouse, unwrapHappenWindow, waxwane, unwrapHappenWheel)
 import Key (KeySet, anyKeysBegun, keyBegun, listen, unkeys)
 import Matrix (Point, RenderView)
 import Mean (full, weep)
@@ -59,6 +59,7 @@ data Allwit = Allwit {
 , _settings :: Settings
 , _keyset :: KeySet
 , _mouse :: Point
+, _wheel :: Point
 , _events :: [SDL.Event]
 , _window :: SDL.Window
 , _display :: RenderView
@@ -77,10 +78,11 @@ makeAllwit = Allwit
   makeSettings
   unkeys
   (Vertex2 0 0)
+  (Vertex2 0 0)
   []
 
 news :: Allwit -> News
-news allwit = (allwit^.keyset, allwit^.mouse, allwit^.display, allwit^.time)
+news allwit = (allwit^.keyset, allwit^.mouse, allwit^.wheel, allwit^.display, allwit^.time)
 
 updateEvents :: StateT Allwit IO ()
 updateEvents = do
@@ -102,10 +104,19 @@ updateKeys = do
 updateMouse :: StateT Allwit IO ()
 updateMouse = do
   allwit <- get
+  -- todo sum instead of head
   let m = unwrapHappenMouse (allwit^.events)
   if full m
     then put allwit { _mouse = head m }
     else put allwit { _mouse = Vertex2 0 0}
+
+updateWheel :: StateT Allwit IO ()
+updateWheel = do
+  allwit <- get
+  let w = unwrapHappenWheel (allwit^.events)
+  if full w
+    then put allwit { _wheel = head w }
+    else put allwit { _wheel = Vertex2 0 0}
 
 updateWindow :: StateT Allwit IO ()
 updateWindow = do
@@ -125,6 +136,7 @@ updateAll = do
   updateTime
   updateKeys
   updateMouse
+  updateWheel
   updateWindow
   updateSettings
 

@@ -13,7 +13,7 @@ import Control.Monad (when)
 import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT (runStateT))
 import Numeric.LinearAlgebra (Extractor (..), flatten, fromColumns, fromList, toColumns, (!), (??), (¿))
 
-import Graphics.Rendering.OpenGL as GL (Program, Vertex2 (Vertex2), VertexArrayObject, Vertex3 (Vertex3))
+import Graphics.Rendering.OpenGL as GL (Program, Vertex2 (Vertex2), VertexArrayObject, Vertex3 (Vertex3), GLfloat)
 
 import Frog (Frogwit (..), makeFrog, moveFrog, position)
 import State (News, StateName (..), Stately (..))
@@ -42,6 +42,7 @@ data PlayState = PlayState {
 , _meshes :: [Mesh]
 , _frog :: Frogwit
 , _euler :: Point
+, _radius :: GLfloat
 , _programs :: [(Program, VertexArrayObject)]
 , _camera :: Camera
 }
@@ -52,7 +53,7 @@ instance Stately PlayState where
   _update = play
 
 instance Show PlayState where
-  show (PlayState _ _ f _ p c) = show f ++ show p ++ show c
+  show (PlayState _ _ f _ _ p c) = show f ++ show p ++ show c
 
 makePlayState :: [Mesh] -> PlayState
 makePlayState ms = PlayState {
@@ -60,12 +61,13 @@ makePlayState ms = PlayState {
 , _meshes = ms
 , _frog = makeFrog
 , _euler = Vertex2 0.3 1.57079633
+, _radius = 5
 , _programs = []
 , _camera = makeCamera
 }
 
 play :: News -> StateT PlayState IO ()
-play news@(_, _, display, _) = do
+play news@(_, _, _, display, _) = do
   statewit <- get
   cam <- updateCamera news
 
@@ -78,21 +80,23 @@ play news@(_, _, display, _) = do
   lift $ mapM_ (drawMesh (getProjectionMatrix display) viewMatrix) (statewit^.meshes)
 
 updateCamera :: News -> StateT PlayState IO Camera
-updateCamera (keys, mouse, _, _) = do
+updateCamera (keys, mouse, wheel, _, _) = do
   statewit <- get
   let Vertex3 x _ z = statewit^.frog.position
   let Vertex2 dx dy = given aught mouse (arrow keys)
       Vertex2 pitch yaw = statewit^.euler
       pitch' = clamp (0, 1) $ pitch + dy / 100.0
       yaw' = yaw + dx / 100.0
-      fx = 5 * cos yaw * cos pitch
-      fy = 5 * sin pitch
-      fz = 5 * sin yaw * cos pitch
+      Vertex2 _ wy = wheel
+      r = clamp (3, 25) $ statewit^.radius - wy
+      fx = r * cos yaw * cos pitch
+      fy = r * sin pitch
+      fz = r * sin yaw * cos pitch
   let c = Camera {
       cTarget = fromList [x, 0, z]
     , cPosition = fromList [x + fx, 1 + fy, z - fz]
   }
-  put statewit { _camera = c, _euler = Vertex2 pitch' yaw' }
+  put statewit { _camera = c, _euler = Vertex2 pitch' yaw', _radius = r }
   return c
 
 updateFrog :: News -> FrogVector -> StateT PlayState IO ()
