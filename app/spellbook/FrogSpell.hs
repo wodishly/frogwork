@@ -13,13 +13,13 @@ module FrogSpell (
 , vertexCount -- unused
 ) where
 
-import Data.Binary.Get (Get, getFloatle, getInt16le, getInt32le, getWord32le, getWord8)
+import Data.Binary.Get (Get)
 import Graphics.Rendering.OpenGL
 
 import Foreign (Int16, Int32, Word32, Word8)
 import Matrix (Polygon, Polyhedron)
 import Control.Lens (makeLenses)
-import Spell ( f32x3, (✿), int )
+import Spell ((✿), int, u8, u32, s16, s32, f32x2, f32x3)
 
 data FrogFile = FrogFile {
   -- header
@@ -44,27 +44,21 @@ data FrogVertex = FrogVertex {
 , normal :: Vertex3 GLfloat
 } deriving (Show, Eq)
 
-f32x2 :: Get (Vertex2 GLfloat)
-f32x2 = do
-  u <- getFloatle
-  v <- getFloatle
-  return $! Vertex2 u v
-
 parseFrogFile :: Get FrogFile
 parseFrogFile = do
-  vcount <- getInt32le
-  ncount <- getInt32le
-  icount <- getInt32le
-  twidth <- getInt16le
-  theight <- getInt16le
+  vcount <- s32
+  ncount <- s32
+  icount <- s32
+  twidth <- s16
+  theight <- s16
 
   fverts <- vcount ✿ f32x3
   fuvs <- vcount ✿ f32x2
   fnormals <- ncount ✿ f32x3
-  findices <- icount ✿ getWord32le
+  findices <- icount ✿ u32
 
   let tsize = int twidth * int theight * 4
-  bmp <- tsize ✿ getWord8
+  bmp <- tsize ✿ u8
 
   return $!
     FrogFile {

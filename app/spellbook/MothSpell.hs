@@ -3,14 +3,14 @@ module MothSpell (
 ) where
 
 import Control.Monad (replicateM)
-import Data.Binary.Get (Get, getFloatle, getWord8, getInt32le)
+import Data.Binary.Get (Get)
 
 import Foreign (Word8)
 import Graphics.Rendering.OpenGL (GLfloat, Vertex4 (..))
 
 import Matrix (FrogMatrix)
 import Numeric.LinearAlgebra.HMatrix ((><))
-import Spell ((✿), f32x3, int)
+import Spell ((✿), int, u8, s32, f32, f32x3, f32x4)
 import Graphics.Rendering.OpenGL.GL (Vertex3)
 
 
@@ -43,8 +43,8 @@ data Mothly4 = Mothly4 {
 
 exoskeleton :: Get MothBone
 exoskeleton = do
-  parent <- getWord8
-  floats <- replicateM 16 getFloatle
+  parent <- u8
+  floats <- replicateM 16 f32
   return $ MothBone {
     mother = parent
   , matrix = (4><4) floats
@@ -62,43 +62,35 @@ tale = do
 
 threetale :: Get Mothly3
 threetale = do
-  talesize <- getInt32le
-  let times = int talesize
-  v <- times ✿ f32x3 
-  t <- times ✿ getFloatle
+  times <- s32
+  let talemany = int times
+  v <- talemany ✿ f32x3 
+  t <- talemany ✿ f32
   return $! Mothly3
     v
     t
     
 fourtale :: Get Mothly4
 fourtale = do
-  talesize <- getInt32le
-  let times = int talesize
-  v <- times ✿ f32x4
-  t <- times ✿ getFloatle
+  times <- s32
+  let talemany = int times
+  v <- talemany ✿ f32x4
+  t <- talemany ✿ f32
   return $! Mothly4
     v
     t
-  
-f32x4 :: Get (Vertex4 GLfloat)
-f32x4 = do
-  x <- getFloatle
-  y <- getFloatle
-  z <- getFloatle
-  w <- getFloatle
-  return $! Vertex4 x y z w
 
 mothify :: Get MothFile
 mothify = do
-  bcount <- getWord8
-  bones <- bcount ✿ exoskeleton
+  bonemany <- u8
+  bones <- bonemany ✿ exoskeleton
 
-  let times = int bcount
+  let times = int bonemany
       tell = times
   tales <- tell ✿ tale
 
   return $!
     MothFile 
-      bcount 
+      bonemany 
       bones
       tales
