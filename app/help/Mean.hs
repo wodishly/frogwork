@@ -1,10 +1,11 @@
 module Mean where
 
-import Debug.Trace (trace)
-import Data.Bifunctor (first, bimap)
 import Control.Exception (assert)
-import Data.List (singleton)
+import Data.Bifunctor (bimap, first)
+import Data.Bits (Bits (shiftL, shiftR))
 import Data.Function (applyWhen)
+import Data.List (singleton)
+import Debug.Trace (trace)
 
 type Shed a = [a] -> a
 type Shell a = a -> [a]
@@ -216,3 +217,9 @@ hits ns f = hits (tail ns) f . hit (head ns) f
 {-# INLINE lif #-}
 lif :: Bool -> Bool -> Bool
 lif = (||) . not
+
+(.<<.) :: Bits a => a -> Int -> a
+(.<<.) = shiftL
+
+(.>>.) :: Bits a => a -> Int -> a
+(.>>.) = shiftR

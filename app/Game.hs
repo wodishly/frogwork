@@ -56,7 +56,8 @@ import Mean (full, weep)
 import Time (Time, beginTime, keepTime)
 import FastenShade (defaultAssetMeshProfile, defaultSimpleMeshProfile, SimpleMeshProfile (..), iBuffer, staveVBuffer, ShaderProfile (..))
 import Shade (Mesh, makeAssetMesh, makeSimpleMesh, setMeshTransform, makeAsset)
-import Stave (loadGlyphWithFile)
+import Stave (loadStavebook, Stave (..))
+import Data.HashMap.Lazy ((!))
 
 
 data Allwit = Allwit {
@@ -96,12 +97,12 @@ begetMeshes = do
   farsee <- makeAssetMesh (makeAsset "tv")
     >>= setMeshTransform (fromTranslation [-2, 1, 2])
 
-  x <- loadGlyphWithFile
+  x <- loadStavebook
   stave <- makeSimpleMesh $ SimpleMeshProfile {
       vbuffer = staveVBuffer
     , ibuffer = iBuffer
     , meshShaderProfile = ShaderProfile ("vertex_stave", "fragment_stave") ["u_texture"]
-    , texObject = Just x
+    , texObject = Just (texture $ x!'H')
   }
 
   return [froggy, earth, farsee, stave]
