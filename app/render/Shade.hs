@@ -29,6 +29,7 @@ import FastenShade
 import File
 import Matrix (FrogMatrix, fromTranslation)
 import Mean (Twain, twimap, twin, doBoth)
+import Stave (fearlessness)
 
 
 drawFaces :: Int32 -> IO ()
@@ -243,11 +244,14 @@ makeAssetMesh mprofile = do
   print pro
   GL.get (activeUniforms pro) >>= print
 
+  -- see Stave.hs
+  texObject' <- fearlessness
+
   -- ✿*,(*´◕ω◕`*)+✿.*
   return $ Mesh
     pro
     vao'
-    (Just texObject)
+    (Just texObject')
     (Just frogFile)
     hmap
     (frogFile^.indexCount)

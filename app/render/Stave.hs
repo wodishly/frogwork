@@ -1,124 +1,180 @@
+{-# OPTIONS_GHC -Wno-type-defaults #-}
 module Stave where
 
--- import FreeType
+import Control.Monad (unless)
+import Data.Bifunctor (second)
 
--- write :: IO()
--- write = do
---   paths <- getArgs
+import Foreign (alloca, peek, peekArray, withArray)
+import Foreign.C (withCString)
+import GHC.Ptr (Ptr (Ptr))
 
--- 
--- import Data.Char
--- import Foreign.C
--- import Control.Lens
--- import Control.Monad
--- 
--- import SDL
--- 
--- import Mean
--- import Light
--- import World
--- import Graphics.Rendering.OpenGL (TextureObject)
+import FreeType.Core.Base (FT_Face, FT_FaceRec (..), FT_GlyphSlotRec (..), FT_Library, ft_Get_Char_Index)
+import FreeType.Core.Base.Internal (
+    ft_Init_FreeType'
+  , ft_Load_Glyph'
+  , ft_New_Face'
+  , ft_Render_Glyph'
+  , ft_Set_Pixel_Sizes'
+  )
+import FreeType.Core.Types (FT_Bitmap (..), FT_Error, FT_Glyph_Format)
 
--- loadCharacter :: FilePath -> Char -> Int -> IO TextureObject
--- loadCharacter path char px = undefined
--- 
--- runFreeType :: IO FT_Error -> IO ()
--- runFreeType m = do
---     r <- m
---     unless (r == 0) $ fail $ "FreeType Error:" ++ show r
+import Graphics.Rendering.OpenGL (
+    Capability (..)
+  , Clamping (..)
+  , DataType (..)
+  , GeneratableObjectName (..)
+  , PixelData (..)
+  , PixelFormat (..)
+  , PixelInternalFormat (..)
+  , Proxy (..)
+  , Repetition (..)
+  , TextureCoordName (..)
+  , TextureFilter (..)
+  , TextureObject
+  , TextureSize2D (..)
+  , TextureTarget2D (..)
+  , TextureUnit (..)
+  , ($=)
+  )
+import qualified Graphics.Rendering.OpenGL as GL (
+    activeTexture
+  , texImage2D
+  , texture
+  , textureBinding
+  , textureFilter
+  , textureWrapMode
+  )
+
+import Mean (twimap, twin, doBoth)
 
 
--- data Feather = Feather {
---   _featherSize :: CFloat
--- , _featherThick :: CFloat
--- , _featherColor :: FrogColor
--- }
--- makeLenses ''Feather
--- 
--- defaultFeather :: Feather
--- defaultFeather = Feather {
---   _featherSize = 64
--- , _featherThick = 4
--- , _featherColor = yellow
--- }
--- 
--- -- todo: efficiency
--- wordWidth :: Feather -> String -> CFloat
--- wordWidth feather word = (cast.length) word * (3/5*(feather^.featherSize + feather^.featherThick))
--- 
--- centeredX :: Feather -> String -> CFloat
--- centeredX feather word = (center^._x) - (wordWidth feather word / 2)
--- 
--- featherGrid :: Feather -> [V2 CFloat]
--- featherGrid feather =
---   map (\i -> (0.5 - cast n/2.0) ^+^ V2 (cast $ div i n) (cast $ mod i n)) (flight $ n*n)
---   where n = cast $ feather^.featherThick
--- 
--- xscale :: Enum a => a -> V2 CFloat -> V2 CFloat
--- xscale n (V2 x y) = V2 (cast n*x) y
--- 
--- drawWord :: Renderer -> Feather -> V2 CFloat -> String -> IO ()
--- drawWord renderer feather topLeft word = forM_ (flight $ length word)
---   $ \i -> forM_ (featherGrid feather)
---   $ \j -> drawStave renderer feather
---     (cast i *^ V2 (3/5*(feather^.featherSize + feather^.featherThick)) 0 ^+^ j ^+^ topLeft)
---     (word!!i)
--- 
--- drawStave :: Renderer -> Feather -> V2 CFloat -> Char -> IO ()
--- drawStave renderer feather topLeft c = do
---   color <- get (rendererDrawColor renderer)
---   rendererDrawColor renderer $= feather^.featherColor
---   forM_ (stave feather topLeft c) $ uncurry (drawLine renderer) . twimap (fmap cast)
---   rendererDrawColor renderer $= color
--- 
--- stave :: Feather -> V2 CFloat -> Char -> [Twain (Point V2 CFloat)]
--- stave feather topLeft c = map (stave' feather topLeft . stavedeal) $ case toLower c of
---   'a' -> [0, 1, 2, 4, 5, 6, 7]
---   'b' -> [0, 1, 2, 3, 7, 9, 12]
---   'c' -> [0, 3, 4, 5]
---   'd' -> [0, 1, 2, 3, 9, 12]
---   'e' -> [0, 3, 4, 5, 6, 7]
---   'f' -> [0, 4, 5, 6, 7]
---   'g' -> [0, 2, 3, 4, 5, 7]
---   'h' -> [1, 2, 4, 5, 6, 7]
---   'i' -> [0, 3, 9, 12]
---   'j' -> [1, 2, 3, 4]
---   'k' -> [4, 5, 6, 10, 13]
---   'l' -> [3, 4, 5]
---   'm' -> [1, 2, 4, 5, 8, 10]
---   'n' -> [1, 2, 4, 5, 8, 13]
---   'o' -> [0, 1, 2, 3, 4, 5]
---   'p' -> [0, 1, 4, 5, 6, 7]
---   'q' -> [0, 1, 2, 3, 4, 5, 13]
---   'r' -> [0, 1, 4, 5, 6, 7, 13]
---   's' -> [0, 2, 3, 7, 8]
---   't' -> [0, 9, 12]
---   'u' -> [1, 2, 3, 4, 5]
---   'v' -> [4, 5, 10, 11]
---   'w' -> [1, 2, 4, 5, 11, 13]
---   'x' -> [8, 10, 11, 13]
---   'y' -> [8, 10, 12]
---   'z' -> [0, 3, 10, 11]
---   _ -> []
--- 
--- stave' :: Feather -> V2 CFloat -> StaveDeal -> Twain (Point V2 CFloat)
--- stave' feather topLeft = twimap (P . (topLeft ^+^) . ((feather^.featherSize/4) *^) . uncurry V2)
--- 
--- type StaveDeal = Twain (Twain CFloat)
--- stavedeal :: Int -> StaveDeal
--- stavedeal n = case n of
---   0  -> ((0, 0), (2, 0))
---   1  -> ((2, 0), (2, 2))
---   2  -> ((2, 2), (2, 4))
---   3  -> ((0, 4), (2, 4))
---   4  -> ((0, 2), (0, 4))
---   5  -> ((0, 0), (0, 2))
---   6  -> ((0, 2), (1, 2))
---   7  -> ((1, 2), (2, 2))
---   8  -> ((0, 0), (1, 2))
---   9  -> ((1, 0), (1, 2))
---   10 -> ((2, 0), (1, 2))
---   11 -> ((1, 2), (0, 4))
---   12 -> ((1, 2), (1, 4))
---   13 -> ((1, 2), (2, 4))
---   _ -> error "bad stavedeal"
+ordeal :: IO FT_Error -> IO ()
+ordeal = (>>= flip unless (error "freetype error") . (== 0))
+
+makeStavebook :: IO FT_Library
+makeStavebook = alloca (ordeal . ft_Init_FreeType' >> peek)
+
+makeFeather :: FT_Library -> FilePath -> IO FT_Face
+makeFeather library path = withCString path 
+  (\(Ptr p) -> alloca (ordeal . ft_New_Face' library (Ptr p) 0 >> peek))
+
+-- | See [source](https://hackage.haskell.org/package/freetype2-0.2.0/docs/src/FreeType.Core.Types.html#line-139).
+staveShapeName :: FT_Glyph_Format -> String
+staveShapeName format = "ft_GLYPH_FORMAT_" ++ case format of
+    1651078259 -> "BITMAP"
+    1668246896 -> "COMPOSITE"
+    1869968492 -> "OUTLINE"
+    1886154612 -> "PLOTTER"
+    _ -> "NONE"
+
+addPadding :: Int -> Int -> a -> [a] -> [a]
+addPadding _ _ _ [] = []
+addPadding amount w idk xs = a ++ b ++ c where
+  a = take w xs
+  b = replicate amount idk
+  c = addPadding amount w idk (drop w xs)
+
+newBoundTexUnit :: Int -> IO TextureObject
+newBoundTexUnit u = do
+  [tex] <- genObjectNames 1
+  GL.texture Texture2D $= Enabled
+  GL.activeTexture $= TextureUnit (fromIntegral u)
+  GL.textureBinding Texture2D $= Just tex
+  return tex
+
+-- | This is the test function to see if @loadStave@
+-- successfully begets a @TextureObject@.
+fearlessness :: IO TextureObject
+fearlessness = loadStave "assets/noto-sans.ttf" 'f' 10 1
+
+-- | This is the main function.
+-- Based on [this page](https://zyghost.com/articles/Haskell-font-rendering-with-freetype2-and-opengl.html)
+-- and the documentation, especially for [@FreeType.Core.Base@](https://hackage.haskell.org/package/freetype2-0.2.0/docs/FreeType-Core-Base.html).
+loadStave :: FilePath -> Char -> Int -> Int -> IO TextureObject
+loadStave path stave greatness texUnit = do
+  -- load the stavebook
+  stavebook <- makeStavebook
+  print stavebook
+  print "we made the stavebook"
+
+  -- load the feather
+  feather <- makeFeather stavebook path
+  print feather
+  print "one"
+  feather' <- peek feather
+  print "two"
+  ordeal (ft_Set_Pixel_Sizes' feather (fromIntegral greatness) 0)
+  print "we made the feather"
+
+  -- load the glyph from the unicodepoint
+  finger <- ft_Get_Char_Index feather (fromIntegral $ fromEnum stave)
+  ordeal (ft_Load_Glyph' feather finger 0)
+  print finger
+  print "we got the finger"
+
+  let slot = frGlyph feather'
+  slot' <- peek slot
+
+  let staveTell = frNum_glyphs feather'
+      shape = gsrFormat slot'
+
+  print $ "slot: " ++ show slot
+  print $ "stave tell: " ++ show staveTell
+  print $ "stave shape:" ++ staveShapeName shape
+
+  -- This is [] for Ubuntu Mono, but I'm guessing for bitmap
+  -- fonts this would be populated with the different font sizes.
+  -- putStr "greatness:"
+  -- let greatnessTell = frNum_fixed_sizes feather'
+  --     sizesPtr = frAvailable_sizes feather'
+  -- sizes <- forM (flight $ pred $ fromIntegral greatnessTell)
+  --   (\i -> peek . plusPtr sizesPtr . fromIntegral $ i :: IO FT_Bitmap_Size)
+
+  let (l, t) = doBoth gsrBitmap_left gsrBitmap_top slot'
+  print $ "left: " ++ show l
+  print $ "top: " ++ show t
+
+  -- See [source](https://hackage.haskell.org/package/freetype2-0.2.0/docs/src/FreeType.Core.Base.html#line-705).
+  ordeal (ft_Render_Glyph' slot 0)
+  print "we got this far"
+
+  let bitmap = gsrBitmap slot'
+  print $ concat [
+      "width: " ++ show (bWidth bitmap)
+    , " rows: " ++ show (bRows bitmap)
+    , " pitch: " ++ show (bPitch bitmap)
+    , " num_grays: " ++ show (bNum_grays bitmap)
+    , " pixel_mode: " ++ show (bPixel_mode bitmap)
+    , " palette_mode: " ++ show (bPalette_mode bitmap)
+    ]
+
+  let ((w, w'), (h, h')) = twimap (second fromIntegral . twin . fromIntegral . ($ bitmap)) (bWidth, bRows)
+      pitch = 4 - mod w 4
+      nw = fromIntegral (pitch + fromIntegral w')
+
+  bitmapData <- peekArray (w*h) (bBuffer bitmap)
+  let data' = addPadding pitch w 0 bitmapData
+  print "we got the… bitmap data?"
+
+  GL.texture Texture2D $= Enabled
+  print "hi"
+
+  tex <- newBoundTexUnit texUnit
+  print "hihi"
+
+  withArray data' $ \pointer -> GL.texImage2D
+    Texture2D
+    NoProxy
+    0
+    R8
+    (TextureSize2D nw h')
+    0
+    (PixelData Red UnsignedByte pointer)
+  print "hihihi"
+
+  GL.textureFilter Texture2D $= ((Linear', Nothing), Linear')
+  GL.textureWrapMode Texture2D S $= (Repeated, ClampToEdge)
+  GL.textureWrapMode Texture2D T $= (Repeated, ClampToEdge)
+  print "we did it"
+
+  return tex
