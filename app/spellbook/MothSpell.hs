@@ -1,18 +1,17 @@
+{-# OPTIONS_GHC -Wno-type-defaults #-}
 module MothSpell (
   mothify
 ) where
 
-import Control.Monad (replicateM)
 import Data.Binary.Get (Get)
-
 import Foreign (Word8)
 import Graphics.Rendering.OpenGL (GLfloat, Vertex4 (..))
-
-import Matrix (FrogMatrix)
-import Numeric.LinearAlgebra.HMatrix ((><))
-import Spell ((✿), int, u8, s32, f32, f32x3, f32x4)
 import Graphics.Rendering.OpenGL.GL (Vertex3)
 
+import Numeric.LinearAlgebra.HMatrix ((><))
+import Matrix (FrogMatrix)
+
+import Spell ((✿), int, u8, s32, f32, f32x3, f32x4)
 
 data MothFile = MothFile {
   boneCount :: Word8,
@@ -44,21 +43,15 @@ data Mothly4 = Mothly4 {
 exoskeleton :: Get MothBone
 exoskeleton = do
   parent <- u8
-  floats <- replicateM 16 f32
-  return $ MothBone {
-    mother = parent
-  , matrix = (4><4) floats
-  }
+  floats <- 16 ✿ f32
+  return $! MothBone parent $ (4><4) floats
 
 tale :: Get MothTale
 tale = do
   t <- threetale
   r <- fourtale
   s <- threetale
-  return $! MothTale
-    t
-    r
-    s
+  return $! MothTale t r s
 
 threetale :: Get Mothly3
 threetale = do
@@ -66,9 +59,7 @@ threetale = do
   let talemany = int times
   v <- talemany ✿ f32x3 
   t <- talemany ✿ f32
-  return $! Mothly3
-    v
-    t
+  return $! Mothly3 v t
     
 fourtale :: Get Mothly4
 fourtale = do
@@ -76,9 +67,7 @@ fourtale = do
   let talemany = int times
   v <- talemany ✿ f32x4
   t <- talemany ✿ f32
-  return $! Mothly4
-    v
-    t
+  return $! Mothly4 v t
 
 mothify :: Get MothFile
 mothify = do
