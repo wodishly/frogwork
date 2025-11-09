@@ -28,7 +28,7 @@ import FastenMain (assetsBasePath, shaderBasePath)
 import FastenShade
 import File
 import Matrix (FrogMatrix, fromTranslation)
-import Mean (Twain, twimap, twin)
+import Mean (Twain, twimap, twin, doBoth)
 
 
 drawFaces :: Int32 -> IO ()
@@ -44,13 +44,13 @@ bufferOffset :: Int -> Ptr Int
 bufferOffset = plusPtr nullPtr . fromIntegral
 
 bufferSize :: Storable a => [a] -> GLsizeiptr
-bufferSize buffer = fromIntegral (length buffer * (sizeOf.head) buffer)
+bufferSize = fromIntegral . uncurry (*) . doBoth length (sizeOf.head)
 
 data Mesh = Mesh {
     _program :: Program
   , vao :: VertexArrayObject
   , tex :: Maybe TextureObject
-  , file :: Maybe FrogFile
+  , _file :: Maybe FrogFile
   , _uniformMap :: UniformMap
   , elementCount :: Int32
   , transform :: FrogMatrix
@@ -58,16 +58,16 @@ data Mesh = Mesh {
 
 instance Programful Mesh where
   program = _program
-  uniformMap (Mesh _ _ _ _ u _ _) = u
+  uniformMap (Mesh _ _ _ _ x _ _) = x
 
 data Concoction = Concoction Program UniformMap (Maybe String)
 
 instance Programful Concoction where
-  program (Concoction p _ _) = p
-  uniformMap (Concoction _ u _) = u
+  program (Concoction x _ _) = x
+  uniformMap (Concoction _ x _) = x
 
 instance Pathlikeful Maybe Concoction where
-  filePath (Concoction _ _ p) = p
+  filePath (Concoction _ _ x) = x
 
 makeAsset :: String -> AssetMeshProfile
 makeAsset = AssetMeshProfile
@@ -244,15 +244,14 @@ makeAssetMesh mprofile = do
   GL.get (activeUniforms pro) >>= print
 
   -- ✿*,(*´◕ω◕`*)+✿.*
-  return Mesh {
-      _program = pro
-    , vao = vao'
-    , tex = Just texObject
-    , file = Just frogFile
-    , _uniformMap = hmap
-    , elementCount = frogFile^.indexCount
-    , transform = ident 4
-  }
+  return $ Mesh
+    pro
+    vao'
+    (Just texObject)
+    (Just frogFile)
+    hmap
+    (frogFile^.indexCount)
+    (ident 4)
 
 makeSimpleMesh :: SimpleMeshProfile -> IO Mesh
 makeSimpleMesh profile = do
@@ -278,12 +277,11 @@ makeSimpleMesh profile = do
   withArray ib $ \ptr ->
     bufferData ElementArrayBuffer $= (bufferSize ib, ptr, StaticDraw)
 
-  return Mesh {
-      _program = pro
-    , vao = vao'
-    , tex = Nothing
-    , file = Nothing
-    , _uniformMap = hmap
-    , elementCount = fromIntegral (length ib)
-    , transform = ident 4
-  }
+  return $ Mesh
+    pro
+    vao'
+    Nothing
+    Nothing
+    hmap
+    (fromIntegral $ length ib)
+    (ident 4)
