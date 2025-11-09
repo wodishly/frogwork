@@ -124,7 +124,7 @@ brewProfile mProfile = do
 
 begetMeshes :: IO [Mesh]
 begetMeshes = do
-  froggy <- makeAssetMesh defaultAssetMeshProfile
+  froggy <- makeAssetMesh (makeAsset "bunny")
     >>= setMeshTransform (fromTranslation [0, 0, 0])
 
   earth <- makeSimpleMesh defaultSimpleMeshProfile
