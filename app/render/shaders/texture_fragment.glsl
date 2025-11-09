@@ -4,7 +4,7 @@ precision highp sampler2D;
 
 in vec2 v_uv;
 in vec3 v_normal;
-out vec4 pc_fragColor;
+out vec4 f_color;
 
 uniform sampler2D u_texture;
 uniform float u_time;
@@ -18,5 +18,5 @@ void main() {
     float lighting = ambient + diffuse;
     vec3 color = texture(u_texture, v_uv).rgb;
 
-    pc_fragColor = vec4(color, 1.0);
+    f_color = vec4(color, 1.0);
 }
