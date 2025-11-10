@@ -59,14 +59,14 @@ instance Stately PlayState where
         forward = flatten $ (viewMatrix ¿ [2]) ?? (Take 3, All)
     updateFrog news forward
 
-  render (_, _, _, display, _) = do
+  render (_, _, _, display, time) = do
     statewit <- get
     bg black
     let cam = statewit^.camera
     let viewMatrix = frogLookAt (cPosition cam) (cTarget cam)
         orthographicMatrix = getOrthographicMatrix display
         (width, height) = _size display
-    lift $ mapM_ (drawMesh (getPerspectiveMatrix display) viewMatrix orthographicMatrix) (statewit^.meshes)
+    lift $ mapM_ (drawMesh (getPerspectiveMatrix display) viewMatrix orthographicMatrix time) (statewit^.meshes)
     lift $ stavewrite (statewit^.staveware) (Vertex2 (0.1*width) $ 0.9*height) 1 "omg frogs!!!!"
 
 instance Show PlayState where

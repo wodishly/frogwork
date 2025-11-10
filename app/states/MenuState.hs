@@ -36,13 +36,14 @@ instance Stately MenuState where
     _ <- get
     menuFare keyset
 
-  render (_, _, _, display, _) = do
+  render (_, _, _, display, time) = do
     statewit <- get
     bg darkwhelk
     lift $ drawMesh
       (getPerspectiveMatrix display)
       (ident 4)
       (getOrthographicMatrix display)
+      time
       (snd $ statewit^.staveware)
 
     let (width, height) = _size display

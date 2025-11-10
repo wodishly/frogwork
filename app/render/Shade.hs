@@ -34,7 +34,7 @@ import FastenShade
 import File
 import Matrix (FrogMatrix)
 import Mean (Twain, twimap, twin, doBoth)
-import SDL (time)
+import Time (Time, _lifetime)
 
 
 drawFaces :: Int32 -> IO ()
@@ -140,8 +140,8 @@ useMesh mesh = do
   bindVertexArrayObject $= Just (vao mesh)
   textureBinding Texture2D $= tex mesh
 
-drawMesh :: FrogMatrix -> FrogMatrix -> FrogMatrix -> Mesh -> IO ()
-drawMesh projectionMatrix viewMatrix orthographicMatrix mesh = do
+drawMesh :: FrogMatrix -> FrogMatrix -> FrogMatrix -> Time -> Mesh -> IO ()
+drawMesh projectionMatrix viewMatrix orthographicMatrix time mesh = do
   useMesh mesh
 
   -- the bindings seem to be broken here? :(
@@ -177,7 +177,7 @@ drawMesh projectionMatrix viewMatrix orthographicMatrix mesh = do
   case HM.lookup "u_time" (uniformMap mesh) of
     Just _ -> do
       timeLocation <- uniformMap mesh ! "u_time"
-      time >>= ((uniform timeLocation :: StateVar GLfloat) $=)
+      (uniform timeLocation :: StateVar GLfloat) $= (fromIntegral (_lifetime time) / 1000)
     _ -> return ()
 
   case HM.lookup "u_texture" (uniformMap mesh) of
@@ -280,7 +280,7 @@ uploadTexture format (w, h) pointer = do
     (TextureSize2D w h)
     0
     (PixelData format UnsignedByte pointer)
-  
+
   return thingy
 
 makeSimpleMesh :: SimpleMeshProfile -> IO Mesh

@@ -113,7 +113,7 @@ begetMeshes = do
       vbuffer = [Vertex3 1 1 0, Vertex3 1 -1 0, Vertex3 -1 -1 0, Vertex3 -1 1 0]
     , ibuffer = iBuffer
     , uvbuffer = Just quadUvBuffer
-    , meshShaderProfile = ShaderProfile ("vertex_stave", "fragment_stave") ["u_texture", "u_orthographic_matrix"]
+    , meshShaderProfile = ShaderProfile ("vertex_stave", "fragment_stave") ["u_texture", "u_time", "u_orthographic_matrix"]
     , texObject = Nothing
   }
 
