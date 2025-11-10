@@ -9,5 +9,5 @@ uniform sampler2D u_texture;
 
 void main() {
     vec4 value = vec4(vec3(1.0), texture(u_texture, v_uv).r);
-    f_color = value * vec4(1.0, 0.0, 1.0, 1.0);
+    f_color = value * vec4(1.0);
 }

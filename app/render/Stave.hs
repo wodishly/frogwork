@@ -24,7 +24,7 @@ import Graphics.Rendering.OpenGL (
   , PixelFormat (Red)
   , Repetition (Repeated)
   , TextureCoordName (S, T)
-  , TextureFilter (Nearest)
+  , TextureFilter (Nearest, Linear')
   , TextureObject
   , TextureTarget2D (Texture2D)
   , TextureUnit (TextureUnit)
@@ -143,7 +143,7 @@ makeStavebook great path = do
 
     -- does this do anything? unsure if safe to destroy
     -- GL.texture Texture2D $= Enabled
-    GL.textureFilter Texture2D $= ((Nearest, Nothing), Nearest)
+    GL.textureFilter Texture2D $= ((Linear', Nothing), Linear')
     GL.textureWrapMode Texture2D S $= (Repeated, ClampToEdge)
     GL.textureWrapMode Texture2D T $= (Repeated, ClampToEdge)
     putStrLn "made texture!"

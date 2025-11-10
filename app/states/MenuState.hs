@@ -47,8 +47,8 @@ instance Stately MenuState where
 
     let (width, height) = _size display
     lift $ stavewrite (statewit^.staveware) (Vertex2 (width/8) (height*4/8)) 1 "welcome to frogford!"
-    lift $ stavewrite (statewit^.staveware) (Vertex2 (width/8) (height*3/8)) 0.5 "play"
-    lift $ stavewrite (statewit^.staveware) (Vertex2 (width/8) (height*2/8)) 0.5 "quit"
+    lift $ stavewrite (statewit^.staveware) (Vertex2 (width/8) (height*3/8)) 1 "play"
+    lift $ stavewrite (statewit^.staveware) (Vertex2 (width/8) (height*2/8)) 1 "quit"
 
 makeMenuState :: Staveware -> MenuState
 makeMenuState ware = MenuState {
