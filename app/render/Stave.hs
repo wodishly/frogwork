@@ -27,7 +27,7 @@ import Graphics.Rendering.OpenGL (
   , TextureTarget2D (..)
   , Vertex2 (Vertex2)
   , GLfloat
-  , ($=), activeTexture, TextureUnit (TextureUnit), textureBinding, bindBuffer, BufferTarget (ArrayBuffer), bufferSubData, TransferDirection (WriteToBuffer)
+  , ($=), activeTexture, TextureUnit (TextureUnit), textureBinding, bindBuffer, BufferTarget (ArrayBuffer), bufferSubData, TransferDirection (WriteToBuffer), Vertex3 (Vertex3)
   )
 import qualified Graphics.Rendering.OpenGL as GL (
     textureFilter
@@ -65,7 +65,7 @@ pad amount width something bitmapData = aLeft ++ b ++ c where
   c = pad amount width something aRight
 
 loadFeather :: FilePath -> IO Stavebook
-loadFeather = flip loadStaveweb 24 . printf "%s/%s.ttf" assetsBasePath
+loadFeather = flip loadStaveweb 96 . printf "%s/%s.ttf" assetsBasePath
 
 -- | Based on [this page](https://zyghost.com/articles/Haskell-font-rendering-with-freetype2-and-opengl.html).
 loadStaveweb :: FilePath -> FT_UInt -> IO Stavebook
@@ -126,7 +126,7 @@ loadStaveweb path greatness = do
     tex' <- flip withArray (helpMe Red (nw, fromIntegral h')) . pad pitch w' 0 =<< peekArray (w'*h') (bBuffer bitmap)
 
     -- GL.texture Texture2D $= Enabled -- this doesnt seem to do anything
-    GL.textureFilter Texture2D $= ((Linear', Nothing), Linear')
+    GL.textureFilter Texture2D $= ((Nearest, Nothing), Nearest)
     GL.textureWrapMode Texture2D S $= (Repeated, ClampToEdge)
     GL.textureWrapMode Texture2D T $= (Repeated, ClampToEdge)
     putStrLn "made texture!"
@@ -152,17 +152,17 @@ stavewrite book meshy (Vertex2 x y) scale spell = do
 
   forM_ (zip [0..] spell) $ \(i, stave) -> do
     let (Stave (Vertex2 left top) size'@(Vertex2 _ height) _ tex') = book!stave
-        xpos = scale * (left + (advances!!i))
+        xpos = scale * (left + advances!!i)
         ypos = y - scale * (height - top)
         Vertex2 w h = (* scale) <$> size'
         vertices = [
-            xpos+w, ypos  , 0
-          , xpos+w, ypos+h, 0
-          , xpos  , ypos+h, 0
-          , xpos  , ypos  , 0
+            Vertex3 (xpos+w) (ypos+h) 0
+          , Vertex3 (xpos+w)  ypos    0
+          , Vertex3  xpos     ypos    0
+          , Vertex3  xpos    (ypos+h) 0
           ]
         -- vertices = floorVBuffer
-
+    print $ book!('F')
     print vertices
     activeTexture $= TextureUnit 0
     textureBinding Texture2D $= Just tex'
@@ -170,6 +170,6 @@ stavewrite book meshy (Vertex2 x y) scale spell = do
 
     _ <- withArray vertices $ \ptr ->
       bufferSubData ArrayBuffer WriteToBuffer 0 (bufferSize vertices) ptr
-    
+
     bindBuffer ArrayBuffer $= Nothing
     drawFaces $ elementCount meshy

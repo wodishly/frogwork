@@ -24,10 +24,10 @@ import Graphics.Rendering.OpenGL (
   , HasSetter (($=))
   , Position (Position)
   , Size (Size)
-  , Vertex2
+  , Vertex2, Capability (Enabled)
   )
 
-import qualified Graphics.Rendering.OpenGL as GL (depthFunc, get, viewport)
+import qualified Graphics.Rendering.OpenGL as GL (depthFunc, get, viewport, blend, blendFunc, BlendingFactor (OneMinusSrcAlpha, SrcAlpha))
 
 import Mean (doBoth)
 import Matrix (RenderView (..), asFrog)
@@ -61,6 +61,8 @@ waxwane wind = do
   V2 width height <- (fromIntegral <$>) <$> GL.get (SDL.windowSize wind)
   GL.viewport $= (Position 0 0, Size width height)
   GL.depthFunc $= Just Lequal
+  GL.blend $= Enabled
+  GL.blendFunc $= (GL.SrcAlpha, GL.OneMinusSrcAlpha)
   return RenderView {
       _aspect = fromIntegral width / fromIntegral height
     , _fov = pi / 4.0

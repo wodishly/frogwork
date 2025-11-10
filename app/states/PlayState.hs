@@ -82,7 +82,7 @@ play news@(_, _, _, display, _) = do
 
   bg black
   lift $ mapM_ (drawMesh (getProjectionMatrix display) viewMatrix) (statewit^.meshes)
-  _ <- lift $ stavewrite (statewit^.stavebook) (last $ statewit^.meshes) (Vertex2 -1 0) 1 "FROG"
+  _ <- lift $ stavewrite (statewit^.stavebook) (last $ statewit^.meshes) (Vertex2 -100 0) (1/200) "FROG"
   return ()
 
 updateCamera :: News -> StateT PlayState IO Camera
