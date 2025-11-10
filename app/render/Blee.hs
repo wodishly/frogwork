@@ -35,22 +35,22 @@ black :: FrogColor
 black = Color4 0 0 0 1
 
 white :: FrogColor
-white = Color4 255 255 255 1
+white = Color4 1 1 1 1
 
 -- red :: FrogColor
--- red = Color4 255 0 0 1
+-- red = Color4 1 0 0 1
 
 -- green :: FrogColor
--- green = Color4 0 255 0 1
+-- green = Color4 0 1 0 1
 
 blue :: FrogColor
-blue = Color4 0 0 255 1
+blue = Color4 0 0 1 1
 
 -- yellow :: FrogColor
--- yellow = Color4 255 255 0 1
+-- yellow = Color4 1 1 0 1
 
 -- magenta :: FrogColor
--- magenta = Color4 255 0 255 1
+-- magenta = Color4 1 0 1 1
 
 -- interpolates a color `c` by fraction `n`
 clerp :: GLfloat -> FrogColor -> FrogColor

@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -Wno-unused-imports #-}
 module Happen (
     Keywit
   , unwrapHappenKeys
@@ -16,7 +15,7 @@ import SDL (
   , InputMotion
   , KeyboardEventData (keyboardEventKeyMotion, keyboardEventKeysym)
   , Keysym (keysymScancode)
-  , Scancode, Window, V2 (V2), windowSize, MouseMotionEventData (mouseMotionEventPos, mouseMotionEventRelMotion), MouseWheelEventData (mouseWheelEventPos)
+  , Scancode, Window, V2 (V2), windowSize, MouseMotionEventData (mouseMotionEventRelMotion), MouseWheelEventData (mouseWheelEventPos)
   )
 import Graphics.Rendering.OpenGL (
     ComparisonFunction (Lequal)
@@ -27,12 +26,18 @@ import Graphics.Rendering.OpenGL (
   , Vertex2, Capability (Enabled)
   )
 
-import qualified Graphics.Rendering.OpenGL as GL (depthFunc, get, viewport, blend, blendFunc, BlendingFactor (OneMinusSrcAlpha, SrcAlpha))
+import qualified Graphics.Rendering.OpenGL as GL (
+    BlendingFactor (OneMinusSrcAlpha, SrcAlpha)
+  , blend
+  , blendFunc
+  , depthFunc
+  , get
+  , viewport
+  )
 
-import Mean (doBoth)
 import Matrix (RenderView (..), asFrog)
-import SDL.Vect (Point(P))
-import Control.Lens (bimap)
+import Mean (doBoth)
+import SDL.Vect (Point (P))
 
 
 type Keywit = (Scancode, InputMotion)

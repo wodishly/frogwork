@@ -7,16 +7,19 @@ module MenuState (
 ) where
 
 import Control.Lens (makeLenses, (^.))
+import Numeric.LinearAlgebra (ident)
 import Control.Monad.State (MonadState (get, put), StateT, MonadTrans (lift))
 
 import SDL.Input.Keyboard.Codes
+import Graphics.Rendering.OpenGL (Vertex2(Vertex2), Color4 (Color4))
 
 import State (StateName (MenuName, PlayName), Stately (..))
 
 import Blee (bg, clerp, white)
 import Key (KeySet, keyBegun)
-import Stave (Staveware, stavewrite, Staveware)
-import Graphics.Rendering.OpenGL (Vertex2(Vertex2))
+import Matrix (getOrthographicMatrix, getPerspectiveMatrix)
+import Shade (drawMesh)
+import Stave (Staveware, stavewrite)
 
 
 data MenuState = MenuState {
@@ -33,10 +36,15 @@ instance Stately MenuState where
     _ <- get
     menuFare keyset
 
-  render _ = do
+  render (_, _, _, display, _) = do
     statewit <- get
-    bg (clerp (1/4) white)
-    lift $ stavewrite (statewit^.staveware) (Vertex2 -100 0) 1 "FROG"
+    bg white
+    lift $ drawMesh
+      (getPerspectiveMatrix display)
+      (ident 4)
+      (getOrthographicMatrix display)
+      (snd $ statewit^.staveware)
+    lift $ stavewrite (statewit^.staveware) (Vertex2 100 100) 1 "Welcome to Frogton."
 
 makeMenuState :: Staveware -> MenuState
 makeMenuState ware = MenuState {

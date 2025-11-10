@@ -45,7 +45,7 @@ import qualified Graphics.Rendering.OpenGL as GL (
 import FastenMain (assetsBasePath)
 
 import Matrix (Point)
-import Mean (doBoth, ly, (.>>.))
+import Mean (doBoth, (.>>.), ly)
 import Shade (uploadTexture, useMesh, Mesh (..), bufferSize, drawFaces)
 
 type Stavebook = HashMap Char Stave
@@ -59,7 +59,7 @@ data Stave = Stave {
 } deriving (Show, Eq)
 
 sharpness :: Word32
-sharpness = 2^(5 :: Integer)
+sharpness = 2^(7 :: Integer)
 
 glyphFormatName :: FT_Glyph_Format -> String
 glyphFormatName format = "ft_GLYPH_FORMAT_" ++ case format of
@@ -145,7 +145,7 @@ makeStavebook greatness path = do
     GL.textureWrapMode Texture2D T $= (Repeated, ClampToEdge)
     putStrLn "made texture!"
 
-    return $ ly (stave, Stave
+    return (stave, Stave
         (fromIntegral <$> Vertex2 l t)
         (fromIntegral <$> Vertex2 w h)
         (fromIntegral (x .>>. 6))
@@ -161,13 +161,12 @@ stavewrite :: Staveware -> Point -> GLfloat -> String -> IO ()
 stavewrite (book, mesh) (Vertex2 x y) scale spell = do
   useMesh mesh
 
-  let advances = scanl (+) x (map (_advance . (book!)) spell)
+  let advances = scanl (+) 0 (map (_advance . (book!)) spell)
 
   forM_ (zip [0..] spell) $ \(i, stave) -> do
     let (Stave (Vertex2 left top) size@(Vertex2 _ height) _ tex') = book!stave
-        -- scale' = scale / fromIntegral sharpness / 4
-        scale' = scale
-        x' = scale' * (left + advances!!i)
+        scale' = scale * 64 / fromIntegral sharpness
+        x' = x + scale' * (left + advances!!i)
         y' = y - scale' * (height - top)
         Vertex2 w h = (* scale') <$> size
         vertices = [

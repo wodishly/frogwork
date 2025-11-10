@@ -109,7 +109,6 @@ begetMeshes = do
   farsee <- makeAssetMesh (makeAsset "tv")
     >>= setMeshTransform (fromTranslation [-2, 1, 2])
 
-  x <- makeFeather "noto-sans"
   hack <- makeSimpleMesh $ SimpleMeshProfile {
       vbuffer = [Vertex3 1 1 0, Vertex3 1 -1 0, Vertex3 -1 -1 0, Vertex3 -1 1 0]
     , ibuffer = iBuffer
@@ -118,6 +117,7 @@ begetMeshes = do
     , texObject = Nothing
   }
 
+  x <- makeFeather "noto-sans"
   return ((x, hack), [froggy, earth, farsee, hack])
 
 news :: Allwit -> News
