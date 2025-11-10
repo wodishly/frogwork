@@ -1,8 +1,10 @@
 module Shade (
-  Mesh
+  Mesh (..)
+, bufferSize
 , drawMesh
 , setMeshTransform
 , makeAsset
+, useMesh
 , makeAssetMesh
 , makeSimpleMesh
 , helpMe
@@ -52,6 +54,7 @@ bufferSize = fromIntegral . uncurry (*) . doBoth length (sizeOf.head)
 data Mesh = Mesh {
     _program :: Program
   , vao :: VertexArrayObject
+  , vbo :: BufferObject
   , tex :: Maybe TextureObject
   , _file :: Maybe FrogFile
   , _uniformMap :: UniformMap
@@ -61,7 +64,7 @@ data Mesh = Mesh {
 
 instance Programful Mesh where
   program = _program
-  uniformMap (Mesh _ _ _ _ x _ _) = x
+  uniformMap (Mesh _ _ _ _ _ x _ _) = x
 
 data Concoction = Concoction Program UniformMap (Maybe String)
 
@@ -152,8 +155,8 @@ drawMesh projectionMatrix viewMatrix mesh = do
   -- S.unsafeWith (flatten $ transform mesh) (GLRaw.glUniformMatrix4fv mLocation 1 1)
 
   -- -- TODO: move these to a Uniform Buffer Object
-  -- UniformLocation projLocation <- get (uniformMap mesh ! "u_projection_matrix")
-  -- S.unsafeWith (flatten projectionMatrix) (GLRaw.glUniformMatrix4fv projLocation 1 1)
+  UniformLocation projLocation <- get (uniformMap mesh ! "u_projection_matrix")
+  S.unsafeWith (flatten projectionMatrix) (GLRaw.glUniformMatrix4fv projLocation 1 1)
   -- UniformLocation viewLocation <- get (uniformMap mesh ! "u_view_matrix")
   -- S.unsafeWith (flatten viewMatrix) (GLRaw.glUniformMatrix4fv viewLocation 1 1)
 
@@ -233,6 +236,7 @@ makeAssetMesh mprofile = do
   return $ Mesh
     pro
     vao'
+    vbo'
     (Just texy)
     (Just frogFile)
     hmap
@@ -285,6 +289,7 @@ makeSimpleMesh profile = do
   return $ Mesh
     pro
     vao'
+    vbo'
     (texObject profile)
     Nothing
     hmap

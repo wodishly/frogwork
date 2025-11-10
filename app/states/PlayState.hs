@@ -20,11 +20,12 @@ import State (News, StateName (..), Stately (..))
 
 import Blee (bg, black)
 import Matrix (FrogVector, Point, frogLookAt, frogZero, getProjectionMatrix, Point3, aught)
-import Mean (hit, given)
+import Mean (hit, given, ly)
 import Random (FrogSeed, defaultSeed)
 import Rime (clamp)
 import Shade (Mesh, drawMesh, setMeshTransform)
 import Key (arrow)
+import Stave (stavewrite, Stavebook)
 
 data Camera = Camera {
   cPosition :: FrogVector
@@ -39,6 +40,7 @@ makeCamera = Camera {
 
 data PlayState = PlayState {
   _seed :: FrogSeed
+, _stavebook :: Stavebook
 , _meshes :: [Mesh]
 , _frog :: Frogwit
 , _euler :: Point
@@ -53,11 +55,12 @@ instance Stately PlayState where
   _update = play
 
 instance Show PlayState where
-  show (PlayState _ _ f _ _ p c) = show f ++ show p ++ show c
+  show (PlayState _ _ _ f _ _ p c) = show f ++ show p ++ show c
 
-makePlayState :: [Mesh] -> PlayState
-makePlayState ms = PlayState {
+makePlayState :: Stavebook -> [Mesh] -> PlayState
+makePlayState book ms = PlayState {
   _seed = defaultSeed
+, _stavebook = book
 , _meshes = ms
 , _frog = makeFrog
 , _euler = Vertex2 0.3 1.57079633
@@ -76,8 +79,11 @@ play news@(_, _, _, display, _) = do
 
   updateFrog news forward
   
+
   bg black
   lift $ mapM_ (drawMesh (getProjectionMatrix display) viewMatrix) (statewit^.meshes)
+  _ <- lift $ stavewrite (statewit^.stavebook) (last $ statewit^.meshes) (Vertex2 -1 0) 1 "FROG"
+  return ()
 
 updateCamera :: News -> StateT PlayState IO Camera
 updateCamera (keys, mouse, wheel, _, _) = do

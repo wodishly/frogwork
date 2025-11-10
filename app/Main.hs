@@ -22,6 +22,7 @@ import Game (
   )
 import FastenMain (openGLWindow)
 import Happen (waxwane)
+import Data.Bifunctor (second)
 
 
 main :: IO ()
@@ -36,11 +37,11 @@ main = do
 birth :: SDL.Window -> SDL.GLContext -> IO Allwit
 birth window context = do
   display <- waxwane window
-  meshes <- begetMeshes
+  (stavebook, meshes) <- second init <$> begetMeshes
   -- _ <- SDL.setMouseLocationMode SDL.RelativeLocation
 
   let allwit = makeAllwit window display context
-        (makePlayState meshes)
+        (makePlayState stavebook meshes)
         makePauseState
         makeMenuState
         MenuName

@@ -23,15 +23,15 @@ module Game (
 , updateAll
 ) where
 
-import Control.Lens (Lens', makeLenses, (^.), (.~))
-import Control.Monad (when, unless)
+import Control.Lens (Lens', makeLenses, (.~), (^.))
+import Control.Monad (unless, when)
 import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT, execStateT)
 import Data.Function (applyWhen)
 
 import SDL.Input.Keyboard.Codes
 import Graphics.Rendering.OpenGL (Vertex2 (Vertex2))
 
-import qualified SDL (Event, Window, GLContext, ticks, pollEvents, glSwapWindow)
+import qualified SDL (Event, GLContext, Window, glSwapWindow, pollEvents, ticks)
 
 import State (
     News
@@ -41,23 +41,23 @@ import State (
   , makeSettings
   , isShowingKeys
   , isShowingTicks
+  , isRunningTests
   , _update
   , preent
-  , isRunningTests
   )
 import MenuState (MenuState, finger, hand)
 import PauseState (PauseState)
 import PlayState (PlayState)
 
+import FastenShade (ShaderProfile (..), SimpleMeshProfile (..), defaultAssetMeshProfile, defaultSimpleMeshProfile, iBuffer)
+
 import Happen (unwrapHappenMouse, unwrapHappenWheel, unwrapHappenWindow, waxwane)
 import Key (KeySet, anyKeysBegun, keyBegun, listen, unkeys)
 import Matrix (Point, RenderView, fromTranslation)
 import Mean (full, weep)
+import Shade (Mesh, makeAsset, makeAssetMesh, makeSimpleMesh, setMeshTransform)
+import Stave (Stavebook, loadFeather)
 import Time (Time, beginTime, keepTime)
-import FastenShade (defaultAssetMeshProfile, defaultSimpleMeshProfile, SimpleMeshProfile (..), iBuffer, staveVBuffer, ShaderProfile (..))
-import Shade (Mesh, makeAssetMesh, makeSimpleMesh, setMeshTransform, makeAsset)
-import Stave (loadStavebook, Stave (..))
-import Data.HashMap.Lazy ((!))
 
 
 data Allwit = Allwit {
@@ -87,7 +87,7 @@ makeAllwit = Allwit
   (Vertex2 0 0)
   []
 
-begetMeshes :: IO [Mesh]
+begetMeshes :: IO (Stavebook, [Mesh])
 begetMeshes = do
   froggy <- makeAssetMesh defaultAssetMeshProfile
     >>= setMeshTransform (fromTranslation [0, 0, 0])
@@ -97,15 +97,15 @@ begetMeshes = do
   farsee <- makeAssetMesh (makeAsset "tv")
     >>= setMeshTransform (fromTranslation [-2, 1, 2])
 
-  x <- loadStavebook
-  stave <- makeSimpleMesh $ SimpleMeshProfile {
-      vbuffer = staveVBuffer
+  x <- loadFeather "noto-sans"
+  hack <- makeSimpleMesh $ SimpleMeshProfile {
+      vbuffer = []
     , ibuffer = iBuffer
-    , meshShaderProfile = ShaderProfile ("vertex_stave", "fragment_stave") ["u_texture"]
-    , texObject = Just (texture $ x!'H')
+    , meshShaderProfile = ShaderProfile ("vertex_stave", "fragment_stave") ["u_texture", "u_projection_matrix"]
+    , texObject = Nothing
   }
 
-  return [froggy, earth, farsee, stave]
+  return (x, [froggy, earth, farsee, hack])
 
 news :: Allwit -> News
 news allwit = (allwit^.keyset, allwit^.mouse, allwit^.wheel, allwit^.display, allwit^.time)

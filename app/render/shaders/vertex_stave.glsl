@@ -3,6 +3,8 @@
 in vec3 position;
 out vec2 v_uv;
 
+uniform mat4 u_projection_matrix;
+
 void main() {
   v_uv = vec2(0.5 + position.x / 2.0, -0.5 + position.y * -2.0);
   gl_Position = vec4(position, 1.0);

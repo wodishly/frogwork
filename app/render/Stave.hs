@@ -1,14 +1,23 @@
-module Stave where
+{- HLINT ignore "Redundant return" -}
+module Stave (
+  Stave (..)
+, Stavebook
+, loadFeather
+, loadStaveweb
+, stavewrite
+) where
 
-import Control.Monad (forM)
+import Control.Monad (forM, forM_)
 import Data.Char (chr)
-import Data.HashMap.Lazy (HashMap, fromList)
+import Data.HashMap.Lazy (HashMap, fromList, (!))
+import Text.Printf (printf)
 
-import Foreign (peek, peekArray, withArray)
+import Foreign (peek, peekArray, withArray, Storable (sizeOf))
 
 import FreeType.Core.Base
 import FreeType.Core.Types
 
+import Graphics.GL (glBindTexture)
 import Graphics.Rendering.OpenGL (
     Clamping (..)
   , PixelFormat (..)
@@ -18,23 +27,27 @@ import Graphics.Rendering.OpenGL (
   , TextureObject
   , TextureTarget2D (..)
   , Vertex2 (Vertex2)
-  , ($=)
+  , GLfloat
+  , ($=), drawArrays, PrimitiveMode (Triangles), drawElements, activeTexture, TextureUnit (TextureUnit), textureBinding, bindBuffer, BufferTarget (ArrayBuffer), bufferSubData, TransferDirection (WriteToBuffer)
   )
 import qualified Graphics.Rendering.OpenGL as GL (
     textureFilter
   , textureWrapMode
   )
 
+import FastenMain (assetsBasePath)
 import Matrix (Point)
 import Mean (doBoth, ly, twimap, (.>>.))
-import Shade (helpMe)
+import Shade (helpMe, makeAssetMesh, makeSimpleMesh, useMesh, Mesh (..), bufferSize)
+import FastenShade (SimpleMeshProfile(..), iBuffer, ShaderProfile (ShaderProfile))
+import Data.Foldable (foldlM)
 
-type StaveWeb = HashMap Char Stave
+type Stavebook = HashMap Char Stave
 
 data Stave = Stave {
     bearing :: Point
   , size :: Point
-  , advance:: Point
+  , advance :: GLfloat
   , texture :: TextureObject
 } deriving (Show, Eq)
 
@@ -53,14 +66,12 @@ pad amount width something bitmapData = aLeft ++ b ++ c where
   b = replicate amount something
   c = pad amount width something aRight
 
--- | This is the test function to see if @loadStave@
--- successfully begets a @TextureObject@.
-loadStavebook :: IO StaveWeb
-loadStavebook = loadStave "assets/noto-sans.ttf" 24
+loadFeather :: FilePath -> IO Stavebook
+loadFeather = flip loadStaveweb 24 . printf "%s/%s.ttf" assetsBasePath
 
 -- | Based on [this page](https://zyghost.com/articles/Haskell-font-rendering-with-freetype2-and-opengl.html).
-loadStave :: FilePath -> FT_UInt -> IO StaveWeb
-loadStave path greatness = do
+loadStaveweb :: FilePath -> FT_UInt -> IO Stavebook
+loadStaveweb path greatness = do
   stavewit <- ft_Init_FreeType
   putStrLn "made stavebook!"
 
@@ -96,11 +107,11 @@ loadStave path greatness = do
     let bitmap = gsrBitmap slot'
         (l, t) = doBoth gsrBitmap_left gsrBitmap_top slot'
         (w, h) = doBoth bWidth bRows bitmap
-        FT_Vector x y = gsrAdvance slot'
+        FT_Vector x _ = gsrAdvance slot'
     putStrLn "here's the stuff we're going to save"
     putStrLn $ "  bearing: " ++ show (l, t)
     putStrLn $ "  size: " ++ show (w, h)
-    putStrLn $ "  advance: " ++ show (x, y)
+    putStrLn $ "  advance: " ++ show (x, 0 :: Int)
 
     putStrLn "here's some other stuff:"
     putStrLn $ "  pitch: " ++ show (bPitch bitmap)
@@ -125,13 +136,43 @@ loadStave path greatness = do
     return $ ly (stave, Stave
         (fromIntegral <$> Vertex2 l t)
         (fromIntegral <$> Vertex2 w h)
-        (fromIntegral . (.>>. 6) <$> Vertex2 x y)
+        (fromIntegral (x .>>. 6))
         tex
       )
 
   ft_Done_Face feather
   ft_Done_FreeType stavewit
 
-  print stavebook
-
   return $ fromList stavebook
+
+stavewrite :: Stavebook -> Mesh -> Point -> GLfloat -> String -> IO ()
+stavewrite book meshy (Vertex2 x y) scale spell = do
+
+  useMesh meshy
+
+  let advances = scanl (+) x (map (advance . (book!)) spell)
+
+  forM_ (zip [0..] spell) $ \(i, stave) -> do
+    let (Stave (Vertex2 left top) size'@(Vertex2 _ height) _ tex') = book!stave
+        xpos = scale * (left + (advances!!i))
+        ypos = y - scale * (height - top)
+        Vertex2 w h = (* scale) <$> size'
+        vertices = [
+            xpos  , ypos+h, 0, 0
+          , xpos  , ypos  , 0, 1
+          , xpos+w, ypos  , 1, 1
+          , xpos  , ypos+h, 0, 0
+          , xpos+w, ypos  , 1, 1
+          , xpos+w, ypos+h, 1, 0
+          ]
+    print vertices
+
+    activeTexture $= TextureUnit 0
+    textureBinding Texture2D $= Just tex'
+    bindBuffer ArrayBuffer $= Just (vbo meshy)
+
+    _ <- withArray vertices $ \ptr ->
+      bufferSubData ArrayBuffer WriteToBuffer 0 (bufferSize vertices) ptr
+    
+    bindBuffer ArrayBuffer $= Nothing
+    drawArrays Triangles 0 6
