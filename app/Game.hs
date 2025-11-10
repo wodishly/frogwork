@@ -99,7 +99,7 @@ begetMeshes = do
 
   x <- loadFeather "noto-sans"
   hack <- makeSimpleMesh $ SimpleMeshProfile {
-      vbuffer = [Vertex3 -1 1 0, Vertex3 1 1 0, Vertex3 1 -1 0, Vertex3 -1 -1 0]
+      vbuffer = [Vertex3 1 1 0, Vertex3 1 -1 0, Vertex3 -1 -1 0, Vertex3 -1 1 0]
     , ibuffer = iBuffer
     , uvbuffer = Just quadUvBuffer
     , meshShaderProfile = ShaderProfile ("vertex_stave", "fragment_stave") ["u_texture", "u_projection_matrix"]

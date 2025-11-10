@@ -37,7 +37,7 @@ main = do
 birth :: SDL.Window -> SDL.GLContext -> IO Allwit
 birth window context = do
   display <- waxwane window
-  (stavebook, meshes) <- second init <$> begetMeshes
+  (stavebook, meshes) <- begetMeshes
   -- _ <- SDL.setMouseLocationMode SDL.RelativeLocation
 
   let allwit = makeAllwit window display context
