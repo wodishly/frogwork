@@ -2,6 +2,7 @@ module Shade (
   Mesh (..)
 , bufferSize
 , drawMesh
+, drawFaces
 , setMeshTransform
 , makeAsset
 , useMesh
@@ -22,7 +23,6 @@ import Text.Printf (printf)
 
 import Foreign (Int32, Ptr, Storable, new, nullPtr, plusPtr, sizeOf, withArray, Word8)
 import Graphics.Rendering.OpenGL as GL
-import SDL (time)
 
 import qualified Data.ByteString as BS (readFile)
 import qualified Data.HashMap.Lazy as HM (fromList, lookup)
@@ -55,6 +55,7 @@ data Mesh = Mesh {
     _program :: Program
   , vao :: VertexArrayObject
   , vbo :: BufferObject
+  , uvbo :: BufferObject
   , tex :: Maybe TextureObject
   , _file :: Maybe FrogFile
   , _uniformMap :: UniformMap
@@ -64,7 +65,7 @@ data Mesh = Mesh {
 
 instance Programful Mesh where
   program = _program
-  uniformMap (Mesh _ _ _ _ _ x _ _) = x
+  uniformMap (Mesh _ _ _ _ _ _ x _ _) = x
 
 data Concoction = Concoction Program UniformMap (Maybe String)
 
@@ -150,15 +151,24 @@ drawMesh projectionMatrix viewMatrix mesh = do
 
 
 
-
-  -- UniformLocation mLocation <- get (uniformMap mesh ! "u_model_matrix")
-  -- S.unsafeWith (flatten $ transform mesh) (GLRaw.glUniformMatrix4fv mLocation 1 1)
+  case HM.lookup "u_model_matrix" (uniformMap mesh) of
+    Just uLoc -> do
+      UniformLocation mLocation <- get uLoc
+      S.unsafeWith (flatten $ transform mesh) (GLRaw.glUniformMatrix4fv mLocation 1 1)
+    _ -> return ()
 
   -- -- TODO: move these to a Uniform Buffer Object
-  UniformLocation projLocation <- get (uniformMap mesh ! "u_projection_matrix")
-  S.unsafeWith (flatten projectionMatrix) (GLRaw.glUniformMatrix4fv projLocation 1 1)
-  -- UniformLocation viewLocation <- get (uniformMap mesh ! "u_view_matrix")
-  -- S.unsafeWith (flatten viewMatrix) (GLRaw.glUniformMatrix4fv viewLocation 1 1)
+  case HM.lookup "u_projection_matrix" (uniformMap mesh) of
+    Just uLoc -> do
+      UniformLocation projLocation <- get uLoc
+      S.unsafeWith (flatten projectionMatrix) (GLRaw.glUniformMatrix4fv projLocation 1 1)
+    _ -> return ()
+
+  case HM.lookup "u_view_matrix" (uniformMap mesh) of
+    Just uLoc -> do
+      UniformLocation viewLocation <- get uLoc
+      S.unsafeWith (flatten viewMatrix) (GLRaw.glUniformMatrix4fv viewLocation 1 1)
+    _ -> return ()
 
   -- timeLocation <- uniformMap mesh ! "u_time"
   -- time >>= ((uniform timeLocation :: StateVar GLfloat) $=)
@@ -198,8 +208,8 @@ makeAssetMesh mprofile = do
   vertexAttribArray (AttribLocation 0) $= Enabled
 
   -- uv attribute
-  uvbo <- genObjectName
-  bindBuffer ArrayBuffer $= Just uvbo
+  uvbo' <- genObjectName
+  bindBuffer ArrayBuffer $= Just uvbo'
 
   withArray (frogFile^.uvBuffer) $ \ptr ->
     bufferData ArrayBuffer $= (bufferSize (frogFile^.uvBuffer), ptr, StaticDraw)
@@ -237,6 +247,7 @@ makeAssetMesh mprofile = do
     pro
     vao'
     vbo'
+    uvbo'
     (Just texy)
     (Just frogFile)
     hmap
@@ -269,6 +280,7 @@ makeSimpleMesh profile = do
   vao' <- genObjectName
   bindVertexArrayObject $= Just vao'
 
+  -- vertex buffer
   vbo' <- genObjectName
   bindBuffer ArrayBuffer $= Just vbo'
 
@@ -280,6 +292,22 @@ makeSimpleMesh profile = do
     $= (ToFloat, VertexArrayDescriptor 3 Float 0 (bufferOffset 0))
   vertexAttribArray (AttribLocation 0) $= Enabled
 
+  -- uv attribute
+  uvbo' <- genObjectName
+
+  let uvb = uvbuffer profile
+  case uvb of
+    Just buffer -> do
+      bindBuffer ArrayBuffer $= Just uvbo'
+
+      withArray buffer $ \ptr ->
+        bufferData ArrayBuffer $= (bufferSize buffer, ptr, StaticDraw)
+
+      vertexAttribPointer (AttribLocation 1)
+        $= (ToFloat, VertexArrayDescriptor 2 Float 0 (bufferOffset 0))
+      vertexAttribArray (AttribLocation 1) $= Enabled
+    Nothing -> return ()
+
   -- index buffer
   let ib = ibuffer profile
   genObjectName >>= (bindBuffer ElementArrayBuffer $=) . Just
@@ -290,6 +318,7 @@ makeSimpleMesh profile = do
     pro
     vao'
     vbo'
+    uvbo'
     (texObject profile)
     Nothing
     hmap

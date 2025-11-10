@@ -4,7 +4,8 @@ import Control.Monad.Identity (Identity (Identity))
 import Data.HashMap.Lazy (HashMap)
 
 import Foreign (Word32)
-import Graphics.Rendering.OpenGL (GettableStateVar, Program, UniformLocation, Vertex3 (Vertex3), TextureObject)
+import Graphics.Rendering.OpenGL 
+  (GettableStateVar, Program, UniformLocation, Vertex3 (Vertex3), TextureObject, GLfloat, Vertex2 (Vertex2))
 
 import Matrix (Polyhedron)
 import Mean (Twain)
@@ -36,6 +37,7 @@ data SimpleMeshProfile = SimpleMeshProfile {
     vbuffer :: Polyhedron
   , ibuffer :: [Word32]
   , meshShaderProfile :: ShaderProfile
+  , uvbuffer :: Maybe [Vertex2 GLfloat]
   , texObject :: Maybe TextureObject
 } deriving (Show, Eq)
 
@@ -62,6 +64,7 @@ defaultSimpleMeshProfile :: SimpleMeshProfile
 defaultSimpleMeshProfile = SimpleMeshProfile {
     vbuffer = floorVBuffer
   , ibuffer = iBuffer
+  , uvbuffer = Nothing
   , meshShaderProfile = defaultSimpleShaderProfile
   , texObject = Nothing
 }
@@ -92,4 +95,12 @@ iBuffer :: [Word32]
 iBuffer = [
     0, 1, 2
   , 2, 3, 0
+  ]
+
+quadUvBuffer :: [Vertex2 GLfloat]
+quadUvBuffer = [
+    Vertex2 1 0
+  , Vertex2 1 1
+  , Vertex2 0 1
+  , Vertex2 0 0
   ]

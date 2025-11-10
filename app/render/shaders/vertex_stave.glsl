@@ -1,14 +1,12 @@
 #version 410
 
 in vec3 position;
+in vec2 uv;
 out vec2 v_uv;
 
 uniform mat4 u_projection_matrix;
 
 void main() {
-  v_uv = vec2(0.5 + position.x / 2.0, -0.5 + position.y * -2.0);
+  v_uv = uv;
   gl_Position = vec4(position, 1.0);
 }
-
-// (-1, -1/4) -> (0, 0)
-// (1, -3/4) -> (1, 1)

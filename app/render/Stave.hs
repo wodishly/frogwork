@@ -12,12 +12,11 @@ import Data.Char (chr)
 import Data.HashMap.Lazy (HashMap, fromList, (!))
 import Text.Printf (printf)
 
-import Foreign (peek, peekArray, withArray, Storable (sizeOf))
+import Foreign (peek, peekArray, withArray)
 
 import FreeType.Core.Base
 import FreeType.Core.Types
 
-import Graphics.GL (glBindTexture)
 import Graphics.Rendering.OpenGL (
     Clamping (..)
   , PixelFormat (..)
@@ -28,7 +27,7 @@ import Graphics.Rendering.OpenGL (
   , TextureTarget2D (..)
   , Vertex2 (Vertex2)
   , GLfloat
-  , ($=), drawArrays, PrimitiveMode (Triangles), drawElements, activeTexture, TextureUnit (TextureUnit), textureBinding, bindBuffer, BufferTarget (ArrayBuffer), bufferSubData, TransferDirection (WriteToBuffer)
+  , ($=), activeTexture, TextureUnit (TextureUnit), textureBinding, bindBuffer, BufferTarget (ArrayBuffer), bufferSubData, TransferDirection (WriteToBuffer)
   )
 import qualified Graphics.Rendering.OpenGL as GL (
     textureFilter
@@ -38,9 +37,8 @@ import qualified Graphics.Rendering.OpenGL as GL (
 import FastenMain (assetsBasePath)
 import Matrix (Point)
 import Mean (doBoth, ly, twimap, (.>>.))
-import Shade (helpMe, makeAssetMesh, makeSimpleMesh, useMesh, Mesh (..), bufferSize)
-import FastenShade (SimpleMeshProfile(..), iBuffer, ShaderProfile (ShaderProfile))
-import Data.Foldable (foldlM)
+import Shade (helpMe, useMesh, Mesh (..), bufferSize, drawFaces)
+import FastenShade (floorVBuffer)
 
 type Stavebook = HashMap Char Stave
 
@@ -125,7 +123,7 @@ loadStaveweb path greatness = do
         nw = fromIntegral (pitch + fromIntegral w')
     putStrLn "did some reckoning..."
 
-    tex <- flip withArray (helpMe Red (nw, fromIntegral h')) . pad pitch w' 0 =<< peekArray (w'*h') (bBuffer bitmap)
+    tex' <- flip withArray (helpMe Red (nw, fromIntegral h')) . pad pitch w' 0 =<< peekArray (w'*h') (bBuffer bitmap)
 
     -- GL.texture Texture2D $= Enabled -- this doesnt seem to do anything
     GL.textureFilter Texture2D $= ((Linear', Nothing), Linear')
@@ -137,7 +135,7 @@ loadStaveweb path greatness = do
         (fromIntegral <$> Vertex2 l t)
         (fromIntegral <$> Vertex2 w h)
         (fromIntegral (x .>>. 6))
-        tex
+        tex'
       )
 
   ft_Done_Face feather
@@ -157,22 +155,20 @@ stavewrite book meshy (Vertex2 x y) scale spell = do
         xpos = scale * (left + (advances!!i))
         ypos = y - scale * (height - top)
         Vertex2 w h = (* scale) <$> size'
-        vertices = [
-            xpos  , ypos+h, 0, 0
-          , xpos  , ypos  , 0, 1
-          , xpos+w, ypos  , 1, 1
-          , xpos  , ypos+h, 0, 0
-          , xpos+w, ypos  , 1, 1
-          , xpos+w, ypos+h, 1, 0
-          ]
-    print vertices
+        -- vertices = [
+        --     xpos+w, ypos  , 0
+        --   , xpos+w, ypos+h, 0
+        --   , xpos  , ypos+h, 0
+        --   , xpos  , ypos  , 0
+        --   ]
+        vertices = floorVBuffer
 
     activeTexture $= TextureUnit 0
-    textureBinding Texture2D $= Just tex'
-    bindBuffer ArrayBuffer $= Just (vbo meshy)
+    -- textureBinding Texture2D $= Just tex'
+    -- bindBuffer ArrayBuffer $= Just (vbo meshy)
 
-    _ <- withArray vertices $ \ptr ->
-      bufferSubData ArrayBuffer WriteToBuffer 0 (bufferSize vertices) ptr
+    -- _ <- withArray vertices $ \ptr ->
+    --   bufferSubData ArrayBuffer WriteToBuffer 0 (bufferSize vertices) ptr
     
-    bindBuffer ArrayBuffer $= Nothing
-    drawArrays Triangles 0 6
+    -- bindBuffer ArrayBuffer $= Nothing
+    -- drawFaces $ elementCount meshy

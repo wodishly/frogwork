@@ -29,7 +29,7 @@ import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT, ex
 import Data.Function (applyWhen)
 
 import SDL.Input.Keyboard.Codes
-import Graphics.Rendering.OpenGL (Vertex2 (Vertex2))
+import Graphics.Rendering.OpenGL (Vertex2 (Vertex2), Vertex3 (Vertex3))
 
 import qualified SDL (Event, GLContext, Window, glSwapWindow, pollEvents, ticks)
 
@@ -49,7 +49,7 @@ import MenuState (MenuState, finger, hand)
 import PauseState (PauseState)
 import PlayState (PlayState)
 
-import FastenShade (ShaderProfile (..), SimpleMeshProfile (..), defaultAssetMeshProfile, defaultSimpleMeshProfile, iBuffer)
+import FastenShade (ShaderProfile (..), SimpleMeshProfile (..), defaultAssetMeshProfile, defaultSimpleMeshProfile, iBuffer, quadUvBuffer, floorVBuffer)
 
 import Happen (unwrapHappenMouse, unwrapHappenWheel, unwrapHappenWindow, waxwane)
 import Key (KeySet, anyKeysBegun, keyBegun, listen, unkeys)
@@ -99,8 +99,9 @@ begetMeshes = do
 
   x <- loadFeather "noto-sans"
   hack <- makeSimpleMesh $ SimpleMeshProfile {
-      vbuffer = []
+      vbuffer = [Vertex3 -1 1 0, Vertex3 1 1 0, Vertex3 1 -1 0, Vertex3 -1 -1 0]
     , ibuffer = iBuffer
+    , uvbuffer = Just quadUvBuffer
     , meshShaderProfile = ShaderProfile ("vertex_stave", "fragment_stave") ["u_texture", "u_projection_matrix"]
     , texObject = Nothing
   }

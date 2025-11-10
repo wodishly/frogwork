@@ -20,7 +20,7 @@ import State (News, StateName (..), Stately (..))
 
 import Blee (bg, black)
 import Matrix (FrogVector, Point, frogLookAt, frogZero, getProjectionMatrix, Point3, aught)
-import Mean (hit, given, ly)
+import Mean (hit, given)
 import Random (FrogSeed, defaultSeed)
 import Rime (clamp)
 import Shade (Mesh, drawMesh, setMeshTransform)
