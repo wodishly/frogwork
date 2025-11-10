@@ -148,22 +148,22 @@ stavewrite book meshy (Vertex2 x y) scale spell = do
 
   useMesh meshy
 
-  let advances = scanl (+) x (map (advance . (book!)) spell)
+  -- let advances = scanl (+) x (map (advance . (book!)) spell)
 
-  forM_ (zip [0..] spell) $ \(i, stave) -> do
-    let (Stave (Vertex2 left top) size'@(Vertex2 _ height) _ tex') = book!stave
-        xpos = scale * (left + (advances!!i))
-        ypos = y - scale * (height - top)
-        Vertex2 w h = (* scale) <$> size'
-        -- vertices = [
-        --     xpos+w, ypos  , 0
-        --   , xpos+w, ypos+h, 0
-        --   , xpos  , ypos+h, 0
-        --   , xpos  , ypos  , 0
-        --   ]
-        vertices = floorVBuffer
+  -- forM_ (zip [0..] spell) $ \(i, stave) -> do
+  --   let (Stave (Vertex2 left top) size'@(Vertex2 _ height) _ tex') = book!stave
+  --       xpos = scale * (left + (advances!!i))
+  --       ypos = y - scale * (height - top)
+  --       Vertex2 w h = (* scale) <$> size'
+  --       -- vertices = [
+  --       --     xpos+w, ypos  , 0
+  --       --   , xpos+w, ypos+h, 0
+  --       --   , xpos  , ypos+h, 0
+  --       --   , xpos  , ypos  , 0
+  --       --   ]
+  --       vertices = floorVBuffer
 
-    activeTexture $= TextureUnit 0
+  --   activeTexture $= TextureUnit 0
     -- textureBinding Texture2D $= Just tex'
     -- bindBuffer ArrayBuffer $= Just (vbo meshy)
 
