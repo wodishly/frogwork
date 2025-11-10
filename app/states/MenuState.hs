@@ -7,7 +7,7 @@ module MenuState (
 ) where
 
 import Control.Lens (makeLenses, (^.))
-import Control.Monad.State (MonadState (get, put), StateT)
+import Control.Monad.State (MonadState (get, put), StateT, MonadTrans (lift))
 
 import SDL.Input.Keyboard.Codes
 
@@ -15,13 +15,16 @@ import State (StateName (MenuName, PlayName), Stately (..))
 
 import Blee (bg, clerp, white)
 import Key (KeySet, keyBegun)
+import Stave (Staveware, stavewrite, Staveware)
+import Graphics.Rendering.OpenGL (Vertex2(Vertex2))
 
 
 data MenuState = MenuState {
   _hand :: [(StateName, String)]
 , _finger :: Int
 , _choosen :: Maybe StateName
-} deriving (Show, Eq)
+, _staveware :: Staveware
+}
 makeLenses ''MenuState
 
 instance Stately MenuState where
@@ -31,15 +34,16 @@ instance Stately MenuState where
     menuFare keyset
 
   render _ = do
-    _ <- get
+    statewit <- get
     bg (clerp (1/4) white)
+    lift $ stavewrite (statewit^.staveware) (Vertex2 -100 0) 1 "FROG"
 
-
-makeMenuState :: MenuState
-makeMenuState = MenuState {
+makeMenuState :: Staveware -> MenuState
+makeMenuState ware = MenuState {
   _hand = [(PlayName, "play"), (PlayName, "frog")]
 , _finger = 0
 , _choosen = Nothing
+, _staveware = ware
 }
 
 menuFare :: KeySet -> StateT MenuState IO ()

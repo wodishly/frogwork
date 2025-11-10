@@ -1,6 +1,7 @@
 module Stave (
   Stave (..)
 , Stavebook
+, Staveware
 , makeFeather
 , makeStavebook
 , stavewrite
@@ -49,6 +50,7 @@ import Shade (Mesh (..), bufferSize, drawFaces, uploadTexture, useMesh)
 
 
 type Stavebook = HashMap Char Stave
+type Staveware = (Stavebook, Mesh)
 
 data Stave = Stave {
     _bearing :: Point
@@ -89,7 +91,7 @@ makeStavebook greatness path = do
   feather' <- peek feather
   putStrLn "made feather!"
 
-  stavebook <- forM (map chr [65..90]) $ \stave -> do
+  stavebook <- forM (map chr [32..126]) $ \stave -> do
     finger <- ft_Get_Char_Index feather (fromIntegral $ fromEnum stave)
     ft_Load_Glyph feather finger FT_LOAD_RENDER
     putStrLn "made finger!"
@@ -156,8 +158,8 @@ makeStavebook greatness path = do
 
   return $ fromList stavebook
 
-stavewrite :: Stavebook -> Mesh -> Point -> GLfloat -> String -> IO ()
-stavewrite book mesh (Vertex2 x y) scale spell = do
+stavewrite :: Staveware -> Point -> GLfloat -> String -> IO ()
+stavewrite (book, mesh) (Vertex2 x y) scale spell = do
   useMesh mesh
 
   let advances = scanl (+) x (map (_advance . (book!)) spell)

@@ -36,13 +36,13 @@ main = do
 birth :: SDL.Window -> SDL.GLContext -> IO Allwit
 birth window context = do
   display <- waxwane window
-  (stavebook, meshes) <- begetMeshes
+  (staveware, meshes) <- begetMeshes
   -- _ <- SDL.setMouseLocationMode SDL.RelativeLocation
 
-  let allwit = makeAllwit window display context
-        (makePlayState stavebook meshes)
-        makePauseState
-        makeMenuState
+  let allwit = makeAllwit staveware window display context
+        (makePlayState staveware meshes)
+        (makePauseState staveware)
+        (makeMenuState staveware)
         MenuName
 
   fand allwit

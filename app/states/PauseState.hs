@@ -8,9 +8,10 @@ import Control.Lens (makeLenses)
 import State (StateName (PauseName), Stately (..))
 
 import Blee (bg, blue)
+import Stave (Staveware)
 
 
-data PauseState = PauseState
+newtype PauseState = PauseState Staveware
 makeLenses ''PauseState
 
 instance Stately PauseState where
@@ -18,5 +19,5 @@ instance Stately PauseState where
   update _ = return ()
   render _ = bg blue
 
-makePauseState :: PauseState
+makePauseState :: Staveware -> PauseState
 makePauseState = PauseState

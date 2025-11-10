@@ -1,6 +1,7 @@
 module Game (
   Allwit (..)
 , makeAllwit
+, staveware -- unused
 , context -- unused
 , keyset
 , settings
@@ -64,7 +65,7 @@ import Key (KeySet, anyKeysBegun, keyBegun, listen, unkeys)
 import Matrix (Point, RenderView, fromTranslation)
 import Mean (full, weep)
 import Shade (Mesh, makeAsset, makeAssetMesh, makeSimpleMesh, setMeshTransform)
-import Stave (Stavebook, makeFeather)
+import Stave (Staveware, makeFeather, Staveware)
 import Time (Time, beginTime, keepTime)
 
 
@@ -75,6 +76,7 @@ data Allwit = Allwit {
 , _mouse :: Point
 , _wheel :: Point
 , _events :: [SDL.Event]
+, _staveware :: Staveware
 , _window :: SDL.Window
 , _display :: RenderView
 , _context :: SDL.GLContext
@@ -87,7 +89,7 @@ data Allwit = Allwit {
 }
 makeLenses ''Allwit
 
-makeAllwit :: SDL.Window -> RenderView -> SDL.GLContext
+makeAllwit :: Staveware -> SDL.Window -> RenderView -> SDL.GLContext
   -> PlayState -> PauseState -> MenuState -> StateName -> Allwit
 makeAllwit = Allwit
   beginTime
@@ -97,7 +99,7 @@ makeAllwit = Allwit
   (Vertex2 0 0)
   []
 
-begetMeshes :: IO (Stavebook, [Mesh])
+begetMeshes :: IO (Staveware, [Mesh])
 begetMeshes = do
   froggy <- makeAssetMesh defaultAssetMeshProfile
     >>= setMeshTransform (fromTranslation [0, 0, 0])
@@ -116,7 +118,7 @@ begetMeshes = do
     , texObject = Nothing
   }
 
-  return (x, [froggy, earth, farsee, hack])
+  return ((x, hack), [froggy, earth, farsee])
 
 news :: Allwit -> News
 news allwit = (allwit^.keyset, allwit^.mouse, allwit^.wheel, allwit^.display, allwit^.time)

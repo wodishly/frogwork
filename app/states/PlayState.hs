@@ -6,7 +6,7 @@ module PlayState (
 , programs
 , camera
 , seed
-, stavebook -- unused
+, staveware -- unused
 ) where
 
 import Control.Lens (makeLenses, (^.))
@@ -26,7 +26,7 @@ import Mean (given, hit)
 import Random (FrogSeed, defaultSeed)
 import Rime (clamp)
 import Shade (Mesh, drawMesh, setMeshTransform)
-import Stave (Stavebook)
+import Stave (Staveware)
 
 data Camera = Camera {
   cPosition :: FrogVector
@@ -41,7 +41,7 @@ makeCamera = Camera {
 
 data PlayState = PlayState {
   _seed :: FrogSeed
-, _stavebook :: Stavebook
+, _staveware :: Staveware
 , _meshes :: [Mesh]
 , _frog :: Frogwit
 , _euler :: Point
@@ -65,15 +65,14 @@ instance Stately PlayState where
     let cam = statewit^.camera
     let viewMatrix = frogLookAt (cPosition cam) (cTarget cam)
     lift $ mapM_ (drawMesh (getProjectionMatrix display) viewMatrix) (statewit^.meshes)
-    -- lift $ stavewrite (statewit^.stavebook) (last $ statewit^.meshes) (Vertex2 -100 0) 1 "FROG"
 
 instance Show PlayState where
   show (PlayState _ _ _ f _ _ p c) = show f ++ show p ++ show c
 
-makePlayState :: Stavebook -> [Mesh] -> PlayState
-makePlayState book ms = PlayState {
+makePlayState :: Staveware -> [Mesh] -> PlayState
+makePlayState ware ms = PlayState {
   _seed = defaultSeed
-, _stavebook = book
+, _staveware = ware
 , _meshes = ms
 , _frog = makeFrog
 , _euler = Vertex2 0.3 1.57079633
