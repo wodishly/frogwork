@@ -59,7 +59,7 @@ data Stave = Stave {
 } deriving (Show, Eq)
 
 sharpness :: Word32
-sharpness = 2^(8 :: Integer)
+sharpness = 2^(5 :: Integer)
 
 glyphFormatName :: FT_Glyph_Format -> String
 glyphFormatName format = "ft_GLYPH_FORMAT_" ++ case format of

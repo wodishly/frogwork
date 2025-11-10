@@ -6,7 +6,7 @@ import qualified Graphics.Rendering.OpenGL as GL
 import qualified SDL (
     initializeAll, getKeyboardState, quit
   , Window, createWindow, destroyWindow
-  , GLContext, glCreateContext, glDeleteContext
+  , GLContext, glCreateContext, glDeleteContext, setMouseLocationMode, LocationMode (RelativeLocation)
   -- , LocationMode (RelativeLocation), setMouseLocationMode
   )
 
@@ -37,7 +37,7 @@ birth :: SDL.Window -> SDL.GLContext -> IO Allwit
 birth window context = do
   display <- waxwane window
   (staveware, meshes) <- begetMeshes
-  -- _ <- SDL.setMouseLocationMode SDL.RelativeLocation
+  _ <- SDL.setMouseLocationMode SDL.RelativeLocation
 
   let allwit = makeAllwit staveware window display context
         (makePlayState staveware meshes)

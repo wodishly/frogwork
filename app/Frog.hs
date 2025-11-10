@@ -18,8 +18,8 @@ import Key (KeySet, keyBegun, wasd)
 import Matrix (FrogVector, Point3, hat3)
 import Time (Time, throttle)
 import Control.Monad (when)
-import Mean (doBoth)
-import State (News)
+import Mean (doBoth, ly)
+import State (News, preent)
 
 
 data Frogwit = Frogwit {
@@ -65,11 +65,12 @@ fall time = do
   let Vertex3 x y z = frogwit^.position
       y' = max 0 (y + throttle time (frogwit^.dy))
       dy' = frogwit^.dy + throttle time (frogwit^.weight)
+  let landed = y' == 0
   put frogwit {
-      _dy = dy'
+      _dy = if landed then 0 else dy'
+    , _leapCount = if landed then 0 else frogwit^.leapCount
     , _position = Vertex3 x y' z
   }
-  when (y' == 0) $ put frogwit { _leapCount = 0 }
   return (frogwit^.dy /= 0)
 
 walk :: News -> FrogVector -> StateT Frogwit IO Bool

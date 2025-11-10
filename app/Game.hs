@@ -32,7 +32,7 @@ import Data.Function (applyWhen)
 import SDL.Input.Keyboard.Codes
 import Graphics.Rendering.OpenGL (Vertex2 (Vertex2), Vertex3 (Vertex3))
 
-import qualified SDL (Event, GLContext, Window, glSwapWindow, pollEvents, ticks)
+import qualified SDL (Event, GLContext, Window, glSwapWindow, pollEvents, ticks, windowGrab, LocationMode (AbsoluteLocation), setMouseLocationMode)
 
 import State (
     News
@@ -66,6 +66,7 @@ import Mean (full, weep)
 import Shade (Mesh, makeAsset, makeAssetMesh, makeSimpleMesh, setMeshTransform)
 import Stave (Staveware, makeFeather, Staveware)
 import Time (Time, beginTime, keepTime)
+import SDL (($=), LocationMode (RelativeLocation))
 
 
 data Allwit = Allwit {
@@ -209,8 +210,15 @@ settleState = do
       else allwit^.nowState
   }
   case allwit^.nowState of
-    PlayName -> goto playState
-    PauseName -> goto pauseState
+    PlayName -> do
+      SDL.windowGrab (allwit^.window) $= True
+      _ <- SDL.setMouseLocationMode SDL.RelativeLocation
+      goto playState
+    PauseName -> do
+      SDL.windowGrab (allwit^.window) $= False
+      _ <- SDL.setMouseLocationMode SDL.AbsoluteLocation
+
+      goto pauseState
     MenuName -> goto menuState
 
 goto :: Stately a => Lens' Allwit a -> StateT Allwit IO ()
