@@ -223,3 +223,6 @@ lif = (||) . not
 
 (.>>.) :: Bits a => a -> Int -> a
 (.>>.) = shiftR
+
+(<<) :: Monad m => m b -> m a -> m b
+(<<) = flip (>>)

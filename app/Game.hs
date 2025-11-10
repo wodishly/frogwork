@@ -217,9 +217,11 @@ settleState = do
     PauseName -> do
       SDL.windowGrab (allwit^.window) $= False
       _ <- SDL.setMouseLocationMode SDL.AbsoluteLocation
-
       goto pauseState
-    MenuName -> goto menuState
+    MenuName -> do
+      SDL.windowGrab (allwit^.window) $= False
+      _ <- SDL.setMouseLocationMode SDL.AbsoluteLocation
+      goto menuState
 
 goto :: Stately a => Lens' Allwit a -> StateT Allwit IO ()
 goto lens = do

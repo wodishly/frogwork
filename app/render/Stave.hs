@@ -45,7 +45,7 @@ import qualified Graphics.Rendering.OpenGL as GL (
 import FastenMain (assetsBasePath)
 
 import Matrix (Point)
-import Mean (doBoth, (.>>.), ly)
+import Mean (doBoth, (.>>.))
 import Shade (uploadTexture, useMesh, Mesh (..), bufferSize, drawFaces)
 
 type Stavebook = HashMap Char Stave
@@ -61,8 +61,11 @@ data Stave = Stave {
 sharpness :: Word32
 sharpness = 2^(7 :: Integer)
 
+greatness :: GLfloat
+greatness = 2^(6 :: Integer)
+
 glyphFormatName :: FT_Glyph_Format -> String
-glyphFormatName format = "ft_GLYPH_FORMAT_" ++ case format of
+glyphFormatName = ("ft_GLYPH_FORMAT_" ++) . \case
     FT_GLYPH_FORMAT_BITMAP -> "BITMAP"
     FT_GLYPH_FORMAT_COMPOSITE -> "COMPOSITE"
     FT_GLYPH_FORMAT_OUTLINE -> "OUTLINE"
@@ -81,12 +84,12 @@ makeFeather = makeStavebook sharpness . printf "%s/%s.ttf" assetsBasePath
 
 -- | Based on [this page](https://zyghost.com/articles/Haskell-font-rendering-with-freetype2-and-opengl.html).
 makeStavebook :: FT_UInt -> FilePath -> IO Stavebook
-makeStavebook greatness path = do
+makeStavebook great path = do
   stavewit <- ft_Init_FreeType
   putStrLn "made stavebook!"
 
   feather <- ft_New_Face stavewit path 0
-  ft_Set_Pixel_Sizes feather 0 (fromIntegral greatness)
+  ft_Set_Pixel_Sizes feather 0 (fromIntegral great)
   feather' <- peek feather
   putStrLn "made feather!"
 
@@ -165,7 +168,7 @@ stavewrite (book, mesh) (Vertex2 x y) scale spell = do
 
   forM_ (zip [0..] spell) $ \(i, stave) -> do
     let (Stave (Vertex2 left top) size@(Vertex2 _ height) _ tex') = book!stave
-        scale' = scale * 64 / fromIntegral sharpness
+        scale' = scale * greatness / fromIntegral sharpness
         x' = x + scale' * (left + advances!!i)
         y' = y - scale' * (height - top)
         Vertex2 w h = (* scale') <$> size

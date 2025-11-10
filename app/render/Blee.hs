@@ -2,8 +2,11 @@ module Blee (
   white
 , blue
 , black
+, lightwhelk
+, darkwhelk
 , clerp
 , bg
+, from255
 ) where
 
 import Control.Monad.State (StateT, MonadTrans (lift))
@@ -18,6 +21,7 @@ import Graphics.Rendering.OpenGL (
   )
 
 import Rime (clamp)
+import Mean ((<<))
 
 
 type FrogColor = Color4 GLfloat
@@ -31,11 +35,21 @@ type FrogColor = Color4 GLfloat
 -- evenNooks :: Int -> Polygon
 -- evenNooks n = map (dir . (* (2*pi / cast n)). cast) (flight n)
 
+from255 :: Int -> Int -> Int -> Int -> FrogColor
+from255 = (((. f) .) .) . (((. f) .) . ((. f) . Color4) . f)
+  where f = (/255) . fromIntegral
+
 black :: FrogColor
 black = Color4 0 0 0 1
 
 white :: FrogColor
 white = Color4 1 1 1 1
+
+lightwhelk :: FrogColor
+lightwhelk = from255 203 203 255 255
+
+darkwhelk :: FrogColor
+darkwhelk = from255 53 59 79 255
 
 -- red :: FrogColor
 -- red = Color4 1 0 0 1
@@ -57,4 +71,4 @@ clerp :: GLfloat -> FrogColor -> FrogColor
 clerp = fmap . (*) . clamp (0.0, 1.0)
 
 bg :: FrogColor -> StateT a IO ()
-bg c = lift (clearColor $= c >> clear [ColorBuffer, DepthBuffer])
+bg = lift . (clear [ColorBuffer, DepthBuffer] <<) . (clearColor $=)

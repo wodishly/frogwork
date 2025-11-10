@@ -11,13 +11,13 @@ import Numeric.LinearAlgebra (ident)
 import Control.Monad.State (MonadState (get, put), StateT, MonadTrans (lift))
 
 import SDL.Input.Keyboard.Codes
-import Graphics.Rendering.OpenGL (Vertex2(Vertex2), Color4 (Color4))
+import Graphics.Rendering.OpenGL (Vertex2(Vertex2))
 
 import State (StateName (MenuName, PlayName), Stately (..))
 
-import Blee (bg, clerp, white)
+import Blee (bg, darkwhelk)
 import Key (KeySet, keyBegun)
-import Matrix (getOrthographicMatrix, getPerspectiveMatrix)
+import Matrix (_size, getOrthographicMatrix, getPerspectiveMatrix)
 import Shade (drawMesh)
 import Stave (Staveware, stavewrite)
 
@@ -38,13 +38,17 @@ instance Stately MenuState where
 
   render (_, _, _, display, _) = do
     statewit <- get
-    bg white
+    bg darkwhelk
     lift $ drawMesh
       (getPerspectiveMatrix display)
       (ident 4)
       (getOrthographicMatrix display)
       (snd $ statewit^.staveware)
-    lift $ stavewrite (statewit^.staveware) (Vertex2 100 100) 1 "Welcome to Frogton."
+
+    let (width, height) = _size display
+    lift $ stavewrite (statewit^.staveware) (Vertex2 (width/8) (height*4/8)) 1 "welcome to frogford!"
+    lift $ stavewrite (statewit^.staveware) (Vertex2 (width/8) (height*3/8)) 0.5 "play"
+    lift $ stavewrite (statewit^.staveware) (Vertex2 (width/8) (height*2/8)) 0.5 "quit"
 
 makeMenuState :: Staveware -> MenuState
 makeMenuState ware = MenuState {
