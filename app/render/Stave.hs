@@ -1,9 +1,8 @@
-{- HLINT ignore "Redundant return" -}
 module Stave (
   Stave (..)
 , Stavebook
-, loadFeather
-, loadStaveweb
+, makeFeather
+, makeStavebook
 , stavewrite
 ) where
 
@@ -12,22 +11,30 @@ import Data.Char (chr)
 import Data.HashMap.Lazy (HashMap, fromList, (!))
 import Text.Printf (printf)
 
-import Foreign (peek, peekArray, withArray)
+import Foreign (peek, peekArray, withArray, Word32)
 
 import FreeType.Core.Base
 import FreeType.Core.Types
 
 import Graphics.Rendering.OpenGL (
-    Clamping (..)
-  , PixelFormat (..)
-  , Repetition (..)
-  , TextureCoordName (..)
-  , TextureFilter (..)
-  , TextureObject
-  , TextureTarget2D (..)
-  , Vertex2 (Vertex2)
+    BufferTarget (ArrayBuffer)
+  , Clamping (ClampToEdge)
   , GLfloat
-  , ($=), activeTexture, TextureUnit (TextureUnit), textureBinding, bindBuffer, BufferTarget (ArrayBuffer), bufferSubData, TransferDirection (WriteToBuffer), Vertex3 (Vertex3)
+  , PixelFormat (Red)
+  , Repetition (Repeated)
+  , TextureCoordName (S, T)
+  , TextureFilter (Nearest)
+  , TextureObject
+  , TextureTarget2D (Texture2D)
+  , TextureUnit (TextureUnit)
+  , TransferDirection (WriteToBuffer)
+  , Vertex2 (Vertex2)
+  , Vertex3 (Vertex3)
+  , activeTexture
+  , bindBuffer
+  , bufferSubData
+  , textureBinding
+  , ($=)
   )
 import qualified Graphics.Rendering.OpenGL as GL (
     textureFilter
@@ -35,19 +42,23 @@ import qualified Graphics.Rendering.OpenGL as GL (
   )
 
 import FastenMain (assetsBasePath)
+
 import Matrix (Point)
-import Mean (doBoth, ly, twimap, (.>>.))
-import Shade (helpMe, useMesh, Mesh (..), bufferSize, drawFaces)
-import FastenShade (floorVBuffer)
+import Mean (doBoth, ly, (.>>.))
+import Shade (Mesh (..), bufferSize, drawFaces, uploadTexture, useMesh)
+
 
 type Stavebook = HashMap Char Stave
 
 data Stave = Stave {
-    bearing :: Point
-  , size :: Point
-  , advance :: GLfloat
-  , texture :: TextureObject
+    _bearing :: Point
+  , _size :: Point
+  , _advance :: GLfloat
+  , _texture :: TextureObject
 } deriving (Show, Eq)
+
+sharpness :: Word32
+sharpness = 2^(8 :: Integer)
 
 glyphFormatName :: FT_Glyph_Format -> String
 glyphFormatName format = "ft_GLYPH_FORMAT_" ++ case format of
@@ -59,17 +70,17 @@ glyphFormatName format = "ft_GLYPH_FORMAT_" ++ case format of
 
 pad :: Int -> Int -> a -> [a] -> [a]
 pad _ _ _ [] = []
-pad amount width something bitmapData = aLeft ++ b ++ c where
-  (aLeft, aRight) = splitAt width bitmapData
+pad amount width something bitmapData = left ++ b ++ recourse where
+  (left, right) = splitAt width bitmapData
   b = replicate amount something
-  c = pad amount width something aRight
+  recourse = pad amount width something right
 
-loadFeather :: FilePath -> IO Stavebook
-loadFeather = flip loadStaveweb 96 . printf "%s/%s.ttf" assetsBasePath
+makeFeather :: FilePath -> IO Stavebook
+makeFeather = makeStavebook sharpness . printf "%s/%s.ttf" assetsBasePath
 
 -- | Based on [this page](https://zyghost.com/articles/Haskell-font-rendering-with-freetype2-and-opengl.html).
-loadStaveweb :: FilePath -> FT_UInt -> IO Stavebook
-loadStaveweb path greatness = do
+makeStavebook :: FT_UInt -> FilePath -> IO Stavebook
+makeStavebook greatness path = do
   stavewit <- ft_Init_FreeType
   putStrLn "made stavebook!"
 
@@ -118,14 +129,16 @@ loadStaveweb path greatness = do
     putStrLn $ "  palette_mode: " ++ show (bPalette_mode bitmap)
     putStrLn ""
 
-    let (w', h') = twimap fromIntegral (w, h)
+    let (w', h') = (fromIntegral w, fromIntegral h)
         pitch = 4 - mod w' 4
-        nw = fromIntegral (pitch + fromIntegral w')
+        nw = fromIntegral (pitch + w')
     putStrLn "did some reckoning..."
 
-    tex' <- flip withArray (helpMe Red (nw, fromIntegral h')) . pad pitch w' 0 =<< peekArray (w'*h') (bBuffer bitmap)
+    tex' <- flip withArray (uploadTexture Red (nw, h')) . pad pitch w' 0
+      =<< peekArray (fromIntegral $ w*h) (bBuffer bitmap)
 
-    -- GL.texture Texture2D $= Enabled -- this doesnt seem to do anything
+    -- does this do anything? unsure if safe to destroy
+    -- GL.texture Texture2D $= Enabled
     GL.textureFilter Texture2D $= ((Nearest, Nothing), Nearest)
     GL.textureWrapMode Texture2D S $= (Repeated, ClampToEdge)
     GL.textureWrapMode Texture2D T $= (Repeated, ClampToEdge)
@@ -144,32 +157,29 @@ loadStaveweb path greatness = do
   return $ fromList stavebook
 
 stavewrite :: Stavebook -> Mesh -> Point -> GLfloat -> String -> IO ()
-stavewrite book meshy (Vertex2 x y) scale spell = do
+stavewrite book mesh (Vertex2 x y) scale spell = do
+  useMesh mesh
 
-  useMesh meshy
-
-  let advances = scanl (+) x (map (advance . (book!)) spell)
+  let advances = scanl (+) x (map (_advance . (book!)) spell)
 
   forM_ (zip [0..] spell) $ \(i, stave) -> do
-    let (Stave (Vertex2 left top) size'@(Vertex2 _ height) _ tex') = book!stave
-        xpos = scale * (left + advances!!i)
-        ypos = y - scale * (height - top)
-        Vertex2 w h = (* scale) <$> size'
+    let (Stave (Vertex2 left top) size@(Vertex2 _ height) _ tex') = book!stave
+        scale' = scale / fromIntegral sharpness / 4
+        x' = scale' * (left + advances!!i)
+        y' = y - scale' * (height - top)
+        Vertex2 w h = (* scale') <$> size
         vertices = [
-            Vertex3 (xpos+w) (ypos+h) 0
-          , Vertex3 (xpos+w)  ypos    0
-          , Vertex3  xpos     ypos    0
-          , Vertex3  xpos    (ypos+h) 0
+            Vertex3 (x'+w) (y'+h) 0
+          , Vertex3 (x'+w)  y'    0
+          , Vertex3  x'     y'    0
+          , Vertex3  x'    (y'+h) 0
           ]
-        -- vertices = floorVBuffer
-    print $ book!('F')
-    print vertices
+        
     activeTexture $= TextureUnit 0
     textureBinding Texture2D $= Just tex'
-    bindBuffer ArrayBuffer $= Just (vbo meshy)
+    bindBuffer ArrayBuffer $= Just (vbo mesh)
 
-    _ <- withArray vertices $ \ptr ->
-      bufferSubData ArrayBuffer WriteToBuffer 0 (bufferSize vertices) ptr
+    withArray vertices (bufferSubData ArrayBuffer WriteToBuffer 0 $ bufferSize vertices)
 
     bindBuffer ArrayBuffer $= Nothing
-    drawFaces $ elementCount meshy
+    drawFaces $ elementCount mesh

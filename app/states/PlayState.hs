@@ -19,13 +19,13 @@ import Frog (Frogwit (..), makeFrog, moveFrog, position)
 import State (News, StateName (..), Stately (..))
 
 import Blee (bg, black)
-import Matrix (FrogVector, Point, frogLookAt, frogZero, getProjectionMatrix, Point3, aught)
-import Mean (hit, given)
+import Key (arrow)
+import Matrix (FrogVector, Point, Point3, aught, frogLookAt, frogZero, getProjectionMatrix)
+import Mean (given, hit)
 import Random (FrogSeed, defaultSeed)
 import Rime (clamp)
 import Shade (Mesh, drawMesh, setMeshTransform)
-import Key (arrow)
-import Stave (stavewrite, Stavebook)
+import Stave (Stavebook, stavewrite)
 
 data Camera = Camera {
   cPosition :: FrogVector
@@ -51,8 +51,20 @@ data PlayState = PlayState {
 makeLenses ''PlayState
 
 instance Stately PlayState where
-  _name _ = PlayName
-  _update = play
+  name _ = PlayName
+  update news = do
+    cam <- updateCamera news
+    let viewMatrix = frogLookAt (cPosition cam) (cTarget cam)
+        forward = flatten $ (viewMatrix ¿ [2]) ?? (Take 3, All)
+    updateFrog news forward
+
+  render (_, _, _, display, _) = do
+    statewit <- get
+    bg black
+    let cam = statewit^.camera
+    let viewMatrix = frogLookAt (cPosition cam) (cTarget cam)
+    lift $ mapM_ (drawMesh (getProjectionMatrix display) viewMatrix) (statewit^.meshes)
+    lift $ stavewrite (statewit^.stavebook) (last $ statewit^.meshes) (Vertex2 -100 0) 1 "FROG"
 
 instance Show PlayState where
   show (PlayState _ _ _ f _ _ p c) = show f ++ show p ++ show c
@@ -68,22 +80,6 @@ makePlayState book ms = PlayState {
 , _programs = []
 , _camera = makeCamera
 }
-
-play :: News -> StateT PlayState IO ()
-play news@(_, _, _, display, _) = do
-  statewit <- get
-  cam <- updateCamera news
-
-  let viewMatrix = frogLookAt (cPosition cam) (cTarget cam)
-  let forward = flatten $ (viewMatrix ¿ [2]) ?? (Take 3, All)
-
-  updateFrog news forward
-  
-
-  bg black
-  lift $ mapM_ (drawMesh (getProjectionMatrix display) viewMatrix) (statewit^.meshes)
-  _ <- lift $ stavewrite (statewit^.stavebook) (last $ statewit^.meshes) (Vertex2 -100 0) (1/200) "FROG"
-  return ()
 
 updateCamera :: News -> StateT PlayState IO Camera
 updateCamera (keys, mouse, wheel, _, _) = do

@@ -4,9 +4,8 @@ module PauseState (
 ) where
 
 import Control.Lens (makeLenses)
-import Control.Monad.State (StateT)
 
-import State (News, StateName (..), Stately (..))
+import State (StateName (PauseName), Stately (..))
 
 import Blee (bg, blue)
 
@@ -15,12 +14,9 @@ data PauseState = PauseState
 makeLenses ''PauseState
 
 instance Stately PauseState where
-  _name _ = PauseName
-  _update = pause
+  name _ = PauseName
+  update _ = return ()
+  render _ = bg blue
 
 makePauseState :: PauseState
 makePauseState = PauseState
-
-pause :: News -> StateT PauseState IO ()
-pause _ = do
-  bg blue

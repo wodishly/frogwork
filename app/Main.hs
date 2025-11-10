@@ -22,7 +22,6 @@ import Game (
   )
 import FastenMain (openGLWindow)
 import Happen (waxwane)
-import Data.Bifunctor (second)
 
 
 main :: IO ()

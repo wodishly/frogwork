@@ -4,10 +4,17 @@ import Control.Monad.Identity (Identity (Identity))
 import Data.HashMap.Lazy (HashMap)
 
 import Foreign (Word32)
-import Graphics.Rendering.OpenGL 
-  (GettableStateVar, Program, UniformLocation, Vertex3 (Vertex3), TextureObject, GLfloat, Vertex2 (Vertex2))
+import Graphics.Rendering.OpenGL (
+    GLfloat
+  , GettableStateVar
+  , Program
+  , TextureObject
+  , UniformLocation
+  , Vertex2 (Vertex2)
+  , Vertex3 (Vertex3)
+  )
 
-import Matrix (Polyhedron)
+import Matrix (Polyhedron, Polygon)
 import Mean (Twain)
 
 
@@ -97,7 +104,7 @@ iBuffer = [
   , 2, 3, 0
   ]
 
-quadUvBuffer :: [Vertex2 GLfloat]
+quadUvBuffer :: Polygon
 quadUvBuffer = [
     Vertex2 1 0
   , Vertex2 1 1

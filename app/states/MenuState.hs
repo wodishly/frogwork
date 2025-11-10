@@ -11,10 +11,10 @@ import Control.Monad.State (MonadState (get, put), StateT)
 
 import SDL.Input.Keyboard.Codes
 
-import State (News, StateName (..), Stately (..))
+import State (StateName (MenuName, PlayName), Stately (..))
 
-import Key (KeySet, keyBegun)
 import Blee (bg, clerp, white)
+import Key (KeySet, keyBegun)
 
 
 data MenuState = MenuState {
@@ -25,8 +25,15 @@ data MenuState = MenuState {
 makeLenses ''MenuState
 
 instance Stately MenuState where
-  _name _ = MenuName
-  _update = menu
+  name _ = MenuName
+  update (keyset, _, _, _, _) = do
+    _ <- get
+    menuFare keyset
+
+  render _ = do
+    _ <- get
+    bg (clerp (1/4) white)
+
 
 makeMenuState :: MenuState
 makeMenuState = MenuState {
@@ -34,12 +41,6 @@ makeMenuState = MenuState {
 , _finger = 0
 , _choosen = Nothing
 }
-
-menu :: News -> StateT MenuState IO ()
-menu (keyset, _, _, _, _) = do
-  _ <- get
-  bg (clerp (1/4) white)
-  menuFare keyset
 
 menuFare :: KeySet -> StateT MenuState IO ()
 menuFare keyset = do

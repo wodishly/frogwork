@@ -42,21 +42,29 @@ import State (
   , isShowingKeys
   , isShowingTicks
   , isRunningTests
-  , _update
+  , loop
   , preent
   )
 import MenuState (MenuState, finger, hand)
 import PauseState (PauseState)
 import PlayState (PlayState)
 
-import FastenShade (ShaderProfile (..), SimpleMeshProfile (..), defaultAssetMeshProfile, defaultSimpleMeshProfile, iBuffer, quadUvBuffer, floorVBuffer)
+import FastenShade (
+    ShaderProfile (..)
+  , SimpleMeshProfile (..)
+  , defaultAssetMeshProfile
+  , defaultSimpleMeshProfile
+  
+  , iBuffer
+  , quadUvBuffer
+  )
 
 import Happen (unwrapHappenMouse, unwrapHappenWheel, unwrapHappenWindow, waxwane)
 import Key (KeySet, anyKeysBegun, keyBegun, listen, unkeys)
 import Matrix (Point, RenderView, fromTranslation)
 import Mean (full, weep)
 import Shade (Mesh, makeAsset, makeAssetMesh, makeSimpleMesh, setMeshTransform)
-import Stave (Stavebook, loadFeather)
+import Stave (Stavebook, makeFeather)
 import Time (Time, beginTime, keepTime)
 
 
@@ -70,9 +78,11 @@ data Allwit = Allwit {
 , _window :: SDL.Window
 , _display :: RenderView
 , _context :: SDL.GLContext
+
 , _playState :: PlayState
 , _pauseState :: PauseState
 , _menuState :: MenuState
+
 , _nowState :: StateName
 }
 makeLenses ''Allwit
@@ -97,7 +107,7 @@ begetMeshes = do
   farsee <- makeAssetMesh (makeAsset "tv")
     >>= setMeshTransform (fromTranslation [-2, 1, 2])
 
-  x <- loadFeather "noto-sans"
+  x <- makeFeather "noto-sans"
   hack <- makeSimpleMesh $ SimpleMeshProfile {
       vbuffer = [Vertex3 1 1 0, Vertex3 1 -1 0, Vertex3 -1 -1 0, Vertex3 -1 1 0]
     , ibuffer = iBuffer
@@ -205,15 +215,11 @@ settleState = do
 goto :: Stately a => Lens' Allwit a -> StateT Allwit IO ()
 goto lens = do
   allwit <- get
-  state <- lift (execStateT (_update $ news allwit) (allwit^.lens))
+  state <- lift (execStateT (loop $ news allwit) $ allwit^.lens)
   put ((lens.~state) allwit)
 
 blit :: StateT Allwit IO ()
-blit = do
-  allwit <- get
-  SDL.glSwapWindow (allwit^.window)
+blit = get >>= SDL.glSwapWindow . (^.window)
 
 again :: StateT Allwit IO () -> StateT Allwit IO ()
-again f = do
-  allwit <- get
-  unless (anyKeysBegun (allwit^.keyset) [ScancodeQ, ScancodeEscape]) f
+again f = get >>= \allwit -> unless (anyKeysBegun (allwit^.keyset) [ScancodeQ, ScancodeEscape]) f

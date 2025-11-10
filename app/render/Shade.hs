@@ -8,7 +8,7 @@ module Shade (
 , useMesh
 , makeAssetMesh
 , makeSimpleMesh
-, helpMe
+, uploadTexture
 ) where
 
 import Control.Lens ((^.))
@@ -34,6 +34,7 @@ import FastenShade
 import File
 import Matrix (FrogMatrix)
 import Mean (Twain, twimap, twin, doBoth)
+import SDL (time)
 
 
 drawFaces :: Int32 -> IO ()
@@ -170,8 +171,11 @@ drawMesh projectionMatrix viewMatrix mesh = do
       S.unsafeWith (flatten viewMatrix) (GLRaw.glUniformMatrix4fv viewLocation 1 1)
     _ -> return ()
 
-  -- timeLocation <- uniformMap mesh ! "u_time"
-  -- time >>= ((uniform timeLocation :: StateVar GLfloat) $=)
+  case HM.lookup "u_time" (uniformMap mesh) of
+    Just _ -> do
+      timeLocation <- uniformMap mesh ! "u_time"
+      time >>= ((uniform timeLocation :: StateVar GLfloat) $=)
+    _ -> return ()
 
   case HM.lookup "u_texture" (uniformMap mesh) of
     Just uLoc -> do
@@ -237,7 +241,7 @@ makeAssetMesh mprofile = do
 
   -- texture uniform
   texy <- withArray (frogFile^.bitmapBuffer)
-    (helpMe RGBA (twimap fromIntegral $ frogFile^.texSize))
+    (uploadTexture RGBA (twimap fromIntegral $ frogFile^.texSize))
 
   print pro
   GL.get (activeUniforms pro) >>= print
@@ -254,8 +258,8 @@ makeAssetMesh mprofile = do
     (frogFile^.indexCount)
     (ident 4)
 
-helpMe :: PixelFormat -> (GLsizei, GLsizei) -> Ptr Word8 -> IO TextureObject
-helpMe format (w, h) pointer = do
+uploadTexture :: PixelFormat -> (GLsizei, GLsizei) -> Ptr Word8 -> IO TextureObject
+uploadTexture format (w, h) pointer = do
   thingy <- genObjectName
   textureBinding Texture2D $= Just thingy
   textureFilter Texture2D $= ((Nearest, Nothing), Nearest)
@@ -266,7 +270,10 @@ helpMe format (w, h) pointer = do
     Texture2D
     NoProxy
     0 -- mipmaps
-    (if format == Red then R8 else RGBA8) -- internal type
+    (case format of
+      Red -> R8
+      RGBA -> RGBA8
+      _ -> error "bad pixel format") -- internal type
     (TextureSize2D w h)
     0
     (PixelData format UnsignedByte pointer)

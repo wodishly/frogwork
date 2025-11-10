@@ -37,8 +37,13 @@ makeSettings = Settings {
 }
 
 class Stately a where
-  _name :: a -> StateName
-  _update :: News -> StateT a IO ()
+  name :: a -> StateName
+  update :: News -> StateT a IO ()
+  render :: News -> StateT a IO ()
+  loop :: News -> StateT a IO ()
+  loop news = do
+    update news
+    render news
 
 preent :: Show a => a -> StateT b IO ()
 preent = lift . print
