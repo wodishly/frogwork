@@ -10,7 +10,8 @@ module Matrix (
 , RenderView (..)
 , asFrog
 , fromTranslation
-, getProjectionMatrix
+, getPerspectiveMatrix
+, getOrthographicMatrix
 , frogZero -- unused?
 , frogLookAt
 , row -- unused
@@ -53,6 +54,7 @@ type FrogMatrix = Matrix GLfloat
 
 data RenderView = RenderView {
     _aspect :: GLfloat
+  , _size :: (GLfloat, GLfloat)
   , _fov :: GLfloat
   , _near :: GLfloat
   , _far :: GLfloat
@@ -101,13 +103,22 @@ fromTranslation [x, y, z] = (4><4) [
   ]
 fromTranslation _ = error "we need 3 dimensions"
 
-{-# INLINE getProjectionMatrix #-}
-getProjectionMatrix :: RenderView -> FrogMatrix
-getProjectionMatrix (RenderView asp fov near far) = (4><4) [
+{-# INLINE getPerspectiveMatrix #-}
+getPerspectiveMatrix :: RenderView -> FrogMatrix
+getPerspectiveMatrix (RenderView asp _ fov near far) = (4><4) [
    1/(asp*tan (fov/2)),             0,                     0,                     0
   ,                  0, 1/tan (fov/2),                     0,                     0
   ,                  0,             0, (near+far)/(near-far), 2*far*near/(near-far)
   ,                  0,             0,                    -1,                     0
+  ]
+
+{-# INLINE getOrthographicMatrix #-}
+getOrthographicMatrix :: RenderView -> FrogMatrix
+getOrthographicMatrix (RenderView _ (w, h) _ _ _) = (4><4) [
+    2/w, 0,   0, -1
+  , 0,   2/h, 0, -1
+  , 0,   0,  -1,  0
+  , 0,   0,   0,  1
   ]
 
 {-# INLINE frogZero #-}

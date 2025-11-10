@@ -140,17 +140,14 @@ useMesh mesh = do
   bindVertexArrayObject $= Just (vao mesh)
   textureBinding Texture2D $= tex mesh
 
-drawMesh :: FrogMatrix -> FrogMatrix -> Mesh -> IO ()
-drawMesh projectionMatrix viewMatrix mesh = do
+drawMesh :: FrogMatrix -> FrogMatrix -> FrogMatrix -> Mesh -> IO ()
+drawMesh projectionMatrix viewMatrix orthographicMatrix mesh = do
   useMesh mesh
 
   -- the bindings seem to be broken here? :(
   -- projLocation <- uniforms HM.! "u_projection_matrix"
   -- m <- newMatrix ColumnMajor (S.toList projectionMatrix) :: IO (GLmatrix GLfloat)
   -- withMatrix m $ const $ uniformv projLocation 1
-
-
-
 
   case HM.lookup "u_model_matrix" (uniformMap mesh) of
     Just uLoc -> do
@@ -163,6 +160,12 @@ drawMesh projectionMatrix viewMatrix mesh = do
     Just uLoc -> do
       UniformLocation projLocation <- get uLoc
       S.unsafeWith (flatten projectionMatrix) (GLRaw.glUniformMatrix4fv projLocation 1 1)
+    _ -> return ()
+
+  case HM.lookup "u_orthographic_matrix" (uniformMap mesh) of
+    Just uLoc -> do
+      UniformLocation orthLocation <- get uLoc
+      S.unsafeWith (flatten orthographicMatrix) (GLRaw.glUniformMatrix4fv orthLocation 1 1)
     _ -> return ()
 
   case HM.lookup "u_view_matrix" (uniformMap mesh) of

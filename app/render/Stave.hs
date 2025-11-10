@@ -46,8 +46,7 @@ import FastenMain (assetsBasePath)
 
 import Matrix (Point)
 import Mean (doBoth, ly, (.>>.))
-import Shade (Mesh (..), bufferSize, drawFaces, uploadTexture, useMesh)
-
+import Shade (uploadTexture, useMesh, Mesh (..), bufferSize, drawFaces)
 
 type Stavebook = HashMap Char Stave
 type Staveware = (Stavebook, Mesh)
@@ -166,7 +165,8 @@ stavewrite (book, mesh) (Vertex2 x y) scale spell = do
 
   forM_ (zip [0..] spell) $ \(i, stave) -> do
     let (Stave (Vertex2 left top) size@(Vertex2 _ height) _ tex') = book!stave
-        scale' = scale / fromIntegral sharpness / 4
+        -- scale' = scale / fromIntegral sharpness / 4
+        scale' = scale
         x' = scale' * (left + advances!!i)
         y' = y - scale' * (height - top)
         Vertex2 w h = (* scale') <$> size
@@ -176,7 +176,7 @@ stavewrite (book, mesh) (Vertex2 x y) scale spell = do
           , Vertex3  x'     y'    0
           , Vertex3  x'    (y'+h) 0
           ]
-        
+
     activeTexture $= TextureUnit 0
     textureBinding Texture2D $= Just tex'
     bindBuffer ArrayBuffer $= Just (vbo mesh)

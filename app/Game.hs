@@ -55,7 +55,6 @@ import FastenShade (
   , SimpleMeshProfile (..)
   , defaultAssetMeshProfile
   , defaultSimpleMeshProfile
-  
   , iBuffer
   , quadUvBuffer
   )
@@ -114,11 +113,11 @@ begetMeshes = do
       vbuffer = [Vertex3 1 1 0, Vertex3 1 -1 0, Vertex3 -1 -1 0, Vertex3 -1 1 0]
     , ibuffer = iBuffer
     , uvbuffer = Just quadUvBuffer
-    , meshShaderProfile = ShaderProfile ("vertex_stave", "fragment_stave") ["u_texture", "u_projection_matrix"]
+    , meshShaderProfile = ShaderProfile ("vertex_stave", "fragment_stave") ["u_texture", "u_orthographic_matrix"]
     , texObject = Nothing
   }
 
-  return ((x, hack), [froggy, earth, farsee])
+  return ((x, hack), [froggy, earth, farsee, hack])
 
 news :: Allwit -> News
 news allwit = (allwit^.keyset, allwit^.mouse, allwit^.wheel, allwit^.display, allwit^.time)

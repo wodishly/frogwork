@@ -21,12 +21,12 @@ import State (News, StateName (..), Stately (..))
 
 import Blee (bg, black)
 import Key (arrow)
-import Matrix (FrogVector, Point, Point3, aught, frogLookAt, frogZero, getProjectionMatrix)
+import Matrix (FrogVector, Point, Point3, aught, frogLookAt, frogZero, getPerspectiveMatrix, getOrthographicMatrix)
 import Mean (given, hit)
 import Random (FrogSeed, defaultSeed)
 import Rime (clamp)
 import Shade (Mesh, drawMesh, setMeshTransform)
-import Stave (Staveware)
+import Stave (Staveware, stavewrite)
 
 data Camera = Camera {
   cPosition :: FrogVector
@@ -64,7 +64,9 @@ instance Stately PlayState where
     bg black
     let cam = statewit^.camera
     let viewMatrix = frogLookAt (cPosition cam) (cTarget cam)
-    lift $ mapM_ (drawMesh (getProjectionMatrix display) viewMatrix) (statewit^.meshes)
+        orthographicMatrix = getOrthographicMatrix display
+    lift $ mapM_ (drawMesh (getPerspectiveMatrix display) viewMatrix orthographicMatrix) (statewit^.meshes)
+    lift $ stavewrite (statewit^.staveware) (Vertex2 0 0) 1 "FROG"
 
 instance Show PlayState where
   show (PlayState _ _ _ f _ _ p c) = show f ++ show p ++ show c

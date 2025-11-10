@@ -32,6 +32,7 @@ import qualified Graphics.Rendering.OpenGL as GL (depthFunc, get, viewport, blen
 import Mean (doBoth)
 import Matrix (RenderView (..), asFrog)
 import SDL.Vect (Point(P))
+import Control.Lens (bimap)
 
 
 type Keywit = (Scancode, InputMotion)
@@ -65,6 +66,7 @@ waxwane wind = do
   GL.blendFunc $= (GL.SrcAlpha, GL.OneMinusSrcAlpha)
   return RenderView {
       _aspect = fromIntegral width / fromIntegral height
+    , _size = (fromIntegral width, fromIntegral height)
     , _fov = pi / 4.0
     , _near = 0.1
     , _far = 100.0
