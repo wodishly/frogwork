@@ -11,7 +11,7 @@ import Graphics.Rendering.OpenGL (Vertex2(Vertex2))
 
 import State (StateName (MenuName, PlayName), Stately (..))
 
-import Blee (bg, darkwhelk, lightwhelk, Blee, red, green)
+import Blee (bg, darkwhelk, lightwhelk, Blee, red, blue)
 import Key (KeySet, keyBegun)
 import Matrix (getOrthographicMatrix, getPerspectiveMatrix, RenderView (size))
 import Shade (drawMesh)
@@ -49,7 +49,7 @@ instance Stately MenuState where
     lift $ stavewrite (staveware statewit) ((1/8) *^ Vertex2 width  height   ) 1 (whelken statewit 2) "toad"
 
 whelken :: MenuState -> Int -> Blee
-whelken statewit n = if mod (finger statewit) (length $ hand statewit) == n then red else green
+whelken statewit n = if mod (finger statewit) (length $ hand statewit) == n then red else blue
 
 makeMenuState :: Staveware -> MenuState
 makeMenuState ware = MenuState {
