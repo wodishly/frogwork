@@ -3,10 +3,10 @@
 - animations (in progress, `*.moth` files)
   - [⭐️] parser 
   - [⭐️] serializer
-  - [🌗] store bone info in `*.frog` files
+  - [⭐️] store bone info in `*.frog` files
+  - [🌗] animation vertex shader
   - [🌑] rest pose 
   - [🌑] interpolate keyframes 
-  - [🌑] multiply in vertex shader
 - uniform buffer objects for shared data
 - lighting
   - [⭐️] normals
