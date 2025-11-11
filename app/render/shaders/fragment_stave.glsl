@@ -7,8 +7,9 @@ out vec4 f_color;
 
 uniform sampler2D u_texture;
 uniform float u_time;
+uniform vec4 u_blee;
 
 void main() {
     vec4 value = vec4(vec3(1.0), texture(u_texture, v_uv).r * u_time / 2.0);
-    f_color = value * vec4(1.0);
+    f_color = value * vec4(u_blee);
 }

@@ -1,24 +1,28 @@
 {- HLINT ignore "Use head" -}
+{-# LANGUAGE FlexibleInstances #-}
 module Matrix where
 
 import Numeric.LinearAlgebra as H (
     Element
   , Matrix
   , Vector
+  , asColumn
+  , asRow
+  , cross
   , fromList
   , fromRows
-  , asRow
-  , asColumn
+  , size
   , toList
-  , cross
   , (><)
-  , (|||), size
+  , (|||)
   )
 
-import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2), Vertex3 (Vertex3), Vertex, VertexComponent)
+import Foreign (Int32)
+import Graphics.Rendering.OpenGL (GLfloat, Vertex, Vertex2 (Vertex2), Vertex3 (Vertex3))
 
 import qualified SDL (Point (P), V2 (V2))
-import Foreign (Int32)
+
+import Mean (sq, dimensionError)
 
 
 -- * On the sundering of rimes.
@@ -33,8 +37,8 @@ import Foreign (Int32)
 -- No reckoning ("computation") should be done with SDL. Any rime ("number")
 --   begotten thereof should be cast at once, by way of @fromSDL@, to be of OpenGL.
 -- Anything to be drawn must, at the end of its fare, be of hmatrix,
---   either built by hand or cast by way of @toVector@.
--- All other reckoning should be of OpenGL; here @fromVector@ is given
+--   either built by hand or cast by way of @toFrogVector@.
+-- All other reckoning should be of OpenGL; here @fromFrogVector@ is given
 --   for the cast, however seldseen, of a rime of hmatrix back to OpenGL.
 --
 -- The yokes ("types") of earthcraft follow as follows:
@@ -57,30 +61,59 @@ import Foreign (Int32)
 class Vertex v => FrogVertex v where
 -- | Shapeshifts SDL's @P V2 Int32@ to OpenGL's @Vertex2 GLfloat@.
   fromSDL :: SDL.Point SDL.V2 Int32 -> v
--- | Shapeshifts OpenGL's @Vertex GLfloat@ to hmatrix's @Vector GLfloat@.
-  toVector :: v -> FrogVector
--- | Shapeshifts hmatrix's @Vector GLfloat@ to OpenGL's @Vertex GLfloat@.
-  fromVector :: FrogVector -> v
 
-instance (RealFrac a, VertexComponent a) => FrogVertex (Vertex2 a) where
+-- | Shapeshifts OpenGL's @Vertex GLfloat@ to hmatrix's @Vector GLfloat@.
+  toFrogList :: v -> FrogList
+
+-- | Shapeshifts OpenGL's @Vertex GLfloat@ to hmatrix's @Vector GLfloat@.
+  {-# INLINE toFrogVector #-}
+  toFrogVector :: v -> FrogVector
+  toFrogVector = fromList . toFrogList
+
+-- | Shapeshifts hmatrix's @Vector GLfloat@ to OpenGL's @Vertex GLfloat@.
+  fromFrogVector :: FrogVector -> v
+
+  hat :: v -> v
+
+instance FrogVertex (Vertex2 GLfloat) where
   {-# INLINE fromSDL #-}
   fromSDL (SDL.P (SDL.V2 x y)) = fromIntegral <$> Vertex2 x y
-  {-# INLINE toVector #-}
-  toVector (Vertex2 x y) = fromList $ realToFrac <$> [x, y]
-  {-# INLINE fromVector #-}
-  fromVector v
-    | H.size v == 2 = let l = realToFrac <$> toList v in Vertex2 (l!!0) (l!!1)
-    | otherwise = error "bad bad"
+  {-# INLINE toFrogList #-}
+  toFrogList (Vertex2 x y) = [x, y]
+  {-# INLINE fromFrogVector #-}
+  fromFrogVector v
+    | H.size v == 2 = let l = toList v in Vertex2 (l!!0) (l!!1)
+    | otherwise = dimensionError 2
+  {-# INLINE hat #-}
+  hat z
+    | nought z = z
+    | otherwise = (/norm z) <$> z
 
-instance (RealFrac a, VertexComponent a) => FrogVertex (Vertex3 a) where
+instance FrogVertex (Vertex3 GLfloat) where
   {-# INLINE fromSDL #-}
   fromSDL (SDL.P (SDL.V2 x y)) = fromIntegral <$> Vertex3 x y 0
-  {-# INLINE toVector #-}
-  toVector (Vertex3 x y z) = fromList $ realToFrac <$> [x, y, z]
-  {-# INLINE fromVector #-}
-  fromVector v
-    | H.size v == 3 = let l = realToFrac <$> toList v in Vertex3 (l!!0) (l!!1) (l!!2)
-    | otherwise = error "bad bad bad"
+  {-# INLINE toFrogList #-}
+  toFrogList (Vertex3 x y z) = [x, y, z]
+  {-# INLINE fromFrogVector #-}
+  fromFrogVector v
+    | H.size v == 3 = let l = toList v in Vertex3 (l!!0) (l!!1) (l!!2)
+    | otherwise = dimensionError 3
+  {-# INLINE hat #-}
+  hat z
+    | nought z = z
+    | otherwise = (/norm z) <$> z
+
+{-# INLINE norm #-}
+norm :: FrogVertex v => v -> GLfloat
+norm = sqrt . sum . map sq . toFrogList
+
+{-# INLINE nought #-}
+nought :: FrogVertex v => v -> Bool
+nought = (== 0) . norm
+
+{-# INLINE aught #-}
+aught :: FrogVertex v => v -> Bool
+aught = not.nought
 
 type FrogList = [GLfloat]
 type FrogVector = Vector GLfloat
@@ -102,7 +135,7 @@ fromTranslation [x, y, z] = (4><4) [
   0, 0, 1, z,
   0, 0, 0, 1
   ]
-fromTranslation _ = error "we need 3 dimensions"
+fromTranslation _ = dimensionError 3
 
 {-# INLINE getPerspectiveMatrix #-}
 getPerspectiveMatrix :: RenderView -> FrogMatrix
@@ -139,7 +172,6 @@ frogLookAt eye target =
       translation = fromTranslation (toList -eye)
   in rotation <> translation
 
-
 {-# INLINE row #-}
 row :: Element t => [t] -> Matrix t
 row = asRow.fromList
@@ -152,5 +184,5 @@ col = asColumn.fromList
 normalize :: (Fractional t, Element t, Floating t) => Vector t -> Vector t
 normalize v =
   let l = toList v
-      d = sqrt $ sum $ map (^(2::Integer)) l
+      d = sqrt $ sum $ map sq l
   in fromList (map (/d) l)

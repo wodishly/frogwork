@@ -11,11 +11,12 @@ import Graphics.Rendering.OpenGL (Vertex2(Vertex2))
 
 import State (StateName (MenuName, PlayName), Stately (..))
 
-import Blee (bg, darkwhelk)
+import Blee (bg, darkwhelk, lightwhelk, Blee, red, green)
 import Key (KeySet, keyBegun)
 import Matrix (getOrthographicMatrix, getPerspectiveMatrix, RenderView (size))
 import Shade (drawMesh)
 import Stave (Staveware, stavewrite)
+import Rime ((*^))
 
 
 data MenuState = MenuState {
@@ -42,13 +43,17 @@ instance Stately MenuState where
       (snd $ staveware statewit)
 
     let (width, height) = size display
-    lift $ stavewrite (staveware statewit) (Vertex2 (width/8) (height*4/8)) 1 "welcome to frogford!"
-    lift $ stavewrite (staveware statewit) (Vertex2 (width/8) (height*3/8)) 1 "play"
-    lift $ stavewrite (staveware statewit) (Vertex2 (width/8) (height*2/8)) 1 "quit"
+    lift $ stavewrite (staveware statewit) ((1/8) *^ Vertex2 width (height*4)) 1 lightwhelk "welcome to frogford!"
+    lift $ stavewrite (staveware statewit) ((1/8) *^ Vertex2 width (height*3)) 1 (whelken statewit 0) "play"
+    lift $ stavewrite (staveware statewit) ((1/8) *^ Vertex2 width (height*2)) 1 (whelken statewit 1) "frog"
+    lift $ stavewrite (staveware statewit) ((1/8) *^ Vertex2 width  height   ) 1 (whelken statewit 2) "toad"
+
+whelken :: MenuState -> Int -> Blee
+whelken statewit n = if mod (finger statewit) (length $ hand statewit) == n then red else green
 
 makeMenuState :: Staveware -> MenuState
 makeMenuState ware = MenuState {
-  hand = [(PlayName, "play"), (PlayName, "frog")]
+  hand = [(PlayName, "play"), (PlayName, "frog"), (PlayName, "toad")]
 , finger = 0
 , choosen = Nothing
 , staveware = ware
@@ -61,8 +66,8 @@ menuFare keyset = do
   then put menuwit { choosen = Just . fst $ hand menuwit!!finger menuwit }
   else put menuwit {
     finger = if keyBegun keyset ScancodeUp
-        then mod (succ $ finger menuwit) (length $ hand menuwit)
-      else if keyBegun keyset ScancodeDown
         then mod (pred $ finger menuwit) (length $ hand menuwit)
+      else if keyBegun keyset ScancodeDown
+        then mod (succ $ finger menuwit) (length $ hand menuwit)
         else finger menuwit
     }

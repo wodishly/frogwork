@@ -11,8 +11,8 @@ import SDL.Input.Keyboard.Codes
 import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2), Vertex3 (Vertex3))
 
 import Key (KeySet, keyBegun, wasd)
-import Matrix (FrogVector)
-import Rime (Point3, hat3, (<+>), (*^))
+import Matrix (FrogVector, hat)
+import Rime (Point3, (<+>), (*^))
 import Time (Time, throttle)
 import Mean (doBoth)
 import State (News)
@@ -71,7 +71,7 @@ fall time = do
 walk :: News -> FrogVector -> StateT Frogwit IO Bool
 walk (keys, _, _, _, time) forward = do
   frogwit <- get
-  let direction = hat3 $ Vertex3 (forward!0) 0 -(forward!2)
+  let direction = hat $ Vertex3 (forward!0) 0 -(forward!2)
       didWalk = dz < 0 where Vertex2 _ dz = wasd keys
       position' = position frogwit <+> (throttle time (speed frogwit) *^ direction)
 

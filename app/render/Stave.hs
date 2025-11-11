@@ -4,10 +4,11 @@ module Stave (
 , Staveware
 , makeFeather
 , makeStavebook
+, makeStavebook'
 , stavewrite
 ) where
 
-import Control.Monad (forM, forM_)
+import Control.Monad (forM, forM_, when)
 import Data.Char (chr)
 import Data.HashMap.Lazy (HashMap, fromList, (!))
 import Text.Printf (printf)
@@ -31,6 +32,7 @@ import Graphics.Rendering.OpenGL (
   , TransferDirection (WriteToBuffer)
   , Vertex2 (Vertex2)
   , Vertex3 (Vertex3)
+  , Uniform (uniform)
   , activeTexture
   , bindBuffer
   , bufferSubData
@@ -43,10 +45,13 @@ import qualified Graphics.Rendering.OpenGL as GL (
   )
 
 import FastenMain (assetsBasePath)
+import FastenShade (Programful(uniformMap))
 
+import Blee (Blee, bleeToGLVector4)
 import Mean (doBoth, (.>>.))
 import Rime (Point, Polyhedron, (*^), (<+>))
-import Shade (uploadTexture, useMesh, Mesh (..), bufferSize, drawFaces)
+import Shade (Mesh (..), bufferSize, drawFaces, uploadTexture, useMesh)
+
 
 type Stavebook = HashMap Char Stave
 type Staveware = (Stavebook, Mesh)
@@ -82,31 +87,39 @@ pad amount width something bitmapData = left ++ b ++ recourse where
 makeFeather :: FilePath -> IO Stavebook
 makeFeather = makeStavebook sharpness . printf "%s/%s.ttf" assetsBasePath
 
--- | Based on [this page](https://zyghost.com/articles/Haskell-font-rendering-with-freetype2-and-opengl.html).
+-- | does it softly
 makeStavebook :: FT_UInt -> FilePath -> IO Stavebook
-makeStavebook great path = do
+makeStavebook = makeStavebook'' False
+
+-- | does it loudly
+makeStavebook' :: FT_UInt -> FilePath -> IO Stavebook
+makeStavebook' = makeStavebook'' True
+
+-- | Based on [this page](https://zyghost.com/articles/Haskell-font-rendering-with-freetype2-and-opengl.html).
+makeStavebook'' :: Bool -> FT_UInt -> FilePath -> IO Stavebook
+makeStavebook'' loud great path = do
   stavewit <- ft_Init_FreeType
-  putStrLn "made stavebook!"
+  when loud $ putStrLn "made stavebook!"
 
   feather <- ft_New_Face stavewit path 0
   ft_Set_Pixel_Sizes feather 0 (fromIntegral great)
   feather' <- peek feather
-  putStrLn "made feather!"
+  when loud $ putStrLn "made feather!"
 
   stavebook <- forM (map chr [32..126]) $ \stave -> do
     finger <- ft_Get_Char_Index feather (fromIntegral $ fromEnum stave)
     ft_Load_Glyph feather finger FT_LOAD_RENDER
-    putStrLn "made finger!"
-    putStrLn $ "finger is: " ++ show finger ++ " (" ++ show stave ++ ")"
+    when loud $ putStrLn "made finger!"
+    when loud $ putStrLn $ "finger is: " ++ show finger ++ " (" ++ show stave ++ ")"
 
     let slot = frGlyph feather'
     slot' <- peek slot
     let staveTell = frNum_glyphs feather'
     let shape = gsrFormat slot'
-    putStrLn "made slot!"
-    putStrLn $ "slot is: " ++ show slot
-    putStrLn $ "stave tell is: " ++ show staveTell
-    putStrLn $ "stave shape is: " ++ glyphFormatName shape
+    when loud $ putStrLn "made slot!"
+    when loud $ putStrLn $ "slot is: " ++ show slot
+    when loud $ putStrLn $ "stave tell is: " ++ show staveTell
+    when loud $ putStrLn $ "stave shape is: " ++ glyphFormatName shape
 
     ft_Render_Glyph slot FT_RENDER_MODE_NORMAL
 
@@ -114,22 +127,22 @@ makeStavebook great path = do
         (l, t) = doBoth gsrBitmap_left gsrBitmap_top slot'
         (w, h) = doBoth bWidth bRows bitmap
         FT_Vector x _ = gsrAdvance slot'
-    putStrLn "here's the stuff we're going to save"
-    putStrLn $ "  bearing: " ++ show (l, t)
-    putStrLn $ "  size: " ++ show (w, h)
-    putStrLn $ "  advance: " ++ show (x, 0 :: Int)
+    when loud $ putStrLn "here's the stuff we're going to save"
+    when loud $ putStrLn $ "  bearing: " ++ show (l, t)
+    when loud $ putStrLn $ "  size: " ++ show (w, h)
+    when loud $ putStrLn $ "  advance: " ++ show (x, 0 :: Int)
 
-    putStrLn "here's some other stuff:"
-    putStrLn $ "  pitch: " ++ show (bPitch bitmap)
-    putStrLn $ "  num_grays: " ++ show (bNum_grays bitmap)
-    putStrLn $ "  pixel_mode: " ++ show (bPixel_mode bitmap)
-    putStrLn $ "  palette_mode: " ++ show (bPalette_mode bitmap)
-    putStrLn ""
+    when loud $ putStrLn "here's some other stuff:"
+    when loud $ putStrLn $ "  pitch: " ++ show (bPitch bitmap)
+    when loud $ putStrLn $ "  num_grays: " ++ show (bNum_grays bitmap)
+    when loud $ putStrLn $ "  pixel_mode: " ++ show (bPixel_mode bitmap)
+    when loud $ putStrLn $ "  palette_mode: " ++ show (bPalette_mode bitmap)
+    when loud $ putStrLn ""
 
     let (w', h') = (fromIntegral w, fromIntegral h)
         pitch = 4 - mod w' 4
         nw = fromIntegral (pitch + w')
-    putStrLn "did some reckoning..."
+    when loud $ putStrLn "did some reckoning..."
 
     tex' <- flip withArray (uploadTexture Red (nw, h')) . pad pitch w' 0
       =<< peekArray (fromIntegral $ w*h) (bBuffer bitmap)
@@ -139,7 +152,7 @@ makeStavebook great path = do
     GL.textureFilter Texture2D $= ((Linear', Nothing), Linear')
     GL.textureWrapMode Texture2D S $= (Repeated, ClampToEdge)
     GL.textureWrapMode Texture2D T $= (Repeated, ClampToEdge)
-    putStrLn "made texture!"
+    when loud $ putStrLn "made texture!"
 
     return (stave, Stave
         (fromIntegral <$> Vertex2 l t)
@@ -153,8 +166,8 @@ makeStavebook great path = do
 
   return $ fromList stavebook
 
-stavewrite :: Staveware -> Point -> GLfloat -> String -> IO ()
-stavewrite (book, mesh) bottomLeft scale spell = do
+stavewrite :: Staveware -> Point -> GLfloat -> Blee -> String -> IO ()
+stavewrite (book, mesh) bottomLeft scale blee spell = do
   useMesh mesh
 
   let advances = scanl (+) 0 (map (advance . (book!)) spell)
@@ -166,6 +179,8 @@ stavewrite (book, mesh) bottomLeft scale spell = do
     activeTexture $= TextureUnit 0
     textureBinding Texture2D $= Just (texture stave)
     bindBuffer ArrayBuffer $= Just (vbo mesh)
+
+    uniformMap mesh ! "u_blee" >>= ($= bleeToGLVector4 blee) . uniform
 
     withArray vertices (bufferSubData ArrayBuffer WriteToBuffer 0 $ bufferSize vertices)
 

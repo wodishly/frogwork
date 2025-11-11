@@ -13,12 +13,12 @@ import Graphics.Rendering.OpenGL as GL (Program, Vertex2 (Vertex2), VertexArrayO
 import Frog (Frogwit (position), makeFrog, moveFrog)
 import State (News, StateName (..), Stately (..))
 
-import Blee (bg, black)
+import Blee (bg, black, lightwhelk)
 import Key (arrow)
-import Matrix (FrogVector, RenderView (size), frogLookAt, frogZero, getOrthographicMatrix, getPerspectiveMatrix)
+import Matrix (FrogVector, RenderView (size), aught, frogLookAt, frogZero, getOrthographicMatrix, getPerspectiveMatrix)
 import Mean (given, hit)
 import Random (FrogSeed, defaultSeed)
-import Rime (Point, Point3, aught, clamp)
+import Rime (Point, Point3, clamp)
 import Shade (Mesh, drawMesh, setMeshTransform)
 import Stave (Staveware, stavewrite)
 
@@ -61,7 +61,7 @@ instance Stately PlayState where
         orthographicMatrix = getOrthographicMatrix display
         (width, height) = size display
     lift $ mapM_ (drawMesh (getPerspectiveMatrix display) viewMatrix orthographicMatrix time) (meshes statewit)
-    lift $ stavewrite (staveware statewit) (Vertex2 (0.1*width) $ 0.9*height) 1 "omg frogs!!!!"
+    lift $ stavewrite (staveware statewit) (Vertex2 (0.1*width) $ 0.9*height) 1 lightwhelk "omg frogs!!!!"
 
 instance Show PlayState where
   show (PlayState _ _ _ f _ _ p c) = show f ++ show p ++ show c

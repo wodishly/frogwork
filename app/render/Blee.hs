@@ -1,5 +1,8 @@
 module Blee (
-  white
+  Blee
+, white
+, red
+, green
 , blue
 , black
 , lightwhelk
@@ -7,6 +10,7 @@ module Blee (
 , clerp
 , bg
 , from255
+, bleeToGLVector4
 ) where
 
 import Control.Monad.State (StateT, MonadTrans (lift))
@@ -17,13 +21,13 @@ import Graphics.Rendering.OpenGL (
   , GLfloat
   , clear
   , clearColor
-  , ($=)
+  , ($=), Vector4 (Vector4)
   )
 
 import Rime (clamp)
 
 
-type FrogColor = Color4 GLfloat
+type Blee = Color4 GLfloat
 
 -- drawThreenook :: Polygon -> IO ()
 -- drawThreenook triangle = do drawArrays Triangles 0 (fromIntegral $ length triangle)
@@ -34,29 +38,32 @@ type FrogColor = Color4 GLfloat
 -- evenNooks :: Int -> Polygon
 -- evenNooks n = map (dir . (* (2*pi / cast n)). cast) (flight n)
 
-from255 :: Int -> Int -> Int -> Int -> FrogColor
+from255 :: Int -> Int -> Int -> Int -> Blee
 from255 = (((. f) .) .) . (((. f) .) . ((. f) . Color4) . f)
   where f = (/255) . fromIntegral
 
-black :: FrogColor
+bleeToGLVector4 :: Blee -> Vector4 GLfloat
+bleeToGLVector4 (Color4 r g b a) = Vector4 r g b a
+
+black :: Blee
 black = Color4 0 0 0 1
 
-white :: FrogColor
+white :: Blee
 white = Color4 1 1 1 1
 
-lightwhelk :: FrogColor
+lightwhelk :: Blee
 lightwhelk = from255 203 203 255 255
 
-darkwhelk :: FrogColor
+darkwhelk :: Blee
 darkwhelk = from255 53 59 79 255
 
--- red :: FrogColor
--- red = Color4 1 0 0 1
+red :: Blee
+red = Color4 1 0 0 1
 
--- green :: FrogColor
--- green = Color4 0 1 0 1
+green :: Blee
+green = Color4 0 1 0 1
 
-blue :: FrogColor
+blue :: Blee
 blue = Color4 0 0 1 1
 
 -- yellow :: FrogColor
@@ -66,8 +73,8 @@ blue = Color4 0 0 1 1
 -- magenta = Color4 1 0 1 1
 
 -- interpolates a color `c` by fraction `n`
-clerp :: GLfloat -> FrogColor -> FrogColor
+clerp :: GLfloat -> Blee -> Blee
 clerp = fmap . (*) . clamp (0, 1)
 
-bg :: FrogColor -> StateT a IO ()
+bg :: Blee -> StateT a IO ()
 bg = lift . (>> clear [ColorBuffer, DepthBuffer]) . (clearColor $=)

@@ -115,7 +115,7 @@ begetMeshes = do
     , uvbuffer = Just quadUvBuffer
     , meshShaderProfile = ShaderProfile
         ("vertex_stave", "fragment_stave")
-        ["u_texture", "u_time", "u_orthographic_matrix"]
+        ["u_texture", "u_time", "u_orthographic_matrix", "u_blee"]
     , texObject = Nothing
   }
 

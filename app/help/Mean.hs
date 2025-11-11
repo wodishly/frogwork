@@ -6,6 +6,8 @@ import Data.Bits (Bits (shiftL, shiftR))
 import Data.Function (applyWhen, (&))
 import Data.List (singleton)
 import Debug.Trace (trace)
+import GHC.Stack (HasCallStack)
+
 
 type Shed a = [a] -> a
 type Shell a = a -> [a]
@@ -225,3 +227,9 @@ lif = (||) . not
 
 (.>>.) :: Bits a => a -> Int -> a
 (.>>.) = shiftR
+
+sq :: Num a => a -> a
+sq = toBoth (*)
+
+dimensionError :: HasCallStack => Int -> a
+dimensionError = error . ("need dimension " ++) . show
