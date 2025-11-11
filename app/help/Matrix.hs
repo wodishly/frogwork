@@ -1,31 +1,7 @@
-module Matrix (
-  Point
-, Point2
-, Point3
-, Polygon
-, Polyhedron
-, FrogList
-, FrogVector
-, FrogMatrix
-, RenderView (..)
-, asFrog
-, fromTranslation
-, getPerspectiveMatrix
-, getOrthographicMatrix
-, frogZero -- unused?
-, frogLookAt
-, row -- unused
-, aught
-, norm
-, norm3
-, hat
-, hat3
-, (<+>)
-, (*^)
-, (^*)
-) where
+{- HLINT ignore "Use head" -}
+module Matrix where
 
-import Numeric.LinearAlgebra (
+import Numeric.LinearAlgebra as H (
     Element
   , Matrix
   , Vector
@@ -36,20 +12,75 @@ import Numeric.LinearAlgebra (
   , toList
   , cross
   , (><)
-  , (|||)
+  , (|||), size
   )
 
-import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2), Vertex3 (Vertex3))
-import qualified SDL
+import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2), Vertex3 (Vertex3), Vertex, VertexComponent)
+
+import qualified SDL (Point (P), V2 (V2))
 import Foreign (Int32)
 
 
-type Point = Vertex2 GLfloat
-type Point2 = Point
-type Point3 = Vertex3 GLfloat
+-- * On the sundering of rimes.
+-- 
+-- $sundering
+-- All earthcraft ("geometry") is split into three deals,
+--   one of which SDL brooks ("uses") for happenings ("events"),
+--   another OpenGL for drawing,
+--   the third that which in its own tongue is called Numeric.LinearAlgebra, in ours hmatrix.
+-- These all are of sundry shape and meaning.
+--
+-- No reckoning ("computation") should be done with SDL. Any rime ("number")
+--   begotten thereof should be cast at once, by way of @fromSDL@, to be of OpenGL.
+-- Anything to be drawn must, at the end of its fare, be of hmatrix,
+--   either built by hand or cast by way of @toVector@.
+-- All other reckoning should be of OpenGL; here @fromVector@ is given
+--   for the cast, however seldseen, of a rime of hmatrix back to OpenGL.
+--
+-- The yokes ("types") of earthcraft follow as follows:
+--   Begotten of SDL alone:
+--     - V2 Int32
+--     - Point V2 Int32
+--   Begotten of OpenGL alone:
+--     - GLfloat
+--     - [GLfloat], also called FrogList
+--     - Vertex2 GLfloat, also called Point2, also called Point
+--     - Vertex3 GLfloat, also called Point3
+--     - [Vertex2 GLfloat], also called Polygon
+--     - [Vertex3 GLfloat], also called Polyhedron
+--   Begotten of OpenGL and hmatrix:
+--     - Vector GLfloat, also called FrogVector
+--     - Matrix GLfloat, also called FrogMatrix
+--
+-- Godspeed.
 
-type Polygon = [Point2]
-type Polyhedron = [Point3]
+class Vertex v => FrogVertex v where
+-- | Shapeshifts SDL's @P V2 Int32@ to OpenGL's @Vertex2 GLfloat@.
+  fromSDL :: SDL.Point SDL.V2 Int32 -> v
+-- | Shapeshifts OpenGL's @Vertex GLfloat@ to hmatrix's @Vector GLfloat@.
+  toVector :: v -> FrogVector
+-- | Shapeshifts hmatrix's @Vector GLfloat@ to OpenGL's @Vertex GLfloat@.
+  fromVector :: FrogVector -> v
+
+instance (RealFrac a, VertexComponent a) => FrogVertex (Vertex2 a) where
+  {-# INLINE fromSDL #-}
+  fromSDL (SDL.P (SDL.V2 x y)) = fromIntegral <$> Vertex2 x y
+  {-# INLINE toVector #-}
+  toVector (Vertex2 x y) = fromList $ realToFrac <$> [x, y]
+  {-# INLINE fromVector #-}
+  fromVector v
+    | H.size v == 2 = let l = realToFrac <$> toList v in Vertex2 (l!!0) (l!!1)
+    | otherwise = error "bad bad"
+
+instance (RealFrac a, VertexComponent a) => FrogVertex (Vertex3 a) where
+  {-# INLINE fromSDL #-}
+  fromSDL (SDL.P (SDL.V2 x y)) = fromIntegral <$> Vertex3 x y 0
+  {-# INLINE toVector #-}
+  toVector (Vertex3 x y z) = fromList $ realToFrac <$> [x, y, z]
+  {-# INLINE fromVector #-}
+  fromVector v
+    | H.size v == 3 = let l = realToFrac <$> toList v in Vertex3 (l!!0) (l!!1) (l!!2)
+    | otherwise = error "bad bad bad"
 
 type FrogList = [GLfloat]
 type FrogVector = Vector GLfloat
@@ -62,50 +93,6 @@ data RenderView = RenderView {
   , near :: GLfloat
   , far :: GLfloat
 }
-
-{-# INLINE nought #-}
-nought :: Point -> Bool
-nought (Vertex2 x y) = x == 0 && y == 0
-
-{-# INLINE aught #-}
-aught :: Point -> Bool
-aught = not.nought
-
-{-# INLINE norm #-}
-norm :: Point -> GLfloat
-norm (Vertex2 x y) = sqrt (x*x + y*y)
-
-{-# INLINE norm3 #-}
-norm3 :: Point3 -> GLfloat
-norm3 (Vertex3 x y z) = sqrt (x*x + y*y + z*z)
-
-{-# INLINE hat #-}
-hat :: Point -> Point
-hat z
-  | norm z == 0 = z
-  | otherwise = fmap (/norm z) z
-
-{-# INLINE hat3 #-}
-hat3 :: Point3 -> Point3
-hat3 z
-  | norm3 z == 0 = z
-  | otherwise = fmap (/norm3 z) z
-
-infixl 7 *^, ^*
-infixl 6 <+>
-(<+>) :: (Applicative f, Num a) => f a -> f a -> f a
-(<+>) = liftA2 (+)
-
-(*^) :: (Applicative f, Num a) => a -> f a -> f a
-(*^) = (<$>) . (*)
-
-(^*) :: (Applicative f, Num a) => f a -> a -> f a
-(^*) = flip (*^)
-
--- | Converts SDL's @P V2 Int32@ to OpenGL's @Vertex2 GLfloat@.
-{-# INLINE asFrog #-}
-asFrog :: SDL.Point SDL.V2 Int32 -> Point
-asFrog (SDL.P (SDL.V2 x y)) = Vertex2 (fromIntegral x) (fromIntegral y)
 
 {-# INLINE fromTranslation #-}
 fromTranslation :: FrogList -> FrogMatrix

@@ -13,7 +13,7 @@ import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2), Vertex3 (Vertex3))
 
 import qualified Data.ByteString.Lazy as BL
 
-import Matrix (Polygon, Polyhedron)
+import Rime (Polygon, Polyhedron)
 
 
 getFrogBytes :: String -> IO BL.ByteString

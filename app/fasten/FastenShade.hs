@@ -14,8 +14,8 @@ import Graphics.Rendering.OpenGL (
   , Vertex3 (Vertex3)
   )
 
-import Matrix (Polyhedron, Polygon)
 import Mean (Twain)
+import Rime (Polygon, Polyhedron)
 
 
 type MeshProfile = Either AssetMeshProfile SimpleMeshProfile

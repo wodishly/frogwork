@@ -13,7 +13,7 @@ module Game (
 ) where
 
 import Control.Lens (Lens', makeLenses, (.~), (^.))
-import Control.Monad (unless, when)
+import Control.Monad (unless, when, void)
 import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT, execStateT)
 import Data.Function (applyWhen)
 
@@ -59,12 +59,13 @@ import FastenShade (
 
 import Happen (unwrapHappenMouse, unwrapHappenWheel, unwrapHappenWindow, waxwane)
 import Key (KeySet, anyKeysBegun, keyBegun, listen, unkeys)
-import Matrix (Point, RenderView, fromTranslation)
+import Matrix (RenderView, fromTranslation)
 import Mean (full, weep)
+import Rime (Point)
+import SDL (LocationMode (RelativeLocation), ($=))
 import Shade (Mesh, makeAsset, makeAssetMesh, makeSimpleMesh, setMeshTransform)
-import Stave (Staveware, makeFeather, Staveware)
+import Stave (Staveware, makeFeather)
 import Time (Time, beginTime, keepTime)
-import SDL (($=), LocationMode (RelativeLocation))
 
 
 data Allwit = Allwit {
@@ -196,7 +197,7 @@ showLeechwit = do
   when (settings allwit^.isShowingTicks) (preent $ time allwit)
 
 fand :: Allwit -> IO ()
-fand allwit = when (settings allwit^.isRunningTests) weep
+fand = ($ weep) . when . (^.isRunningTests) . settings
 
 settleState :: StateT Allwit IO ()
 settleState = do
@@ -212,17 +213,19 @@ settleState = do
   }
   case nowState allwit of
     PlayName -> do
-      SDL.windowGrab (window allwit) $= True
-      _ <- SDL.setMouseLocationMode SDL.RelativeLocation
+      setWindowGrab True
       goto playState
     PauseName -> do
-      SDL.windowGrab (window allwit) $= False
-      _ <- SDL.setMouseLocationMode SDL.AbsoluteLocation
+      setWindowGrab False
       goto pauseState
     MenuName -> do
-      SDL.windowGrab (window allwit) $= False
-      _ <- SDL.setMouseLocationMode SDL.AbsoluteLocation
+      setWindowGrab False
       goto menuState
+
+setWindowGrab :: Bool -> StateT Allwit IO ()
+setWindowGrab setting =
+  get >>= ($= setting) . SDL.windowGrab . window
+  >> void (SDL.setMouseLocationMode $ if setting then SDL.RelativeLocation else SDL.AbsoluteLocation)
 
 goto :: Stately a => Lens' Allwit a -> StateT Allwit IO ()
 goto lens = do
@@ -234,4 +237,6 @@ blit :: StateT Allwit IO ()
 blit = get >>= SDL.glSwapWindow . window
 
 again :: StateT Allwit IO () -> StateT Allwit IO ()
-again f = get >>= \allwit -> unless (anyKeysBegun (keyset allwit) [ScancodeQ, ScancodeEscape]) f
+again f = do
+  allwit <- get
+  unless (anyKeysBegun (keyset allwit) [ScancodeQ, ScancodeEscape]) f

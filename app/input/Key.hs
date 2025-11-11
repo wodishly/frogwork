@@ -17,8 +17,9 @@ import SDL.Input.Keyboard.Codes
 import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2))
 
 import Happen (Keywit, unwrapHappenKeys)
-import Matrix (Point, hat)
+import Rime (Point, hat)
 import Mean (allIn, has, none, doBoth)
+import Data.Function ((&))
 
 
 data KeySet = KeySet {
@@ -28,7 +29,7 @@ data KeySet = KeySet {
 } deriving (Eq)
 
 instance Show KeySet where
-  show ks = concatMap (show . map unwrapScancode . ($ ks)) [begunKeys, continuingKeys, endedKeys]
+  show = ($ [begunKeys, continuingKeys, endedKeys]) . concatMap . ((show . map unwrapScancode) .) . (&)
 
 hearableKeys :: [Scancode]
 hearableKeys = [

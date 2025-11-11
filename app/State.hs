@@ -14,7 +14,8 @@ import Control.Lens (makeLenses)
 import Control.Monad.State (MonadTrans (lift), StateT)
 
 import Key (KeySet)
-import Matrix (RenderView, Point)
+import Matrix (RenderView)
+import Rime (Point)
 import Time (Time)
 
 

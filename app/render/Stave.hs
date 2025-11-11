@@ -44,8 +44,8 @@ import qualified Graphics.Rendering.OpenGL as GL (
 
 import FastenMain (assetsBasePath)
 
-import Matrix (Point, Polyhedron, (<+>), (*^))
 import Mean (doBoth, (.>>.))
+import Rime (Point, Polyhedron, (*^), (<+>))
 import Shade (uploadTexture, useMesh, Mesh (..), bufferSize, drawFaces)
 
 type Stavebook = HashMap Char Stave

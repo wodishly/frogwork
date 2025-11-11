@@ -15,12 +15,13 @@ import State (News, StateName (..), Stately (..))
 
 import Blee (bg, black)
 import Key (arrow)
-import Matrix (FrogVector, Point, Point3, aught, frogLookAt, frogZero, getPerspectiveMatrix, getOrthographicMatrix, RenderView (size))
+import Matrix (FrogVector, RenderView (size), frogLookAt, frogZero, getOrthographicMatrix, getPerspectiveMatrix)
 import Mean (given, hit)
 import Random (FrogSeed, defaultSeed)
-import Rime (clamp)
+import Rime (Point, Point3, aught, clamp)
 import Shade (Mesh, drawMesh, setMeshTransform)
 import Stave (Staveware, stavewrite)
+
 
 data Camera = Camera {
   cPosition :: FrogVector
