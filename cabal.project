@@ -1,0 +1,7 @@
+packages: .
+
+source-repository-package
+  type: git
+  location: https://github.com/wodishly/freetype2.git
+  branch: frogwards
+  tag: 9792336b734cb496e5e1a3e83fe27fa94a93c5af

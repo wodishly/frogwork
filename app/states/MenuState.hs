@@ -1,55 +1,73 @@
 module MenuState (
-  MenuState
+  MenuState (..)
 , makeMenuState
-, choosen
-, hand
-, finger
 ) where
 
-import Control.Lens (makeLenses, (^.))
-import Control.Monad.State (MonadState (get, put), StateT)
+import Numeric.LinearAlgebra (ident)
+import Control.Monad.State (MonadState (get, put), StateT, MonadTrans (lift))
 
 import SDL.Input.Keyboard.Codes
+import Graphics.Rendering.OpenGL (Vertex2(Vertex2))
 
-import State (News, StateName (..), Stately (..))
+import State (StateName (MenuName, PlayName), Stately (..))
 
+import Blee (bg, darkwhelk, lightwhelk, Blee, red, blue)
 import Key (KeySet, keyBegun)
-import Blee (bg, clerp, white)
+import Matrix (getOrthographicMatrix, getPerspectiveMatrix, RenderView (size))
+import Shade (drawMesh)
+import Stave (Staveware, stavewrite)
+import Rime ((*^))
 
 
 data MenuState = MenuState {
-  _hand :: [(StateName, String)]
-, _finger :: Int
-, _choosen :: Maybe StateName
-} deriving (Show, Eq)
-makeLenses ''MenuState
-
-instance Stately MenuState where
-  _name _ = MenuName
-  _update = menu
-
-makeMenuState :: MenuState
-makeMenuState = MenuState {
-  _hand = [(PlayName, "play"), (PlayName, "frog")]
-, _finger = 0
-, _choosen = Nothing
+  hand :: [(StateName, String)]
+, finger :: Int
+, choosen :: Maybe StateName
+, staveware :: Staveware
 }
 
-menu :: News -> StateT MenuState IO ()
-menu (keyset, _, _, _, _) = do
-  _ <- get
-  bg (clerp (1/4) white)
-  menuFare keyset
+instance Stately MenuState where
+  name _ = MenuName
+  update (keyset, _, _, _, _) = do
+    _ <- get
+    menuFare keyset
+
+  render (_, _, _, display, time) = do
+    statewit <- get
+    bg darkwhelk
+    lift $ drawMesh
+      (getPerspectiveMatrix display)
+      (ident 4)
+      (getOrthographicMatrix display)
+      time
+      (snd $ staveware statewit)
+
+    let (width, height) = size display
+    lift $ stavewrite (staveware statewit) ((1/8) *^ Vertex2 width (height*4)) 1 lightwhelk "welcome to frogford!"
+    lift $ stavewrite (staveware statewit) ((1/8) *^ Vertex2 width (height*3)) 1 (whelken statewit 0) "play"
+    lift $ stavewrite (staveware statewit) ((1/8) *^ Vertex2 width (height*2)) 1 (whelken statewit 1) "frog"
+    lift $ stavewrite (staveware statewit) ((1/8) *^ Vertex2 width  height   ) 1 (whelken statewit 2) "toad"
+
+whelken :: MenuState -> Int -> Blee
+whelken statewit n = if mod (finger statewit) (length $ hand statewit) == n then red else blue
+
+makeMenuState :: Staveware -> MenuState
+makeMenuState ware = MenuState {
+  hand = [(PlayName, "play"), (PlayName, "frog"), (PlayName, "toad")]
+, finger = 0
+, choosen = Nothing
+, staveware = ware
+}
 
 menuFare :: KeySet -> StateT MenuState IO ()
 menuFare keyset = do
   menuwit <- get
   if keyBegun keyset ScancodeReturn
-  then put menuwit { _choosen = Just . fst $ (menuwit^.hand)!!(menuwit^.finger) }
+  then put menuwit { choosen = Just . fst $ hand menuwit!!finger menuwit }
   else put menuwit {
-    _finger = if keyBegun keyset ScancodeUp
-        then mod (succ $ menuwit^.finger) (length $ menuwit^.hand)
+    finger = if keyBegun keyset ScancodeUp
+        then mod (pred $ finger menuwit) (length $ hand menuwit)
       else if keyBegun keyset ScancodeDown
-        then mod (pred $ menuwit^.finger) (length $ menuwit^.hand)
-        else menuwit^.finger
+        then mod (succ $ finger menuwit) (length $ hand menuwit)
+        else finger menuwit
     }

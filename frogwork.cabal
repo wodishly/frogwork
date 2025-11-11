@@ -119,6 +119,7 @@ executable frogwork
     , OpenGLRaw
     , random
     , vector
+    , freetype2
 
   -- Directories containing source files.
   hs-source-dirs: app

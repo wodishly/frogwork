@@ -1,13 +1,9 @@
 module Frog (
   Frogwit (..)
-, position
-, dy
-, weight
 , makeFrog
 , moveFrog
 ) where
 
-import Control.Lens (makeLenses, (^.))
 import Control.Monad.State (MonadState (get, put), StateT)
 import Numeric.LinearAlgebra ((!))
 
@@ -15,37 +11,36 @@ import SDL.Input.Keyboard.Codes
 import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2), Vertex3 (Vertex3))
 
 import Key (KeySet, keyBegun, wasd)
-import Matrix (FrogVector, Point3, hat3)
+import Matrix (FrogVector, hat)
+import Rime (Point3, (<+>), (*^))
 import Time (Time, throttle)
-import Control.Monad (when)
 import Mean (doBoth)
 import State (News)
 
 
 data Frogwit = Frogwit {
-    _position :: Point3
-  , _dy :: GLfloat
-  , _speed :: GLfloat
-  , _aLeap :: GLfloat
-  , _weight :: GLfloat
-  , _leapCount :: Int
-  , _utleaps :: Int
+    position :: Point3
+  , dy :: GLfloat
+  , speed :: GLfloat
+  , aLeap :: GLfloat
+  , weight :: GLfloat
+  , leapCount :: Int
+  , utleaps :: Int
 } deriving (Show, Eq)
-makeLenses ''Frogwit
 
 makeFrog :: Frogwit
 makeFrog = Frogwit {
-    _position = Vertex3 0 0 0
-  , _dy = 0
-  , _speed = 2
-  , _aLeap = 4
-  , _weight = -8
-  , _leapCount = 0
-  , _utleaps = 2
+    position = Vertex3 0 0 0
+  , dy = 0
+  , speed = 2
+  , aLeap = 4
+  , weight = -8
+  , leapCount = 0
+  , utleaps = 2
 }
 
 hasLeapsLeft :: Frogwit -> Bool
-hasLeapsLeft = uncurry (<) . doBoth (^.leapCount) (^.utleaps)
+hasLeapsLeft = uncurry (<) . doBoth leapCount utleaps
 
 leap :: KeySet -> StateT Frogwit IO Bool
 leap keys = do
@@ -53,8 +48,8 @@ leap keys = do
   if keyBegun keys ScancodeSpace && hasLeapsLeft frogwit
     then do
       put frogwit {
-          _dy = frogwit^.aLeap
-        , _leapCount = succ $ frogwit^.leapCount
+          dy = aLeap frogwit
+        , leapCount = succ $ leapCount frogwit
       }
       return True
     else return False
@@ -62,27 +57,26 @@ leap keys = do
 fall :: Time -> StateT Frogwit IO Bool
 fall time = do
   frogwit <- get
-  let Vertex3 x y z = frogwit^.position
-      y' = max 0 (y + throttle time (frogwit^.dy))
-      dy' = frogwit^.dy + throttle time (frogwit^.weight)
+  let Vertex3 x y z = position frogwit
+      y' = max 0 (y + throttle time (dy frogwit))
+      dy' = dy frogwit + throttle time (weight frogwit)
+  let landed = y' == 0
   put frogwit {
-      _dy = dy'
-    , _position = Vertex3 x y' z
+      dy = if landed then 0 else dy'
+    , leapCount = if landed then 0 else leapCount frogwit
+    , position = Vertex3 x y' z
   }
-  when (y' == 0) $ put frogwit { _leapCount = 0 }
-  return (frogwit^.dy /= 0)
+  return (dy frogwit /= 0)
 
 walk :: News -> FrogVector -> StateT Frogwit IO Bool
 walk (keys, _, _, _, time) forward = do
   frogwit <- get
-  let direction = hat3 $ Vertex3 (forward!0) 0 -(forward!2)
+  let direction = hat $ Vertex3 (forward!0) 0 -(forward!2)
       didWalk = dz < 0 where Vertex2 _ dz = wasd keys
-      position' = liftA2 (+)
-        ((* (throttle time $ frogwit^.speed)) <$> direction)
-        (frogwit^.position)
+      position' = position frogwit <+> (throttle time (speed frogwit) *^ direction)
 
   if didWalk
-    then put frogwit { _position = position' } >> return True
+    then put frogwit { position = position' } >> return True
     else return False
 
 moveFrog :: News -> FrogVector -> StateT Frogwit IO Bool

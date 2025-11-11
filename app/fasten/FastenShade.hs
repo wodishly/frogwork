@@ -4,10 +4,18 @@ import Control.Monad.Identity (Identity (Identity))
 import Data.HashMap.Lazy (HashMap)
 
 import Foreign (Word32)
-import Graphics.Rendering.OpenGL (GettableStateVar, Program, UniformLocation, Vertex3 (Vertex3))
+import Graphics.Rendering.OpenGL (
+    GLfloat
+  , GettableStateVar
+  , Program
+  , TextureObject
+  , UniformLocation
+  , Vertex2 (Vertex2)
+  , Vertex3 (Vertex3)
+  )
 
-import Matrix (Polyhedron)
 import Mean (Twain)
+import Rime (Polygon, Polyhedron)
 
 
 type MeshProfile = Either AssetMeshProfile SimpleMeshProfile
@@ -35,10 +43,13 @@ instance Pathlikeful Identity AssetMeshProfile where
 data SimpleMeshProfile = SimpleMeshProfile {
     vbuffer :: Polyhedron
   , ibuffer :: [Word32]
+  , meshShaderProfile :: ShaderProfile
+  , uvbuffer :: Maybe [Vertex2 GLfloat]
+  , texObject :: Maybe TextureObject
 } deriving (Show, Eq)
 
 instance Shaderful SimpleMeshProfile where
-  shaderProfile _ = defaultSimpleShaderProfile
+  shaderProfile = meshShaderProfile
 
 data ShaderProfile = ShaderProfile {
   -- name of (vertex, fragment) shader GLSL files (without extension)
@@ -58,8 +69,11 @@ defaultAssetShaderProfile = ShaderProfile {
 
 defaultSimpleMeshProfile :: SimpleMeshProfile
 defaultSimpleMeshProfile = SimpleMeshProfile {
-    vbuffer = floorVbuffer
-  , ibuffer = floorIbuffer
+    vbuffer = floorVBuffer
+  , ibuffer = iBuffer
+  , uvbuffer = Nothing
+  , meshShaderProfile = defaultSimpleShaderProfile
+  , texObject = Nothing
 }
 
 defaultSimpleShaderProfile :: ShaderProfile
@@ -68,16 +82,32 @@ defaultSimpleShaderProfile = ShaderProfile {
   , uniforms = ["u_projection_matrix", "u_model_matrix", "u_view_matrix", "u_time"]
 }
 
-floorVbuffer :: Polyhedron
-floorVbuffer = [
+floorVBuffer :: Polyhedron
+floorVBuffer = [
     Vertex3  20  0  20.0 --NE
   , Vertex3  20 -0 -20.0 --SE
   , Vertex3 -20 -0 -20.0 --SW
   , Vertex3 -20  0  20.0 --NW
   ]
 
-floorIbuffer :: [Word32]
-floorIbuffer = [
+staveVBuffer :: Polyhedron
+staveVBuffer = [
+    Vertex3   1 -(1/4) 0 --NE
+  , Vertex3   1 -(3/4) 0 --SE
+  , Vertex3  -1 -(3/4) 0 --SW
+  , Vertex3  -1 -(1/4) 0 --NW
+  ]
+
+iBuffer :: [Word32]
+iBuffer = [
     0, 1, 2
   , 2, 3, 0
+  ]
+
+quadUvBuffer :: Polygon
+quadUvBuffer = [
+    Vertex2 1 0
+  , Vertex2 1 1
+  , Vertex2 0 1
+  , Vertex2 0 0
   ]

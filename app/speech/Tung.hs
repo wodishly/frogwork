@@ -1,9 +1,7 @@
-{- HLINT ignore "Functor law" -}
 module Tung where
 
 import Loud
 import Random
-import Rime
 import Mark
 import Breath
 import Mean
@@ -18,7 +16,7 @@ loudhoard = map dirty [
   ]
 
 rloud' :: (Loud -> Bool) -> IO Loud
-rloud' ordeal = (ls !!) . cast . ((*).cast.length) ls <$> rand
+rloud' ordeal = (ls !!) . floor . ((*).fromIntegral.length) ls <$> rand
   where ls = filter ordeal loudhoard
 
 rloud :: IO Loud

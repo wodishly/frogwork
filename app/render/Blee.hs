@@ -1,26 +1,33 @@
 module Blee (
-  white
+  Blee
+, white
+, red
+, green
 , blue
 , black
+, lightwhelk
+, darkwhelk
 , clerp
 , bg
+, from255
+, bleeToGLVector4
 ) where
 
 import Control.Monad.State (StateT, MonadTrans (lift))
 
 import Graphics.Rendering.OpenGL (
-    GLfloat
+    ClearBuffer (..)
   , Color4 (Color4)
-  , clearColor
-  , ClearBuffer (..)
+  , GLfloat
   , clear
-  , ($=)
+  , clearColor
+  , ($=), Vector4 (Vector4)
   )
 
 import Rime (clamp)
 
 
-type FrogColor = Color4 GLfloat
+type Blee = Color4 GLfloat
 
 -- drawThreenook :: Polygon -> IO ()
 -- drawThreenook triangle = do drawArrays Triangles 0 (fromIntegral $ length triangle)
@@ -31,30 +38,43 @@ type FrogColor = Color4 GLfloat
 -- evenNooks :: Int -> Polygon
 -- evenNooks n = map (dir . (* (2*pi / cast n)). cast) (flight n)
 
-black :: FrogColor
+from255 :: Int -> Int -> Int -> Int -> Blee
+from255 = (((. f) .) .) . (((. f) .) . ((. f) . Color4) . f)
+  where f = (/255) . fromIntegral
+
+bleeToGLVector4 :: Blee -> Vector4 GLfloat
+bleeToGLVector4 (Color4 r g b a) = Vector4 r g b a
+
+black :: Blee
 black = Color4 0 0 0 1
 
-white :: FrogColor
-white = Color4 255 255 255 1
+white :: Blee
+white = Color4 1 1 1 1
 
--- red :: FrogColor
--- red = Color4 255 0 0 1
+lightwhelk :: Blee
+lightwhelk = from255 203 203 255 255
 
--- green :: FrogColor
--- green = Color4 0 255 0 1
+darkwhelk :: Blee
+darkwhelk = from255 53 59 79 255
 
-blue :: FrogColor
-blue = Color4 0 0 255 1
+red :: Blee
+red = Color4 1 0 0 1
+
+green :: Blee
+green = Color4 0 1 0 1
+
+blue :: Blee
+blue = Color4 0 0 1 1
 
 -- yellow :: FrogColor
--- yellow = Color4 255 255 0 1
+-- yellow = Color4 1 1 0 1
 
 -- magenta :: FrogColor
--- magenta = Color4 255 0 255 1
+-- magenta = Color4 1 0 1 1
 
 -- interpolates a color `c` by fraction `n`
-clerp :: GLfloat -> FrogColor -> FrogColor
-clerp = fmap . (*) . clamp (0.0, 1.0)
+clerp :: GLfloat -> Blee -> Blee
+clerp = fmap . (*) . clamp (0, 1)
 
-bg :: FrogColor -> StateT a IO ()
-bg c = lift (clearColor $= c >> clear [ColorBuffer, DepthBuffer])
+bg :: Blee -> StateT a IO ()
+bg = lift . (>> clear [ColorBuffer, DepthBuffer]) . (clearColor $=)

@@ -1,10 +1,13 @@
 module Mean where
 
-import Debug.Trace (trace)
-import Data.Bifunctor (first, bimap)
 import Control.Exception (assert)
+import Data.Bifunctor (bimap, first)
+import Data.Bits (Bits (shiftL, shiftR))
+import Data.Function (applyWhen, (&))
 import Data.List (singleton)
-import Data.Function (applyWhen)
+import Debug.Trace (trace)
+import GHC.Stack (HasCallStack)
+
 
 type Shed a = [a] -> a
 type Shell a = a -> [a]
@@ -114,12 +117,14 @@ flight = enumFromTo 0 . pred
 -- | Whether the thing withstands all of the ordeals.
 {-# INLINE allIn #-}
 allIn :: Foldable t => t (a -> Bool) -> a -> Bool
-allIn fs x = all ($ x) fs
+-- allIn fs x = all ($ x) fs
+allIn = (. all . (&)) . (&)
 
 -- | Whether the thing withstands any of the ordeals.
 {-# INLINE anyIn #-}
 anyIn :: Foldable t => t (a -> Bool) -> a -> Bool
-anyIn fs x = any ($ x) fs
+-- anyIn fs x = any ($ x) fs
+anyIn = (. any . (&)) . (&)
 
 -- | Whether the argument is unempty.
 {-# INLINE full #-}
@@ -129,7 +134,7 @@ full = not.null
 -- split xs into a list of lists xss where each `last xss` gladdens `f`
 {-# INLINE split #-}
 split :: (a -> Bool) -> Shell [a]
-split f = split' f . map singleton
+split = (. map singleton) . split'
 
 split' :: (a -> Bool) -> Shift [[a]]
 split' f (a:b:rest) = if (f.last) a
@@ -216,3 +221,15 @@ hits ns f = hits (tail ns) f . hit (head ns) f
 {-# INLINE lif #-}
 lif :: Bool -> Bool -> Bool
 lif = (||) . not
+
+(.<<.) :: Bits a => a -> Int -> a
+(.<<.) = shiftL
+
+(.>>.) :: Bits a => a -> Int -> a
+(.>>.) = shiftR
+
+sq :: Num a => a -> a
+sq = toBoth (*)
+
+dimensionError :: HasCallStack => Int -> a
+dimensionError = error . ("need dimension " ++) . show

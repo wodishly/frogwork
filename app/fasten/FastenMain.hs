@@ -34,5 +34,4 @@ openGLWindow :: SDL.WindowConfig
 openGLWindow = SDL.defaultWindow {
     SDL.windowGraphicsContext = SDL.OpenGLContext openGLConfig
   , SDL.windowResizable = True
-  , SDL.windowInputGrabbed = True
 }

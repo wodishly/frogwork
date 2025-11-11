@@ -2,45 +2,34 @@ module FrogSpell (
   frogify
 , FrogFile (..)
 , FrogVertex (..)
-, positionBuffer
-, uvBuffer
-, normalBuffer
-, indexBuffer
-, bitmapBuffer
-, texSize
-, indexCount
-, normalCount -- unused
-, vertexCount -- unused
 ) where
 
 import Data.Binary.Get (Get)
-import Graphics.Rendering.OpenGL
-
+import Graphics.Rendering.OpenGL (GLfloat, Vertex3)
 import Foreign (Int16, Int32, Word32, Word8)
-import Matrix (Polygon, Polyhedron)
-import Control.Lens (makeLenses)
+
+import Rime (Polygon, Polyhedron)
 import Spell ((✿), int, u8, u32, s16, s32, f32x2, f32x3)
 
 data FrogFile = FrogFile {
   -- header
-  _vertexCount :: Int32,
-  _normalCount :: Int32,
-  _indexCount :: Int32,
-  _texSize :: (Int16, Int16),
+  vertexCount :: Int32,
+  normalCount :: Int32,
+  indexCount :: Int32,
+  texSize :: (Int16, Int16),
   -- vertex attributes
-  _positionBuffer :: Polyhedron,
-  _uvBuffer :: Polygon,
-  _normalBuffer :: Polyhedron,
+  positionBuffer :: Polyhedron,
+  uvBuffer :: Polygon,
+  normalBuffer :: Polyhedron,
   -- face indices
-  _indexBuffer :: [Word32],
+  indexBuffer :: [Word32],
   -- rgba texture block
-  _bitmapBuffer :: [Word8]
+  bitmapBuffer :: [Word8]
 } deriving (Show, Eq)
-makeLenses ''FrogFile
 
 data FrogVertex = FrogVertex {
   position :: Vertex3 GLfloat
-, uv :: Vertex2 GLfloat
+, uv :: Vertex3 GLfloat
 , normal :: Vertex3 GLfloat
 } deriving (Show, Eq)
 
@@ -62,13 +51,13 @@ frogify = do
 
   return $!
     FrogFile {
-        _vertexCount = vcount
-      , _normalCount = ncount
-      , _indexCount = icount
-      , _texSize = (twidth, theight)
-      , _positionBuffer = fverts
-      , _uvBuffer = fuvs
-      , _normalBuffer = fnormals
-      , _indexBuffer = findices
-      , _bitmapBuffer = bmp
+        vertexCount = vcount
+      , normalCount = ncount
+      , indexCount = icount
+      , texSize = (twidth, theight)
+      , positionBuffer = fverts
+      , uvBuffer = fuvs
+      , normalBuffer = fnormals
+      , indexBuffer = findices
+      , bitmapBuffer = bmp
     }

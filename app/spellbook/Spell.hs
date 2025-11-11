@@ -9,11 +9,12 @@ module Spell (
 , u8
 , u32
 , summon
+, unwrappingly
 , (✿)
 ) where
 
 import Control.Monad (replicateM)
-import Data.Binary.Get (Get, getFloatle, getInt32le, getInt16le, getWord32le, getWord8)
+import Data.Binary.Get (Get, getFloatle, getInt32le, getInt16le, getWord32le, getWord8, runGet)
 import Foreign (Int16, Int32, Word32, Word8)
 import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2), Vertex3 (Vertex3), Vertex4 (Vertex4))
 import qualified Data.ByteString.Lazy as BL
@@ -66,6 +67,10 @@ f32x4 = do
 {-# INLINE summon #-}
 summon :: String -> IO BL.ByteString
 summon = BL.readFile
+
+{-# INLINE unwrappingly #-}
+unwrappingly :: Get a -> BL.ByteString -> a
+unwrappingly = runGet
 
 {-# INLINE int #-}
 int :: Integral i => i -> Integer

@@ -14,7 +14,8 @@ import Control.Lens (makeLenses)
 import Control.Monad.State (MonadTrans (lift), StateT)
 
 import Key (KeySet)
-import Matrix (RenderView, Point)
+import Matrix (RenderView)
+import Rime (Point)
 import Time (Time)
 
 
@@ -37,8 +38,13 @@ makeSettings = Settings {
 }
 
 class Stately a where
-  _name :: a -> StateName
-  _update :: News -> StateT a IO ()
+  name :: a -> StateName
+  update :: News -> StateT a IO ()
+  render :: News -> StateT a IO ()
+  loop :: News -> StateT a IO ()
+  loop news = do
+    update news
+    render news
 
 preent :: Show a => a -> StateT b IO ()
 preent = lift . print

@@ -13,11 +13,11 @@ uniform mat4 u_projection_matrix;
 uniform mat4 u_view_matrix;
 
 void main() {
-        v_uv = uv;
+    v_uv = uv;
 
-        mat4 modelview_matrix = u_view_matrix * u_model_matrix;
-        mat3 normal_matrix = transpose(inverse(mat3(modelview_matrix)));
-        v_normal = normal_matrix * normal;
+    mat4 modelview_matrix = u_view_matrix * u_model_matrix;
+    mat3 normal_matrix = transpose(inverse(mat3(modelview_matrix)));
+    v_normal = normal_matrix * normal;
 
-        gl_Position = u_projection_matrix * modelview_matrix * position;
+    gl_Position = u_projection_matrix * modelview_matrix * position;
 }

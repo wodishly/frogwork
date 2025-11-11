@@ -10,7 +10,6 @@ module Key (
 ) where
 
 import Control.Arrow ((>>>))
-import Control.Lens (makeLenses, (^.))
 
 import SDL (InputMotion (Pressed, Released), Event)
 import SDL.Input.Keyboard.Codes
@@ -18,19 +17,20 @@ import SDL.Input.Keyboard.Codes
 import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2))
 
 import Happen (Keywit, unwrapHappenKeys)
-import Matrix (Point, hat)
+import Rime (Point)
+import Matrix (hat)
 import Mean (allIn, has, none, doBoth)
+import Data.Function ((&))
 
 
 data KeySet = KeySet {
-  _begunKeys :: [Scancode]
-, _continuingKeys :: [Scancode]
-, _endedKeys :: [Scancode]
+  begunKeys :: [Scancode]
+, continuingKeys :: [Scancode]
+, endedKeys :: [Scancode]
 } deriving (Eq)
-makeLenses ''KeySet
 
 instance Show KeySet where
-  show ks = concatMap (show . map unwrapScancode . (ks^.)) [begunKeys, continuingKeys, endedKeys]
+  show = ($ [begunKeys, continuingKeys, endedKeys]) . concatMap . ((show . map unwrapScancode) .) . (&)
 
 hearableKeys :: [Scancode]
 hearableKeys = [
@@ -64,7 +64,7 @@ keyUp = (>>>) (, Released) . has
 
 -- | Checks if the given code began being depressed on this frame.
 keyBegun :: KeySet -> Scancode -> Bool
-keyBegun = has . (^.begunKeys)
+keyBegun = has . begunKeys
 
 -- | Like @keyBegun@, but for a set of codes.
 anyKeysBegun :: KeySet -> [Scancode] -> Bool
@@ -72,11 +72,11 @@ anyKeysBegun = any . keyBegun
 
 -- | Checks if the given code continues being depressed since an earlier frame.
 keyContinuing :: KeySet -> Scancode -> Bool
-keyContinuing = has . uncurry (++) . doBoth (^.begunKeys) (^.continuingKeys)
+keyContinuing = has . uncurry (++) . doBoth begunKeys continuingKeys
 
 -- | Checks if the given code ended being depressed on this frame.
 keyEnded :: KeySet -> Scancode -> Bool
-keyEnded = has . (^.endedKeys)
+keyEnded = has . endedKeys
 
 listen :: [Event] -> KeySet -> KeySet
 listen events keyset = let news = unwrapHappenKeys events in KeySet

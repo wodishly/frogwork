@@ -1,124 +1,200 @@
-module Stave where
+module Stave (
+  Stave (..)
+, Stavebook
+, Staveware
+, makeFeather
+, makeStavebook
+, makeStavebook'
+, stavewrite
+) where
 
--- import FreeType
+import Control.Monad (forM, forM_, when)
+import Data.Char (chr)
+import Data.HashMap.Lazy (HashMap, fromList, (!))
+import Text.Printf (printf)
 
--- write :: IO()
--- write = do
---   paths <- getArgs
+import Foreign (Word32, peek, peekArray, withArray)
 
--- 
--- import Data.Char
--- import Foreign.C
--- import Control.Lens
--- import Control.Monad
--- 
--- import SDL
--- 
--- import Mean
--- import Light
--- import World
--- import Graphics.Rendering.OpenGL (TextureObject)
+import FreeType.Core.Base
+import FreeType.Core.Types
 
--- loadCharacter :: FilePath -> Char -> Int -> IO TextureObject
--- loadCharacter path char px = undefined
--- 
--- runFreeType :: IO FT_Error -> IO ()
--- runFreeType m = do
---     r <- m
---     unless (r == 0) $ fail $ "FreeType Error:" ++ show r
+import Graphics.Rendering.OpenGL (
+    BufferTarget (ArrayBuffer)
+  , Clamping (ClampToEdge)
+  , GLfloat
+  , PixelFormat (Red)
+  , Repetition (Repeated)
+  , TextureCoordName (S, T)
+  , TextureFilter (Linear')
+  , TextureObject
+  , TextureTarget2D (Texture2D)
+  , TextureUnit (TextureUnit)
+  , TransferDirection (WriteToBuffer)
+  , Vertex2 (Vertex2)
+  , Vertex3 (Vertex3)
+  , Uniform (uniform)
+  , activeTexture
+  , bindBuffer
+  , bufferSubData
+  , textureBinding
+  , ($=)
+  )
+import qualified Graphics.Rendering.OpenGL as GL (
+    textureFilter
+  , textureWrapMode
+  )
+
+import FastenMain (assetsBasePath)
+import FastenShade (Programful(uniformMap))
+
+import Blee (Blee, bleeToGLVector4)
+import Mean (doBoth, (.>>.))
+import Rime (Point, Polyhedron, (*^), (<+>))
+import Shade (Mesh (..), bufferSize, drawFaces, uploadTexture, useMesh)
 
 
--- data Feather = Feather {
---   _featherSize :: CFloat
--- , _featherThick :: CFloat
--- , _featherColor :: FrogColor
--- }
--- makeLenses ''Feather
--- 
--- defaultFeather :: Feather
--- defaultFeather = Feather {
---   _featherSize = 64
--- , _featherThick = 4
--- , _featherColor = yellow
--- }
--- 
--- -- todo: efficiency
--- wordWidth :: Feather -> String -> CFloat
--- wordWidth feather word = (cast.length) word * (3/5*(feather^.featherSize + feather^.featherThick))
--- 
--- centeredX :: Feather -> String -> CFloat
--- centeredX feather word = (center^._x) - (wordWidth feather word / 2)
--- 
--- featherGrid :: Feather -> [V2 CFloat]
--- featherGrid feather =
---   map (\i -> (0.5 - cast n/2.0) ^+^ V2 (cast $ div i n) (cast $ mod i n)) (flight $ n*n)
---   where n = cast $ feather^.featherThick
--- 
--- xscale :: Enum a => a -> V2 CFloat -> V2 CFloat
--- xscale n (V2 x y) = V2 (cast n*x) y
--- 
--- drawWord :: Renderer -> Feather -> V2 CFloat -> String -> IO ()
--- drawWord renderer feather topLeft word = forM_ (flight $ length word)
---   $ \i -> forM_ (featherGrid feather)
---   $ \j -> drawStave renderer feather
---     (cast i *^ V2 (3/5*(feather^.featherSize + feather^.featherThick)) 0 ^+^ j ^+^ topLeft)
---     (word!!i)
--- 
--- drawStave :: Renderer -> Feather -> V2 CFloat -> Char -> IO ()
--- drawStave renderer feather topLeft c = do
---   color <- get (rendererDrawColor renderer)
---   rendererDrawColor renderer $= feather^.featherColor
---   forM_ (stave feather topLeft c) $ uncurry (drawLine renderer) . twimap (fmap cast)
---   rendererDrawColor renderer $= color
--- 
--- stave :: Feather -> V2 CFloat -> Char -> [Twain (Point V2 CFloat)]
--- stave feather topLeft c = map (stave' feather topLeft . stavedeal) $ case toLower c of
---   'a' -> [0, 1, 2, 4, 5, 6, 7]
---   'b' -> [0, 1, 2, 3, 7, 9, 12]
---   'c' -> [0, 3, 4, 5]
---   'd' -> [0, 1, 2, 3, 9, 12]
---   'e' -> [0, 3, 4, 5, 6, 7]
---   'f' -> [0, 4, 5, 6, 7]
---   'g' -> [0, 2, 3, 4, 5, 7]
---   'h' -> [1, 2, 4, 5, 6, 7]
---   'i' -> [0, 3, 9, 12]
---   'j' -> [1, 2, 3, 4]
---   'k' -> [4, 5, 6, 10, 13]
---   'l' -> [3, 4, 5]
---   'm' -> [1, 2, 4, 5, 8, 10]
---   'n' -> [1, 2, 4, 5, 8, 13]
---   'o' -> [0, 1, 2, 3, 4, 5]
---   'p' -> [0, 1, 4, 5, 6, 7]
---   'q' -> [0, 1, 2, 3, 4, 5, 13]
---   'r' -> [0, 1, 4, 5, 6, 7, 13]
---   's' -> [0, 2, 3, 7, 8]
---   't' -> [0, 9, 12]
---   'u' -> [1, 2, 3, 4, 5]
---   'v' -> [4, 5, 10, 11]
---   'w' -> [1, 2, 4, 5, 11, 13]
---   'x' -> [8, 10, 11, 13]
---   'y' -> [8, 10, 12]
---   'z' -> [0, 3, 10, 11]
---   _ -> []
--- 
--- stave' :: Feather -> V2 CFloat -> StaveDeal -> Twain (Point V2 CFloat)
--- stave' feather topLeft = twimap (P . (topLeft ^+^) . ((feather^.featherSize/4) *^) . uncurry V2)
--- 
--- type StaveDeal = Twain (Twain CFloat)
--- stavedeal :: Int -> StaveDeal
--- stavedeal n = case n of
---   0  -> ((0, 0), (2, 0))
---   1  -> ((2, 0), (2, 2))
---   2  -> ((2, 2), (2, 4))
---   3  -> ((0, 4), (2, 4))
---   4  -> ((0, 2), (0, 4))
---   5  -> ((0, 0), (0, 2))
---   6  -> ((0, 2), (1, 2))
---   7  -> ((1, 2), (2, 2))
---   8  -> ((0, 0), (1, 2))
---   9  -> ((1, 0), (1, 2))
---   10 -> ((2, 0), (1, 2))
---   11 -> ((1, 2), (0, 4))
---   12 -> ((1, 2), (1, 4))
---   13 -> ((1, 2), (2, 4))
---   _ -> error "bad stavedeal"
+type Stavebook = HashMap Char Stave
+type Staveware = (Stavebook, Mesh)
+
+data Stave = Stave {
+    bearing :: Point -- top left
+  , size :: Point
+  , advance :: GLfloat -- step
+  , texture :: TextureObject
+} deriving (Show, Eq)
+
+sharpness :: Word32
+sharpness = 2^(7 :: Integer)
+
+greatness :: GLfloat
+greatness = 2^(6 :: Integer)
+
+glyphFormatName :: FT_Glyph_Format -> String
+glyphFormatName = ("ft_GLYPH_FORMAT_" ++) . \case
+    FT_GLYPH_FORMAT_BITMAP -> "BITMAP"
+    FT_GLYPH_FORMAT_COMPOSITE -> "COMPOSITE"
+    FT_GLYPH_FORMAT_OUTLINE -> "OUTLINE"
+    FT_GLYPH_FORMAT_PLOTTER -> "PLOTTER"
+    _ -> "NONE"
+
+pad :: Int -> Int -> a -> [a] -> [a]
+pad _ _ _ [] = []
+pad amount width something bitmapData = left ++ b ++ recourse where
+  (left, right) = splitAt width bitmapData
+  b = replicate amount something
+  recourse = pad amount width something right
+
+makeFeather :: FilePath -> IO Stavebook
+makeFeather = makeStavebook sharpness . printf "%s/%s.ttf" assetsBasePath
+
+-- | does it softly
+makeStavebook :: FT_UInt -> FilePath -> IO Stavebook
+makeStavebook = makeStavebook'' False
+
+-- | does it loudly
+makeStavebook' :: FT_UInt -> FilePath -> IO Stavebook
+makeStavebook' = makeStavebook'' True
+
+-- | Based on [this page](https://zyghost.com/articles/Haskell-font-rendering-with-freetype2-and-opengl.html).
+makeStavebook'' :: Bool -> FT_UInt -> FilePath -> IO Stavebook
+makeStavebook'' loud great path = do
+  stavewit <- ft_Init_FreeType
+  when loud $ putStrLn "made stavebook!"
+
+  feather <- ft_New_Face stavewit path 0
+  ft_Set_Pixel_Sizes feather 0 (fromIntegral great)
+  feather' <- peek feather
+  when loud $ putStrLn "made feather!"
+
+  stavebook <- forM (map chr [32..126]) $ \stave -> do
+    finger <- ft_Get_Char_Index feather (fromIntegral $ fromEnum stave)
+    ft_Load_Glyph feather finger FT_LOAD_RENDER
+    when loud $ putStrLn "made finger!"
+    when loud $ putStrLn $ "finger is: " ++ show finger ++ " (" ++ show stave ++ ")"
+
+    let slot = frGlyph feather'
+    slot' <- peek slot
+    let staveTell = frNum_glyphs feather'
+    let shape = gsrFormat slot'
+    when loud $ putStrLn "made slot!"
+    when loud $ putStrLn $ "slot is: " ++ show slot
+    when loud $ putStrLn $ "stave tell is: " ++ show staveTell
+    when loud $ putStrLn $ "stave shape is: " ++ glyphFormatName shape
+
+    ft_Render_Glyph slot FT_RENDER_MODE_NORMAL
+
+    let bitmap = gsrBitmap slot'
+        (l, t) = doBoth gsrBitmap_left gsrBitmap_top slot'
+        (w, h) = doBoth bWidth bRows bitmap
+        FT_Vector x _ = gsrAdvance slot'
+    when loud $ putStrLn "here's the stuff we're going to save"
+    when loud $ putStrLn $ "  bearing: " ++ show (l, t)
+    when loud $ putStrLn $ "  size: " ++ show (w, h)
+    when loud $ putStrLn $ "  advance: " ++ show (x, 0 :: Int)
+
+    when loud $ putStrLn "here's some other stuff:"
+    when loud $ putStrLn $ "  pitch: " ++ show (bPitch bitmap)
+    when loud $ putStrLn $ "  num_grays: " ++ show (bNum_grays bitmap)
+    when loud $ putStrLn $ "  pixel_mode: " ++ show (bPixel_mode bitmap)
+    when loud $ putStrLn $ "  palette_mode: " ++ show (bPalette_mode bitmap)
+    when loud $ putStrLn ""
+
+    let (w', h') = (fromIntegral w, fromIntegral h)
+        pitch = 4 - mod w' 4
+        nw = fromIntegral (pitch + w')
+    when loud $ putStrLn "did some reckoning..."
+
+    tex' <- flip withArray (uploadTexture Red (nw, h')) . pad pitch w' 0
+      =<< peekArray (fromIntegral $ w*h) (bBuffer bitmap)
+
+    -- does this do anything? unsure if safe to destroy
+    -- GL.texture Texture2D $= Enabled
+    GL.textureFilter Texture2D $= ((Linear', Nothing), Linear')
+    GL.textureWrapMode Texture2D S $= (Repeated, ClampToEdge)
+    GL.textureWrapMode Texture2D T $= (Repeated, ClampToEdge)
+    when loud $ putStrLn "made texture!"
+
+    return (stave, Stave
+        (fromIntegral <$> Vertex2 l t)
+        (fromIntegral <$> Vertex2 w h)
+        (fromIntegral (x .>>. 6))
+        tex'
+      )
+
+  ft_Done_Face feather
+  ft_Done_FreeType stavewit
+
+  return $ fromList stavebook
+
+stavewrite :: Staveware -> Point -> GLfloat -> Blee -> String -> IO ()
+stavewrite (book, mesh) bottomLeft scale blee spell = do
+  useMesh mesh
+
+  let advances = scanl (+) 0 (map (advance . (book!)) spell)
+
+  forM_ (zip [0..] spell) $ \(i, char) -> do
+    let stave = book!char
+        vertices = stavenooks stave scale bottomLeft (advances!!i)
+
+    activeTexture $= TextureUnit 0
+    textureBinding Texture2D $= Just (texture stave)
+    bindBuffer ArrayBuffer $= Just (vbo mesh)
+
+    uniformMap mesh ! "u_blee" >>= ($= bleeToGLVector4 blee) . uniform
+
+    withArray vertices (bufferSubData ArrayBuffer WriteToBuffer 0 $ bufferSize vertices)
+
+    bindBuffer ArrayBuffer $= Nothing
+    drawFaces $ elementCount mesh
+
+stavenooks :: Stave -> GLfloat -> Point -> GLfloat -> Polyhedron
+stavenooks stave scale bottomLeft step = [
+    Vertex3 (x+w) (y+h) 0
+  , Vertex3 (x+w)  y    0
+  , Vertex3  x     y    0
+  , Vertex3  x    (y+h) 0
+  ] where
+    (Stave (Vertex2 left top) z@(Vertex2 _ height) _ _) = stave
+    scale' = scale * greatness / fromIntegral sharpness
+    Vertex2 x y = bottomLeft <+> (scale' *^ Vertex2 (left + step) (top - height))
+    Vertex2 w h = scale' *^ z

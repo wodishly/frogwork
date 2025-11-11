@@ -11,6 +11,7 @@ languages: <br>
 libraries:<br>
 ✦ sdl2<br>
 ✦ opengl<br>
+✦ freetype2<br>
 
 # setup
 
@@ -19,7 +20,9 @@ libraries:<br>
 cabal run
 ```
 
-# fand
+# other stuff
+
+## profiling
 ```sh
 cabal configure --enable-profiling
 cabal run frogwork -- +RTS -pj -RTS
