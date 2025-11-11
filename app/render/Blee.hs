@@ -12,16 +12,15 @@ module Blee (
 import Control.Monad.State (StateT, MonadTrans (lift))
 
 import Graphics.Rendering.OpenGL (
-    GLfloat
+    ClearBuffer (..)
   , Color4 (Color4)
-  , clearColor
-  , ClearBuffer (..)
+  , GLfloat
   , clear
+  , clearColor
   , ($=)
   )
 
 import Rime (clamp)
-import Mean ((<<))
 
 
 type FrogColor = Color4 GLfloat
@@ -68,7 +67,7 @@ blue = Color4 0 0 1 1
 
 -- interpolates a color `c` by fraction `n`
 clerp :: GLfloat -> FrogColor -> FrogColor
-clerp = fmap . (*) . clamp (0.0, 1.0)
+clerp = fmap . (*) . clamp (0, 1)
 
 bg :: FrogColor -> StateT a IO ()
-bg = lift . (clear [ColorBuffer, DepthBuffer] <<) . (clearColor $=)
+bg = lift . (>> clear [ColorBuffer, DepthBuffer]) . (clearColor $=)

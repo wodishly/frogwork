@@ -2,30 +2,26 @@ module Time (
   Time (..)
 , beginTime
 , keepTime
-, lifetime
-, delta
 , throttle
 ) where
 
-import Control.Lens (makeLenses, (^.))
 import Data.Word (Word32)
 import Graphics.Rendering.OpenGL (GLfloat)
 
 
 data Time = Time {
-  _lifetime :: Word32
-, _delta :: Word32
+  lifetime :: Word32
+, delta :: Word32
 } deriving (Show, Eq)
-makeLenses ''Time
 
 beginTime :: Time
 beginTime = Time 0 0
 
 keepTime :: Time -> Word32 -> Time
 keepTime time now = Time {
-    _lifetime = now
-  , _delta = now - (time^.lifetime)
+    lifetime = now
+  , delta = now - lifetime time
 }
 
 throttle :: Time -> GLfloat -> GLfloat
-throttle time = (*) (fromIntegral (time^.delta) / 1000)
+throttle time = (*) (fromIntegral (delta time) / 1000)

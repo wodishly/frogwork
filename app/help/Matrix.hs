@@ -20,6 +20,9 @@ module Matrix (
 , norm3
 , hat
 , hat3
+, (<+>)
+, (*^)
+, (^*)
 ) where
 
 import Numeric.LinearAlgebra (
@@ -53,11 +56,11 @@ type FrogVector = Vector GLfloat
 type FrogMatrix = Matrix GLfloat
 
 data RenderView = RenderView {
-    _aspect :: GLfloat
-  , _size :: (GLfloat, GLfloat)
-  , _fov :: GLfloat
-  , _near :: GLfloat
-  , _far :: GLfloat
+    aspect :: GLfloat
+  , size :: (GLfloat, GLfloat)
+  , fov :: GLfloat
+  , near :: GLfloat
+  , far :: GLfloat
 }
 
 {-# INLINE nought #-}
@@ -88,6 +91,17 @@ hat3 z
   | norm3 z == 0 = z
   | otherwise = fmap (/norm3 z) z
 
+infixl 7 *^, ^*
+infixl 6 <+>
+(<+>) :: (Applicative f, Num a) => f a -> f a -> f a
+(<+>) = liftA2 (+)
+
+(*^) :: (Applicative f, Num a) => a -> f a -> f a
+(*^) = (<$>) . (*)
+
+(^*) :: (Applicative f, Num a) => f a -> a -> f a
+(^*) = flip (*^)
+
 -- | Converts SDL's @P V2 Int32@ to OpenGL's @Vertex2 GLfloat@.
 {-# INLINE asFrog #-}
 asFrog :: SDL.Point SDL.V2 Int32 -> Point
@@ -105,11 +119,11 @@ fromTranslation _ = error "we need 3 dimensions"
 
 {-# INLINE getPerspectiveMatrix #-}
 getPerspectiveMatrix :: RenderView -> FrogMatrix
-getPerspectiveMatrix (RenderView asp _ fov near far) = (4><4) [
-   1/(asp*tan (fov/2)),             0,                     0,                     0
-  ,                  0, 1/tan (fov/2),                     0,                     0
-  ,                  0,             0, (near+far)/(near-far), 2*far*near/(near-far)
-  ,                  0,             0,                    -1,                     0
+getPerspectiveMatrix (RenderView asp _ fov' near' far') = (4><4) [
+   1/(asp*tan (fov'/2)),              0,                         0,                         0
+  ,                   0, 1/tan (fov'/2),                         0,                         0
+  ,                   0,              0, (near'+far')/(near'-far'), 2*far'*near'/(near'-far')
+  ,                   0,              0,                        -1,                         0
   ]
 
 {-# INLINE getOrthographicMatrix #-}

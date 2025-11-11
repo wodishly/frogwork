@@ -11,7 +11,6 @@ module Shade (
 , uploadTexture
 ) where
 
-import Control.Lens ((^.))
 import Control.Monad (unless)
 import Control.Monad.Identity (Identity (runIdentity))
 import Data.Bifunctor (Bifunctor (second))
@@ -34,7 +33,7 @@ import FastenShade
 import File
 import Matrix (FrogMatrix)
 import Mean (Twain, twimap, twin, doBoth)
-import Time (Time, _lifetime)
+import Time (Time (lifetime))
 
 
 drawFaces :: Int32 -> IO ()
@@ -177,7 +176,7 @@ drawMesh projectionMatrix viewMatrix orthographicMatrix time mesh = do
   case HM.lookup "u_time" (uniformMap mesh) of
     Just _ -> do
       timeLocation <- uniformMap mesh ! "u_time"
-      (uniform timeLocation :: StateVar GLfloat) $= (fromIntegral (_lifetime time) / 1000)
+      (uniform timeLocation :: StateVar GLfloat) $= (fromIntegral (lifetime time) / 1000)
     _ -> return ()
 
   case HM.lookup "u_texture" (uniformMap mesh) of
@@ -207,8 +206,8 @@ makeAssetMesh mprofile = do
 
   -- bespokeness
 
-  withArray (frogFile^.positionBuffer) $ \ptr ->
-    bufferData ArrayBuffer $= (bufferSize (frogFile^.positionBuffer), ptr, StaticDraw)
+  withArray (positionBuffer frogFile) $ \ptr ->
+    bufferData ArrayBuffer $= (bufferSize (positionBuffer frogFile), ptr, StaticDraw)
 
   vertexAttribPointer (AttribLocation 0)
     $= (ToFloat, VertexArrayDescriptor 3 Float 0 (bufferOffset 0))
@@ -218,8 +217,8 @@ makeAssetMesh mprofile = do
   uvbo' <- genObjectName
   bindBuffer ArrayBuffer $= Just uvbo'
 
-  withArray (frogFile^.uvBuffer) $ \ptr ->
-    bufferData ArrayBuffer $= (bufferSize (frogFile^.uvBuffer), ptr, StaticDraw)
+  withArray (uvBuffer frogFile) $ \ptr ->
+    bufferData ArrayBuffer $= (bufferSize (uvBuffer frogFile), ptr, StaticDraw)
 
   vertexAttribPointer (AttribLocation 1)
     $= (ToFloat, VertexArrayDescriptor 2 Float 0 (bufferOffset 0))
@@ -229,8 +228,8 @@ makeAssetMesh mprofile = do
   nbo <- genObjectName
   bindBuffer ArrayBuffer $= Just nbo
 
-  withArray (frogFile^.normalBuffer) $ \ptr ->
-    bufferData ArrayBuffer $= (bufferSize (frogFile^.normalBuffer), ptr, StaticDraw)
+  withArray (normalBuffer frogFile) $ \ptr ->
+    bufferData ArrayBuffer $= (bufferSize (normalBuffer frogFile), ptr, StaticDraw)
 
   vertexAttribPointer (AttribLocation 2)
     $= (ToFloat, VertexArrayDescriptor 3 Float 0 (bufferOffset 0))
@@ -239,12 +238,12 @@ makeAssetMesh mprofile = do
   -- index buffer
   ebo <- genObjectName
   bindBuffer ElementArrayBuffer $= Just ebo
-  withArray (frogFile^.indexBuffer) $ \ptr ->
-    bufferData ElementArrayBuffer $= (bufferSize (frogFile^.indexBuffer), ptr, StaticDraw)
+  withArray (indexBuffer frogFile) $ \ptr ->
+    bufferData ElementArrayBuffer $= (bufferSize (indexBuffer frogFile), ptr, StaticDraw)
 
   -- texture uniform
-  texy <- withArray (frogFile^.bitmapBuffer)
-    (uploadTexture RGBA (twimap fromIntegral $ frogFile^.texSize))
+  texy <- withArray (bitmapBuffer frogFile)
+    (uploadTexture RGBA (twimap fromIntegral $ texSize frogFile))
 
   print pro
   GL.get (activeUniforms pro) >>= print
@@ -258,7 +257,7 @@ makeAssetMesh mprofile = do
     (Just texy)
     (Just frogFile)
     hmap
-    (frogFile^.indexCount)
+    (indexCount frogFile)
     (ident 4)
 
 uploadTexture :: PixelFormat -> (GLsizei, GLsizei) -> Ptr Word8 -> IO TextureObject

@@ -70,9 +70,9 @@ waxwane wind = do
   GL.blend $= Enabled
   GL.blendFunc $= (GL.SrcAlpha, GL.OneMinusSrcAlpha)
   return RenderView {
-      _aspect = fromIntegral width / fromIntegral height
-    , _size = (fromIntegral width, fromIntegral height)
-    , _fov = pi / 4.0
-    , _near = 0.1
-    , _far = 100.0
+      aspect = fromIntegral width / fromIntegral height
+    , size = (fromIntegral width, fromIntegral height)
+    , fov = pi / 4.0
+    , near = 0.1
+    , far = 100.0
   }

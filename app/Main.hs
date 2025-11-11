@@ -15,13 +15,12 @@ import qualified SDL (
   , quit
   )
 
-import State (StateName (..))
 import MenuState (makeMenuState)
 import PauseState (makePauseState)
 import PlayState (makePlayState)
 
 import Game (
-    Allwit (..), makeAllwit
+    Allwit, makeAllwit
   , fand, updateAll, showLeechwit
   , settleState, blit, again, begetMeshes
   )
@@ -47,7 +46,6 @@ birth window context = do
         (makePlayState staveware meshes)
         (makePauseState staveware)
         (makeMenuState staveware)
-        MenuName
 
   fand allwit
   return allwit

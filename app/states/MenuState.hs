@@ -1,12 +1,8 @@
 module MenuState (
-  MenuState
+  MenuState (..)
 , makeMenuState
-, choosen
-, hand
-, finger
 ) where
 
-import Control.Lens (makeLenses, (^.))
 import Numeric.LinearAlgebra (ident)
 import Control.Monad.State (MonadState (get, put), StateT, MonadTrans (lift))
 
@@ -17,18 +13,17 @@ import State (StateName (MenuName, PlayName), Stately (..))
 
 import Blee (bg, darkwhelk)
 import Key (KeySet, keyBegun)
-import Matrix (_size, getOrthographicMatrix, getPerspectiveMatrix)
+import Matrix (getOrthographicMatrix, getPerspectiveMatrix, RenderView (size))
 import Shade (drawMesh)
 import Stave (Staveware, stavewrite)
 
 
 data MenuState = MenuState {
-  _hand :: [(StateName, String)]
-, _finger :: Int
-, _choosen :: Maybe StateName
-, _staveware :: Staveware
+  hand :: [(StateName, String)]
+, finger :: Int
+, choosen :: Maybe StateName
+, staveware :: Staveware
 }
-makeLenses ''MenuState
 
 instance Stately MenuState where
   name _ = MenuName
@@ -44,30 +39,30 @@ instance Stately MenuState where
       (ident 4)
       (getOrthographicMatrix display)
       time
-      (snd $ statewit^.staveware)
+      (snd $ staveware statewit)
 
-    let (width, height) = _size display
-    lift $ stavewrite (statewit^.staveware) (Vertex2 (width/8) (height*4/8)) 1 "welcome to frogford!"
-    lift $ stavewrite (statewit^.staveware) (Vertex2 (width/8) (height*3/8)) 1 "play"
-    lift $ stavewrite (statewit^.staveware) (Vertex2 (width/8) (height*2/8)) 1 "quit"
+    let (width, height) = size display
+    lift $ stavewrite (staveware statewit) (Vertex2 (width/8) (height*4/8)) 1 "welcome to frogford!"
+    lift $ stavewrite (staveware statewit) (Vertex2 (width/8) (height*3/8)) 1 "play"
+    lift $ stavewrite (staveware statewit) (Vertex2 (width/8) (height*2/8)) 1 "quit"
 
 makeMenuState :: Staveware -> MenuState
 makeMenuState ware = MenuState {
-  _hand = [(PlayName, "play"), (PlayName, "frog")]
-, _finger = 0
-, _choosen = Nothing
-, _staveware = ware
+  hand = [(PlayName, "play"), (PlayName, "frog")]
+, finger = 0
+, choosen = Nothing
+, staveware = ware
 }
 
 menuFare :: KeySet -> StateT MenuState IO ()
 menuFare keyset = do
   menuwit <- get
   if keyBegun keyset ScancodeReturn
-  then put menuwit { _choosen = Just . fst $ (menuwit^.hand)!!(menuwit^.finger) }
+  then put menuwit { choosen = Just . fst $ hand menuwit!!finger menuwit }
   else put menuwit {
-    _finger = if keyBegun keyset ScancodeUp
-        then mod (succ $ menuwit^.finger) (length $ menuwit^.hand)
+    finger = if keyBegun keyset ScancodeUp
+        then mod (succ $ finger menuwit) (length $ hand menuwit)
       else if keyBegun keyset ScancodeDown
-        then mod (pred $ menuwit^.finger) (length $ menuwit^.hand)
-        else menuwit^.finger
+        then mod (pred $ finger menuwit) (length $ hand menuwit)
+        else finger menuwit
     }

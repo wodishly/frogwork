@@ -12,7 +12,7 @@ import Data.Char (chr)
 import Data.HashMap.Lazy (HashMap, fromList, (!))
 import Text.Printf (printf)
 
-import Foreign (peek, peekArray, withArray, Word32)
+import Foreign (Word32, peek, peekArray, withArray)
 
 import FreeType.Core.Base
 import FreeType.Core.Types
@@ -24,7 +24,7 @@ import Graphics.Rendering.OpenGL (
   , PixelFormat (Red)
   , Repetition (Repeated)
   , TextureCoordName (S, T)
-  , TextureFilter (Nearest, Linear')
+  , TextureFilter (Linear')
   , TextureObject
   , TextureTarget2D (Texture2D)
   , TextureUnit (TextureUnit)
@@ -44,7 +44,7 @@ import qualified Graphics.Rendering.OpenGL as GL (
 
 import FastenMain (assetsBasePath)
 
-import Matrix (Point)
+import Matrix (Point, Polyhedron, (<+>), (*^))
 import Mean (doBoth, (.>>.))
 import Shade (uploadTexture, useMesh, Mesh (..), bufferSize, drawFaces)
 
@@ -52,10 +52,10 @@ type Stavebook = HashMap Char Stave
 type Staveware = (Stavebook, Mesh)
 
 data Stave = Stave {
-    _bearing :: Point
-  , _size :: Point
-  , _advance :: GLfloat
-  , _texture :: TextureObject
+    bearing :: Point -- top left
+  , size :: Point
+  , advance :: GLfloat -- step
+  , texture :: TextureObject
 } deriving (Show, Eq)
 
 sharpness :: Word32
@@ -108,13 +108,6 @@ makeStavebook great path = do
     putStrLn $ "stave tell is: " ++ show staveTell
     putStrLn $ "stave shape is: " ++ glyphFormatName shape
 
-    -- this is segfaulting, but is just for logging purposes so it can be ignored.
-    -- let greatnessTell = frNum_fixed_sizes feather'
-    --     sizesPtr = frAvailable_sizes feather'
-    -- _sizes <- forM [0 .. (fromIntegral greatnessTell)]
-    --   (\i -> peek . plusPtr sizesPtr . fromIntegral $ i :: IO FT_Bitmap_Size)
-    -- putStrLn "greatnesses grabbed!"
-
     ft_Render_Glyph slot FT_RENDER_MODE_NORMAL
 
     let bitmap = gsrBitmap slot'
@@ -161,29 +154,32 @@ makeStavebook great path = do
   return $ fromList stavebook
 
 stavewrite :: Staveware -> Point -> GLfloat -> String -> IO ()
-stavewrite (book, mesh) (Vertex2 x y) scale spell = do
+stavewrite (book, mesh) bottomLeft scale spell = do
   useMesh mesh
 
-  let advances = scanl (+) 0 (map (_advance . (book!)) spell)
+  let advances = scanl (+) 0 (map (advance . (book!)) spell)
 
-  forM_ (zip [0..] spell) $ \(i, stave) -> do
-    let (Stave (Vertex2 left top) size@(Vertex2 _ height) _ tex') = book!stave
-        scale' = scale * greatness / fromIntegral sharpness
-        x' = x + scale' * (left + advances!!i)
-        y' = y - scale' * (height - top)
-        Vertex2 w h = (* scale') <$> size
-        vertices = [
-            Vertex3 (x'+w) (y'+h) 0
-          , Vertex3 (x'+w)  y'    0
-          , Vertex3  x'     y'    0
-          , Vertex3  x'    (y'+h) 0
-          ]
+  forM_ (zip [0..] spell) $ \(i, char) -> do
+    let stave = book!char
+        vertices = stavenooks stave scale bottomLeft (advances!!i)
 
     activeTexture $= TextureUnit 0
-    textureBinding Texture2D $= Just tex'
+    textureBinding Texture2D $= Just (texture stave)
     bindBuffer ArrayBuffer $= Just (vbo mesh)
 
     withArray vertices (bufferSubData ArrayBuffer WriteToBuffer 0 $ bufferSize vertices)
 
     bindBuffer ArrayBuffer $= Nothing
     drawFaces $ elementCount mesh
+
+stavenooks :: Stave -> GLfloat -> Point -> GLfloat -> Polyhedron
+stavenooks stave scale bottomLeft step = [
+    Vertex3 (x+w) (y+h) 0
+  , Vertex3 (x+w)  y    0
+  , Vertex3  x     y    0
+  , Vertex3  x    (y+h) 0
+  ] where
+    (Stave (Vertex2 left top) z@(Vertex2 _ height) _ _) = stave
+    scale' = scale * greatness / fromIntegral sharpness
+    Vertex2 x y = bottomLeft <+> (scale' *^ Vertex2 (left + step) (top - height))
+    Vertex2 w h = scale' *^ z
