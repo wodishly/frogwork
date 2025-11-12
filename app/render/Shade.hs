@@ -213,15 +213,9 @@ data Animation = Animation {
 , aTime :: Float
 }
 
-idk :: Int -> FrogMatrix -> [FrogMatrix] -> [MothBone] -> FrogMatrix
-idk boneIndex world localMatrices bones = do
-  let parentIndex = fromIntegral (mother $ bones !! boneIndex)
-      localMatrix = localMatrices !! boneIndex
-  case parentIndex of
-    255 -> localMatrix <> world
-    _ -> idk parentIndex (localMatrix <> world) localMatrices bones
-
-
+(*^) :: (Functor f, Num a) => a -> f a -> f a
+(*^) a = fmap (a*)
+{-# INLINE (*^) #-}
 slerp :: Point4 -> Point4 -> Float -> Point4
 slerp (Vertex4 qw qx qy qz) (Vertex4 pw px py pz) t
   | 1.0 - cosphi < 1e-8 = q
@@ -233,12 +227,8 @@ slerp (Vertex4 qw qx qy qz) (Vertex4 pw px py pz) t
     (cosphi, f) = if dqp < 0 then (-dqp, (-1 *^)) else (dqp, id)
     phi = acos cosphi
 
-(*^) :: (Functor f, Num a) => a -> f a -> f a
-(*^) a = fmap (a*)
-{-# INLINE (*^) #-}
-
-compose :: Point3 -> Point4 -> Point3 -> FrogMatrix
-compose pos (Vertex4 x y z s) sc = fromAffine (toFrogList sc) (toFrogList pos) <>
+collectively :: Point3 -> Point4 -> Point3 -> FrogMatrix
+collectively pos (Vertex4 x y z s) sc = fromAffine (toFrogList sc) (toFrogList pos) <>
   (4><4) [
     1 - 2*y**2 - 2*z**2, 2*x*y - 2*s*z, 2*x*z + 2*s*y, 0,
     2*x*y + 2*s*z, 1 - 2*x**2 - 2*z**2, 2*y*z - 2*s*x, 0,
@@ -246,51 +236,51 @@ compose pos (Vertex4 x y z s) sc = fromAffine (toFrogList sc) (toFrogList pos) <
     0, 0, 0, 1
   ]
 
+worldify :: Int -> FrogMatrix -> [FrogMatrix] -> [MothBone] -> FrogMatrix
+worldify boneIndex world localMatrices bones = do
+  let parentIndex = fromIntegral (mother $ bones !! boneIndex)
+      localMatrix = localMatrices !! boneIndex
+  case parentIndex of
+    255 -> localMatrix <> world
+    _ -> worldify parentIndex (localMatrix <> world) localMatrices bones
+
+frame :: [a] -> [GLfloat] -> Float -> (a, a, Float)
+frame values times now =
+  let next = fromMaybe (length times - 1) (findIndex (> now) times)
+      current = if next == 0 then 0 else next - 1
+      nextT = times !! next
+      currentT = times !! current
+      nextV = values !! next
+      currentV = values !! current
+      t = clamp (0, 1) $ (now - currentT) / (nextT - currentT)
+  in (currentV, nextV, t)
+
+local3 :: MothFile -> Float -> (MothTale -> Mothly3) -> [Vertex3 GLfloat]
+local3 mammoth now prop = map (\mothtale ->
+        let Mothly3 positions times = prop mothtale
+            (currentV, nextV, t) = frame positions times now
+        in currentV <+> (t *^ (nextV <-> currentV))
+       ) $ chronicles mammoth
+
 play :: Animation -> Float -> IO [GLfloat]
 play animoth now = do
   let mammoth = aMoth animoth
-      asFuck = skeleton mammoth
-      time = mod' (now - aTime animoth) 1.0
-      confused = map (\mothtale -> do
-        let Mothly3 positions times = MOTH.position mothtale
-            next = fromMaybe (length times - 1) (findIndex (> time) times)
-            current = if next == 0 then 0 else next - 1
-            nextT = times !! next
-            currentT = times !! current
-            nextV = positions !! next
-            currentV = positions !! current
-            t = clamp (0, 1) $ (time - currentT) / (nextT - currentT)
-        currentV <+> (t *^ (nextV <-> currentV))
-       ) $ chronicles mammoth
-      dazed = map (\mothtale -> do
-        let Mothly3 scales times = MOTH.scale mothtale
-            next = fromMaybe (length times - 1) (findIndex (> time) times)
-            current = if next == 0 then 0 else next - 1
-            nextT = times !! next
-            currentT = times !! current
-            nextV = scales !! next
-            currentV = scales !! current
-            t = clamp (0, 1) $ (time - currentT) / (nextT - currentT)
-        currentV <+> (t *^ (nextV <-> currentV))
-       ) $ chronicles mammoth
-      confounded = map (\mothtale -> do
+      fossil = skeleton mammoth
+      mothNow = mod' (now - aTime animoth) 1.0
+      confused = local3 mammoth mothNow MOTH.position
+      confounded = map (\mothtale ->
         let Mothly4 quaternions times = MOTH.quaternion mothtale
-            next = fromMaybe (length times - 1) (findIndex (> time) times)
-            current = if next == 0 then 0 else next - 1
-            nextT = times !! next
-            currentT = times !! current
-            nextQ = quaternions !! next
-            currentQ = quaternions !! current
-            t = clamp (0, 1) $ (time - currentT) / (nextT - currentT)
+            (currentQ, nextQ, t) = frame quaternions times mothNow
             Vertex4 y z real x = slerp currentQ nextQ t
-        Vertex4 x y z real
+        in Vertex4 x y z real
         ) $ chronicles mammoth
+      dazed = local3 mammoth mothNow MOTH.scale
 
+  let be = zipWith3
+      bonewards = be collectively confused confounded dazed
+      ma'ammoth = map (\me -> worldify me (MOTH.matrix (skeleton mammoth !! me)) bonewards fossil) [0..(length fossil - 1)]
 
-  let mats = zipWith3 (\p s q -> compose p q s) confused dazed confounded
-  let worldMatrices = map (\i -> idk i (MOTH.matrix (skeleton mammoth !! i)) mats asFuck) [0..(length asFuck - 1)]
-
-  return $ concatMap (toList . flatten) worldMatrices
+  return $ concatMap (toList . flatten) ma'ammoth
 
 makeAssetMesh :: AssetMeshProfile -> IO Mesh
 makeAssetMesh mprofile = do
