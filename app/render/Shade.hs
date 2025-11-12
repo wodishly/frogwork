@@ -9,6 +9,7 @@ module Shade (
 , makeAssetMesh
 , makeSimpleMesh
 , uploadTexture
+, Animation (..)
 ) where
 
 import Control.Monad (unless)
@@ -16,8 +17,8 @@ import Control.Monad.Identity (Identity (runIdentity))
 import Data.Bifunctor (Bifunctor (second))
 import Data.Binary.Get (runGet)
 import Data.HashMap.Lazy ((!))
-import Data.Maybe (fromJust)
-import Numeric.LinearAlgebra (flatten, ident)
+import Data.Maybe (fromJust, fromMaybe)
+import Numeric.LinearAlgebra (flatten, toList)
 import Text.Printf (printf)
 
 import Foreign (Int32, Ptr, Storable, new, nullPtr, plusPtr, sizeOf, withArray, Word8)
@@ -30,13 +31,16 @@ import qualified Graphics.GL as GLRaw (glUniformMatrix4fv)
 
 import FastenMain (assetsBasePath, shaderBasePath)
 import FastenShade
-import Matrix (FrogMatrix, toFrogList)
+import Matrix (FrogMatrix, toFrogList, FrogVertex (toFrogVector), fromAffine)
 import Mean (Twain, twimap, twin, doBoth)
 import FrogSpell
 import MothSpell as MOTH
 import Spell (summon)
 import Time
-import Numeric.LinearAlgebra.HMatrix (toList)
+import Data.List (findIndex)
+import Rime (clamp, (<->), (<+>), Point4, (^/), Point3)
+import Numeric.LinearAlgebra.HMatrix ( ident, dot, (><) )
+import Data.Fixed (mod')
 
 drawFaces :: Int32 -> IO ()
 drawFaces count = drawElements Triangles count UnsignedInt (bufferOffset 0)
@@ -63,7 +67,7 @@ data Mesh = Mesh {
   , _uniformMap :: UniformMap
   , elementCount :: Int32
   , transform :: FrogMatrix
-  , moth :: Maybe MothFile
+  , meshAnimation :: Maybe Animation
 }
 
 instance Programful Mesh where
@@ -175,22 +179,23 @@ drawMesh projectionMatrix viewMatrix orthographicMatrix time mesh = do
       UniformLocation viewLocation <- get uLoc
       S.unsafeWith (flatten viewMatrix) (GLRaw.glUniformMatrix4fv viewLocation 1 1)
     _ -> return ()
-  
-  case moth mesh of
-    Just meshmoth -> do
-      let skellington = concatMap (toList . flatten . MOTH.matrix) $ skeleton meshmoth
+
+  let now = (fromIntegral (lifetime time) / 1000) :: Float
+  case meshAnimation mesh of
+    Just animation -> do
+      skellington <- play animation now
       case HM.lookup "u_bone_matrices" (uniformMap mesh) of
         Just uLoc -> do
           UniformLocation bonesLocation <- get uLoc
-          withArray skellington $ 
-            \ptr -> GLRaw.glUniformMatrix4fv bonesLocation (fromIntegral $ boneCount meshmoth) 0 ptr
+          withArray skellington $
+            \ptr -> GLRaw.glUniformMatrix4fv bonesLocation (fromIntegral $ boneCount $ aMoth animation) 1 ptr
         _ -> return ()
     Nothing -> return ()
 
   case HM.lookup "u_time" (uniformMap mesh) of
     Just _ -> do
       timeLocation <- uniformMap mesh ! "u_time"
-      (uniform timeLocation :: StateVar GLfloat) $= (fromIntegral (lifetime time) / 1000)
+      (uniform timeLocation :: StateVar GLfloat) $= now
     _ -> return ()
 
   case HM.lookup "u_texture" (uniformMap mesh) of
@@ -202,6 +207,90 @@ drawMesh projectionMatrix viewMatrix orthographicMatrix time mesh = do
     _ -> return ()
 
   drawFaces (elementCount mesh)
+
+data Animation = Animation {
+  aMoth :: MothFile
+, aTime :: Float
+}
+
+idk :: Int -> FrogMatrix -> [FrogMatrix] -> [MothBone] -> FrogMatrix
+idk boneIndex world localMatrices bones = do
+  let parentIndex = fromIntegral (mother $ bones !! boneIndex)
+      localMatrix = localMatrices !! boneIndex
+  case parentIndex of
+    255 -> localMatrix <> world
+    _ -> idk parentIndex (localMatrix <> world) localMatrices bones
+
+
+slerp :: Point4 -> Point4 -> Float -> Point4
+slerp (Vertex4 qw qx qy qz) (Vertex4 pw px py pz) t
+  | 1.0 - cosphi < 1e-8 = q
+  | otherwise           = ((sin ((1-t)*phi) *^ q) <+> sin (t*phi) *^ f p) ^/ sin phi
+  where
+    q = Vertex4 qx qy qz qw
+    p = Vertex4 px py pz pw
+    dqp = dot (toFrogVector q) (toFrogVector p)
+    (cosphi, f) = if dqp < 0 then (-dqp, (-1 *^)) else (dqp, id)
+    phi = acos cosphi
+
+(*^) :: (Functor f, Num a) => a -> f a -> f a
+(*^) a = fmap (a*)
+{-# INLINE (*^) #-}
+
+compose :: Point3 -> Point4 -> Point3 -> FrogMatrix
+compose pos (Vertex4 x y z s) sc = fromAffine (toFrogList sc) (toFrogList pos) <>
+  (4><4) [
+    1 - 2*y**2 - 2*z**2, 2*x*y - 2*s*z, 2*x*z + 2*s*y, 0,
+    2*x*y + 2*s*z, 1 - 2*x**2 - 2*z**2, 2*y*z - 2*s*x, 0,
+    2*x*z - 2*s*y, 2*y*z + 2*s*x, 1 - 2*x**2 - 2*y**2, 0,
+    0, 0, 0, 1
+  ]
+
+play :: Animation -> Float -> IO [GLfloat]
+play animoth now = do
+  let mammoth = aMoth animoth
+      asFuck = skeleton mammoth
+      time = mod' (now - aTime animoth) 1.0
+      confused = map (\mothtale -> do
+        let Mothly3 positions times = MOTH.position mothtale
+            next = fromMaybe (length times - 1) (findIndex (> time) times)
+            current = if next == 0 then 0 else next - 1
+            nextT = times !! next
+            currentT = times !! current
+            nextV = positions !! next
+            currentV = positions !! current
+            t = clamp (0, 1) $ (time - currentT) / (nextT - currentT)
+        currentV <+> (t *^ (nextV <-> currentV))
+       ) $ chronicles mammoth
+      dazed = map (\mothtale -> do
+        let Mothly3 scales times = MOTH.scale mothtale
+            next = fromMaybe (length times - 1) (findIndex (> time) times)
+            current = if next == 0 then 0 else next - 1
+            nextT = times !! next
+            currentT = times !! current
+            nextV = scales !! next
+            currentV = scales !! current
+            t = clamp (0, 1) $ (time - currentT) / (nextT - currentT)
+        currentV <+> (t *^ (nextV <-> currentV))
+       ) $ chronicles mammoth
+      confounded = map (\mothtale -> do
+        let Mothly4 quaternions times = MOTH.quaternion mothtale
+            next = fromMaybe (length times - 1) (findIndex (> time) times)
+            current = if next == 0 then 0 else next - 1
+            nextT = times !! next
+            currentT = times !! current
+            nextQ = quaternions !! next
+            currentQ = quaternions !! current
+            t = clamp (0, 1) $ (time - currentT) / (nextT - currentT)
+            Vertex4 y z real x = slerp currentQ nextQ t
+        Vertex4 x y z real
+        ) $ chronicles mammoth
+
+
+  let mats = zipWith3 (\p s q -> compose p q s) confused dazed confounded
+  let worldMatrices = map (\i -> idk i (MOTH.matrix (skeleton mammoth !! i)) mats asFuck) [0..(length asFuck - 1)]
+
+  return $ concatMap (toList . flatten) worldMatrices
 
 makeAssetMesh :: AssetMeshProfile -> IO Mesh
 makeAssetMesh mprofile = do

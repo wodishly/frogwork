@@ -63,7 +63,7 @@ import Matrix (RenderView, fromTranslation, fromAffine)
 import Mean (full, weep)
 import Rime (Point)
 import SDL (LocationMode (RelativeLocation), ($=))
-import Shade (Mesh (Mesh, moth), makeAsset, makeAssetMesh, makeSimpleMesh, setMeshTransform)
+import Shade (Mesh (meshAnimation), Animation (..), makeAsset, makeAssetMesh, makeSimpleMesh, setMeshTransform)
 import Stave (Staveware, makeFeather)
 import Time (Time, beginTime, keepTime)
 import Spell (summon, unwrappingly)
@@ -108,8 +108,11 @@ begetMeshes = do
   -- print mothFile
 
   bun <- makeAssetMesh (makeAsset "bunny")
-  let bunny = bun { moth = Just mothFile }
-  froggy <- setMeshTransform (fromAffine [0.5, 0.5, 0.5] [0, 0.65, 0]) bunny
+  t <- SDL.ticks
+  let now = (fromIntegral t / 1000) :: Float
+      maamimation = Animation { aMoth = mothFile, aTime = now }
+      bunny = bun { meshAnimation = Just maamimation }
+  froggy <- setMeshTransform (fromAffine [1.0, 1.0, 1.0] [0, 0, 0]) bunny
 
   earth <- makeSimpleMesh defaultSimpleMeshProfile
 

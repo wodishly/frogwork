@@ -14,7 +14,7 @@ import Spell ((✿), int, u8, s32, f32, f32x3, f32x4)
 data MothFile = MothFile {
   boneCount :: Word8,
   skeleton :: [MothBone],
-  tracks :: [MothTale]
+  chronicles :: [MothTale]
 } deriving (Show, Eq)
 
 data MothBone = MothBone {
@@ -55,16 +55,16 @@ threetale :: Get Mothly3
 threetale = do
   times <- s32
   let talemany = int times
-  v <- talemany ✿ f32x3 
   t <- talemany ✿ f32
+  v <- talemany ✿ f32x3 
   return $! Mothly3 v t
     
 fourtale :: Get Mothly4
 fourtale = do
   times <- s32
   let talemany = int times
-  v <- talemany ✿ f32x4
   t <- talemany ✿ f32
+  v <- talemany ✿ f32x4
   return $! Mothly4 v t
 
 mothify :: Get MothFile

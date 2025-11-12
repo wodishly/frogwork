@@ -32,6 +32,10 @@ infixl 6 <+>
 (<+>) :: (Applicative f, Num a) => f a -> f a -> f a
 (<+>) = liftA2 (+)
 
+{-# INLINE (<->) #-}
+(<->) :: (Applicative f, Num a) => f a -> f a -> f a
+(<->) = liftA2 (-)
+
 {-# INLINE (*^) #-}
 (*^) :: (Applicative f, Num a) => a -> f a -> f a
 (*^) = (<$>) . (*)
@@ -40,3 +44,10 @@ infixl 6 <+>
 (^*) :: (Applicative f, Num a) => f a -> a -> f a
 (^*) = flip (*^)
 
+{-# INLINE (/^) #-}
+(/^) :: (Applicative f, Fractional a) => a -> f a -> f a
+(/^) = (<$>) . (/)
+
+{-# INLINE (^/) #-}
+(^/) :: (Functor f, Fractional a) => f a -> a -> f a
+f ^/ a = fmap (/a) f
