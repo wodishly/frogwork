@@ -18,21 +18,26 @@ data Animation = Animation {
 }
 
 collectively :: Point3 -> Point4 -> Point3 -> FrogMatrix
-collectively pos (Vertex4 x y z s) sc = fromAffine (toFrogList sc) (toFrogList pos) <>
+collectively position3d (Vertex4 x y z s) scale3d =
+  fromAffine (toFrogList scale3d) (toFrogList position3d) <>
   (4><4) [
-    1 - 2*y**2 - 2*z**2, 2*x*y - 2*s*z, 2*x*z + 2*s*y, 0,
-    2*x*y + 2*s*z, 1 - 2*x**2 - 2*z**2, 2*y*z - 2*s*x, 0,
-    2*x*z - 2*s*y, 2*y*z + 2*s*x, 1 - 2*x**2 - 2*y**2, 0,
-    0, 0, 0, 1
+    1 - 2*y**2 - 2*z**2, 2*x*y - 2*s*z, 2*x*z + 2*s*y, 0
+  , 2*x*y + 2*s*z, 1 - 2*x**2 - 2*z**2, 2*y*z - 2*s*x, 0
+  , 2*x*z - 2*s*y, 2*y*z + 2*s*x, 1 - 2*x**2 - 2*y**2, 0
+  , 0, 0, 0, 1
   ]
 
-worldify :: Int -> FrogMatrix -> [FrogMatrix] -> [MothBone] -> FrogMatrix
-worldify boneIndex world localMatrices bones = do
+worldify :: Maybe FrogMatrix -> [FrogMatrix] -> [MothBone] -> Int -> FrogMatrix
+worldify world localMatrices bones boneIndex = do
   let parentIndex = fromIntegral (mother $ bones !! boneIndex)
       localMatrix = localMatrices !! boneIndex
+      worldMatrix = fromMaybe (MOTH.matrix (bones !! boneIndex)) world
+
   case parentIndex of
-    255 -> localMatrix <> world
-    _ -> worldify parentIndex (localMatrix <> world) localMatrices bones
+    -- root bone
+    255 -> localMatrix <> worldMatrix
+    -- non-root
+    _ -> worldify (Just $ localMatrix <> worldMatrix) localMatrices bones parentIndex
 
 frame :: [a] -> [GLfloat] -> Float -> (a, a, Float)
 frame values times now =
@@ -84,13 +89,13 @@ play :: Animation -> Float -> IO [GLfloat]
 play animoth now' = do
   let mammoth = aMoth animoth
       fossil = skeleton mammoth
-      now = mod' (now' - aTime animoth) 1.0
+      now = mod' (now' - aTime animoth) 1.0 -- 1.0 is duration
       confused = local mammoth now vlerp $ m3 MOTH.position
       confounded = local mammoth now slerp $ m4 MOTH.quaternion
       dazed = local mammoth now vlerp $ m3  MOTH.scale
 
   let be = zipWith3
       bonewards = be collectively confused confounded dazed
-      ma'ammoth = map (\me -> worldify me (MOTH.matrix (skeleton mammoth !! me)) bonewards fossil) [0..(length fossil - 1)]
+      ma'ammoth = map (worldify Nothing bonewards fossil) [0..(length fossil - 1)]
 
   return $ concatMap (toList . flatten) ma'ammoth

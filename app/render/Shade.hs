@@ -39,6 +39,7 @@ import Spell (summon)
 import Time
 import Numeric.LinearAlgebra.HMatrix ( ident )
 import Skeleton (Animation (..), play)
+import Data.Vector.Storable (Vector)
 
 drawFaces :: Int32 -> IO ()
 drawFaces count = drawElements Triangles count UnsignedInt (bufferOffset 0)
@@ -144,39 +145,27 @@ useMesh mesh = do
   bindVertexArrayObject $= Just (vao mesh)
   textureBinding Texture2D $= tex mesh
 
+-- idk if i like this, but something like this
+allocVector :: Storable a => Mesh -> Vector a -> String -> (GLint -> (Ptr a -> IO ())) -> IO ()
+allocVector mesh prop uniformKey callback = case HM.lookup uniformKey (uniformMap mesh) of
+    Just uLoc -> do
+      UniformLocation location <- get uLoc
+      _ <- S.unsafeWith prop (callback location)
+      return ()
+    _ -> return ()
+
+uniformMatrix :: GLint -> Ptr GLfloat -> IO ()
+uniformMatrix loc = GLRaw.glUniformMatrix4fv loc 1 1
+
 drawMesh :: FrogMatrix -> FrogMatrix -> FrogMatrix -> Time -> Mesh -> IO ()
 drawMesh projectionMatrix viewMatrix orthographicMatrix time mesh = do
   useMesh mesh
 
-  -- the bindings seem to be broken here? :(
-  -- projLocation <- uniforms HM.! "u_projection_matrix"
-  -- m <- newMatrix ColumnMajor (S.toList projectionMatrix) :: IO (GLmatrix GLfloat)
-  -- withMatrix m $ const $ uniformv projLocation 1
-
-  case HM.lookup "u_model_matrix" (uniformMap mesh) of
-    Just uLoc -> do
-      UniformLocation mLocation <- get uLoc
-      S.unsafeWith (flatten $ transform mesh) (GLRaw.glUniformMatrix4fv mLocation 1 1)
-    _ -> return ()
-
-  -- -- TODO: move these to a Uniform Buffer Object
-  case HM.lookup "u_projection_matrix" (uniformMap mesh) of
-    Just uLoc -> do
-      UniformLocation projLocation <- get uLoc
-      S.unsafeWith (flatten projectionMatrix) (GLRaw.glUniformMatrix4fv projLocation 1 1)
-    _ -> return ()
-
-  case HM.lookup "u_orthographic_matrix" (uniformMap mesh) of
-    Just uLoc -> do
-      UniformLocation orthLocation <- get uLoc
-      S.unsafeWith (flatten orthographicMatrix) (GLRaw.glUniformMatrix4fv orthLocation 1 1)
-    _ -> return ()
-
-  case HM.lookup "u_view_matrix" (uniformMap mesh) of
-    Just uLoc -> do
-      UniformLocation viewLocation <- get uLoc
-      S.unsafeWith (flatten viewMatrix) (GLRaw.glUniformMatrix4fv viewLocation 1 1)
-    _ -> return ()
+  allocVector mesh (flatten $ transform mesh) "u_model_matrix" uniformMatrix
+  -- TODO: move these to a Uniform Buffer Object
+  allocVector mesh (flatten projectionMatrix) "u_projection_matrix" uniformMatrix
+  allocVector mesh (flatten viewMatrix) "u_view_matrix" uniformMatrix
+  allocVector mesh (flatten orthographicMatrix) "u_orthographic_matrix" uniformMatrix
 
   let now = (fromIntegral (lifetime time) / 1000) :: Float
   case meshAnimation mesh of
@@ -186,7 +175,7 @@ drawMesh projectionMatrix viewMatrix orthographicMatrix time mesh = do
         Just uLoc -> do
           UniformLocation bonesLocation <- get uLoc
           withArray skellington $
-            \ptr -> GLRaw.glUniformMatrix4fv bonesLocation (fromIntegral $ boneCount $ aMoth animation) 1 ptr
+            GLRaw.glUniformMatrix4fv bonesLocation (fromIntegral $ boneCount $ aMoth animation) 1
         _ -> return ()
     Nothing -> return ()
 
