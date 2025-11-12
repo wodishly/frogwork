@@ -1,12 +1,14 @@
 - fonts
 - sound
-- animations (in progress, `*.moth` files)
+- animations (`*.moth` files complete!)
   - [⭐️] parser 
   - [⭐️] serializer
   - [⭐️] store bone info in `*.frog` files
-  - [🌗] animation vertex shader
-  - [🌑] rest pose 
-  - [🌑] interpolate keyframes 
+  - [⭐️] animation vertex shader
+  - [⭐️] rest pose 
+  - [⭐️] interpolate keyframes 
+  - [🌑] clean up code
+  - [🌑] animation controls (pause/play, etc.)
 - uniform buffer objects for shared data
 - lighting
   - [⭐️] normals
