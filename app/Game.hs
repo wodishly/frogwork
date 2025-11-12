@@ -63,11 +63,12 @@ import Matrix (RenderView, fromTranslation, fromAffine)
 import Mean (full, weep)
 import Rime (Point)
 import SDL (LocationMode (RelativeLocation), ($=))
-import Shade (Mesh (meshAnimation), Animation (..), makeAsset, makeAssetMesh, makeSimpleMesh, setMeshTransform)
+import Shade (Mesh (meshAnimation), makeAsset, makeAssetMesh, makeSimpleMesh, setMeshTransform)
 import Stave (Staveware, makeFeather)
 import Time (Time, beginTime, keepTime)
 import Spell (summon, unwrappingly)
 import MothSpell (mothify)
+import Skeleton (Animation(..))
 
 
 data Allwit = Allwit {
