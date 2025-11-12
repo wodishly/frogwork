@@ -74,7 +74,7 @@ executable frogwork
 
     Blee
     Shade
-    Stave
+    Stavemake
 
     Breath
     Loud
@@ -83,11 +83,13 @@ executable frogwork
     Token
     Tung
 
+    State
     MenuState
     PauseState
     PlayState
 
-    State
+    Statework
+
     Frog
     Game
 

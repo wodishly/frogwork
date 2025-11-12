@@ -18,7 +18,7 @@ import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT, ex
 import Data.Function (applyWhen)
 
 import SDL.Input.Keyboard.Codes
-import Graphics.Rendering.OpenGL (Vertex2 (Vertex2), Vertex3 (Vertex3))
+import Graphics.Rendering.OpenGL (Vertex2 (Vertex2), Vertex3 (Vertex3), HasSetter (($=)))
 
 import qualified SDL (
     Event
@@ -41,8 +41,7 @@ import State (
   , isShowingKeys
   , isShowingTicks
   , isRunningTests
-  , loop
-  , preent
+  , loop, preent
   )
 import MenuState (MenuState (hand, finger))
 import PauseState (PauseState)
@@ -62,9 +61,9 @@ import Key (KeySet, anyKeysBegun, keyBegun, listen, unkeys)
 import Matrix (RenderView, fromTranslation)
 import Mean (full, weep)
 import Rime (Point)
-import SDL (LocationMode (RelativeLocation), ($=))
+import SDL (LocationMode (RelativeLocation))
 import Shade (Mesh, makeAsset, makeAssetMesh, makeSimpleMesh, setMeshTransform)
-import Stave (Staveware, makeFeather)
+import Stavemake (Staveware, makeFeather)
 import Time (Time, beginTime, keepTime)
 
 

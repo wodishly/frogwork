@@ -11,11 +11,12 @@ module State (
 ) where
 
 import Control.Lens (makeLenses)
-import Control.Monad.State (MonadTrans (lift), StateT)
+import Control.Monad.State (StateT, MonadTrans (lift))
 
 import Key (KeySet)
 import Matrix (RenderView)
 import Rime (Point)
+import Stavemake (Staveware)
 import Time (Time)
 
 
@@ -39,12 +40,15 @@ makeSettings = Settings {
 
 class Stately a where
   name :: a -> StateName
+  staveware :: a -> Staveware
   update :: News -> StateT a IO ()
   render :: News -> StateT a IO ()
+
   loop :: News -> StateT a IO ()
   loop news = do
     update news
     render news
 
+-- | Do NOT give this (Stately b) =>, or else we cannot @preent@ from @Allwit@.
 preent :: Show a => a -> StateT b IO ()
 preent = lift . print

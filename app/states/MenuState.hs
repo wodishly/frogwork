@@ -15,19 +15,21 @@ import Blee (bg, darkwhelk, lightwhelk, Blee, red, blue)
 import Key (KeySet, keyBegun)
 import Matrix (getOrthographicMatrix, getPerspectiveMatrix, RenderView (size))
 import Shade (drawMesh)
-import Stave (Staveware, stavewrite)
+import Stavemake (Staveware)
 import Rime ((*^))
+import Statework (stavewrite)
 
 
 data MenuState = MenuState {
   hand :: [(StateName, String)]
 , finger :: Int
 , choosen :: Maybe StateName
-, staveware :: Staveware
+, _staveware :: Staveware
 }
 
 instance Stately MenuState where
   name _ = MenuName
+  staveware = _staveware
   update (keyset, _, _, _, _) = do
     _ <- get
     menuFare keyset
@@ -43,10 +45,10 @@ instance Stately MenuState where
       (snd $ staveware statewit)
 
     let (width, height) = size display
-    lift $ stavewrite (staveware statewit) ((1/8) *^ Vertex2 width (height*4)) 1 lightwhelk "welcome to frogford!"
-    lift $ stavewrite (staveware statewit) ((1/8) *^ Vertex2 width (height*3)) 1 (whelken statewit 0) "play"
-    lift $ stavewrite (staveware statewit) ((1/8) *^ Vertex2 width (height*2)) 1 (whelken statewit 1) "frog"
-    lift $ stavewrite (staveware statewit) ((1/8) *^ Vertex2 width  height   ) 1 (whelken statewit 2) "toad"
+    stavewrite ((1/8) *^ Vertex2 width (height*4)) 1 lightwhelk "WƐLKƏM TU FRⱰGFƆRD!"
+    stavewrite ((1/8) *^ Vertex2 width (height*3)) 1 (whelken statewit 0) "plej"
+    stavewrite ((1/8) *^ Vertex2 width (height*2)) 1 (whelken statewit 1) "frɒg"
+    stavewrite ((1/8) *^ Vertex2 width  height   ) 1 (whelken statewit 2) "towd"
 
 whelken :: MenuState -> Int -> Blee
 whelken statewit n = if mod (finger statewit) (length $ hand statewit) == n then red else blue
@@ -56,7 +58,7 @@ makeMenuState ware = MenuState {
   hand = [(PlayName, "play"), (PlayName, "frog"), (PlayName, "toad")]
 , finger = 0
 , choosen = Nothing
-, staveware = ware
+, _staveware = ware
 }
 
 menuFare :: KeySet -> StateT MenuState IO ()

@@ -1,16 +1,17 @@
-module Stave (
+module Stavemake (
   Stave (..)
 , Stavebook
 , Staveware
 , makeFeather
 , makeStavebook
 , makeStavebook'
-, stavewrite
+, greatness
+, sharpness
 ) where
 
-import Control.Monad (forM, forM_, when)
+import Control.Monad (forM, when)
 import Data.Char (chr)
-import Data.HashMap.Lazy (HashMap, fromList, (!))
+import Data.HashMap.Lazy (HashMap, fromList)
 import Text.Printf (printf)
 
 import Foreign (Word32, peek, peekArray, withArray)
@@ -19,8 +20,7 @@ import FreeType.Core.Base
 import FreeType.Core.Types
 
 import Graphics.Rendering.OpenGL (
-    BufferTarget (ArrayBuffer)
-  , Clamping (ClampToEdge)
+    Clamping (ClampToEdge)
   , GLfloat
   , PixelFormat (Red)
   , Repetition (Repeated)
@@ -28,29 +28,18 @@ import Graphics.Rendering.OpenGL (
   , TextureFilter (Linear')
   , TextureObject
   , TextureTarget2D (Texture2D)
-  , TextureUnit (TextureUnit)
-  , TransferDirection (WriteToBuffer)
-  , Vertex2 (Vertex2)
-  , Vertex3 (Vertex3)
-  , Uniform (uniform)
-  , activeTexture
-  , bindBuffer
-  , bufferSubData
-  , textureBinding
-  , ($=)
+  , Vertex2 (Vertex2), HasSetter (($=))
   )
 import qualified Graphics.Rendering.OpenGL as GL (
     textureFilter
   , textureWrapMode
   )
 
-import FastenMain (assetsBasePath)
-import FastenShade (Programful(uniformMap))
+import FastenMain (wayToFeathers)
 
-import Blee (Blee, bleeToGLVector4)
 import Mean (doBoth, (.>>.))
-import Rime (Point, Polyhedron, (*^), (<+>))
-import Shade (Mesh (..), bufferSize, drawFaces, uploadTexture, useMesh)
+import Rime (Point)
+import Shade (Mesh (..), uploadTexture)
 
 
 type Stavebook = HashMap Char Stave
@@ -62,6 +51,55 @@ data Stave = Stave {
   , advance :: GLfloat -- step
   , texture :: TextureObject
 } deriving (Show, Eq)
+
+tokenwit :: [Int]
+tokenwit =
+     [32..126] -- mean
+  ++ [160..255] -- full-1
+  ++ [256..383] -- thin-a
+  ++ [384..591] -- thin-b
+  ++ [592..687] -- loud
+  ++ [0x2c60..0x2c7f] -- thin-c
+  ++ [0x0370..0x03ff] -- ellen, head
+
+  -- greater loudtokens
+  ++ [0x2c6d -- Ɑ
+    , 0x2c70 -- Ɒ
+    , 0x2c6f -- Ɐ
+    , 0x0181 -- Ɓ
+    , 0xa7b4 -- Ꞵ
+    , 0x00d0 -- Ð
+    , 0x018a -- Ɗ
+    , 0x018f -- Ə
+    , 0x0190 -- Ɛ
+    , 0xa7ab -- Ɜ
+    , 0x0193 -- Ɠ
+    , 0x0194 -- Ɣ
+    , 0x0126 -- Ħ
+    , 0xa7aa -- Ɦ
+    , 0xa78d -- Ɥ
+    , 0x0197 -- Ɨ
+    , 0xa7ae -- Ɪ
+    , 0xa7b2 -- Ʝ
+    , 0x2c62 -- Ɫ
+    , 0xa7ad -- Ɬ
+    , 0x2c6e -- Ɱ
+    , 0x014a -- Ŋ
+    , 0x019d -- Ɲ
+    , 0x0186 -- Ɔ
+    , 0x019f -- Ɵ
+    , 0x2c64 -- Ɽ
+    , 0xa7c5 -- Ʂ
+    , 0x01a9 -- Ʃ
+    , 0x01ae -- Ʈ
+    , 0x0244 -- Ʉ
+    , 0x01b1 -- Ʊ
+    , 0x01b2 -- Ʋ
+    , 0x0245 -- Ʌ
+    , 0x019c -- Ɯ
+    , 0x01b7 -- Ʒ
+    , 0x0241 -- Ɂ
+     ]
 
 sharpness :: Word32
 sharpness = 2^(7 :: Integer)
@@ -85,7 +123,7 @@ pad amount width something bitmapData = left ++ b ++ recourse where
   recourse = pad amount width something right
 
 makeFeather :: FilePath -> IO Stavebook
-makeFeather = makeStavebook sharpness . printf "%s/%s.ttf" assetsBasePath
+makeFeather = makeStavebook sharpness . printf "%s/%s.ttf" wayToFeathers
 
 -- | does it softly
 makeStavebook :: FT_UInt -> FilePath -> IO Stavebook
@@ -94,6 +132,13 @@ makeStavebook = makeStavebook'' False
 -- | does it loudly
 makeStavebook' :: FT_UInt -> FilePath -> IO Stavebook
 makeStavebook' = makeStavebook'' True
+
+-- allbestave :: FT_Face -> Int -> Int -> IO ()
+-- allbestave feather n thatch = do
+--   (code, gindex) <- ft_Get_Next_Char feather (if n==0 then Nothing else Just (fromIntegral n))
+--   when (gindex /= 1 && n < thatch) $ do
+--     print (code, gindex, chr $ fromIntegral code)
+--     allbestave feather (n+1) thatch
 
 -- | Based on [this page](https://zyghost.com/articles/Haskell-font-rendering-with-freetype2-and-opengl.html).
 makeStavebook'' :: Bool -> FT_UInt -> FilePath -> IO Stavebook
@@ -106,7 +151,12 @@ makeStavebook'' loud great path = do
   feather' <- peek feather
   when loud $ putStrLn "made feather!"
 
-  stavebook <- forM (map chr [32..126]) $ \stave -> do
+  -- allbestave feather 161 500
+
+  stavebook <- forM (map chr tokenwit) $ \stave -> do
+
+    -- print stave
+
     finger <- ft_Get_Char_Index feather (fromIntegral $ fromEnum stave)
     ft_Load_Glyph feather finger FT_LOAD_RENDER
     when loud $ putStrLn "made finger!"
@@ -165,36 +215,3 @@ makeStavebook'' loud great path = do
   ft_Done_FreeType stavewit
 
   return $ fromList stavebook
-
-stavewrite :: Staveware -> Point -> GLfloat -> Blee -> String -> IO ()
-stavewrite (book, mesh) bottomLeft scale blee spell = do
-  useMesh mesh
-
-  let advances = scanl (+) 0 (map (advance . (book!)) spell)
-
-  forM_ (zip [0..] spell) $ \(i, char) -> do
-    let stave = book!char
-        vertices = stavenooks stave scale bottomLeft (advances!!i)
-
-    activeTexture $= TextureUnit 0
-    textureBinding Texture2D $= Just (texture stave)
-    bindBuffer ArrayBuffer $= Just (vbo mesh)
-
-    uniformMap mesh ! "u_blee" >>= ($= bleeToGLVector4 blee) . uniform
-
-    withArray vertices (bufferSubData ArrayBuffer WriteToBuffer 0 $ bufferSize vertices)
-
-    bindBuffer ArrayBuffer $= Nothing
-    drawFaces $ elementCount mesh
-
-stavenooks :: Stave -> GLfloat -> Point -> GLfloat -> Polyhedron
-stavenooks stave scale bottomLeft step = [
-    Vertex3 (x+w) (y+h) 0
-  , Vertex3 (x+w)  y    0
-  , Vertex3  x     y    0
-  , Vertex3  x    (y+h) 0
-  ] where
-    (Stave (Vertex2 left top) z@(Vertex2 _ height) _ _) = stave
-    scale' = scale * greatness / fromIntegral sharpness
-    Vertex2 x y = bottomLeft <+> (scale' *^ Vertex2 (left + step) (top - height))
-    Vertex2 w h = scale' *^ z

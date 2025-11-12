@@ -8,7 +8,7 @@ import Control.Monad (when)
 import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT (runStateT))
 import Numeric.LinearAlgebra (Extractor (..), flatten, fromColumns, fromList, toColumns, (!), (??), (¿))
 
-import Graphics.Rendering.OpenGL as GL (Program, Vertex2 (Vertex2), VertexArrayObject, Vertex3 (Vertex3), GLfloat)
+import Graphics.Rendering.OpenGL as GL (GLfloat, Program, Vertex2 (Vertex2), Vertex3 (Vertex3), VertexArrayObject)
 
 import Frog (Frogwit (position), makeFrog, moveFrog)
 import State (News, StateName (..), Stately (..))
@@ -20,7 +20,8 @@ import Mean (given, hit)
 import Random (FrogSeed, defaultSeed)
 import Rime (Point, Point3, clamp)
 import Shade (Mesh, drawMesh, setMeshTransform)
-import Stave (Staveware, stavewrite)
+import Stavemake (Staveware)
+import Statework (stavewrite)
 
 
 data Camera = Camera {
@@ -36,7 +37,7 @@ makeCamera = Camera {
 
 data PlayState = PlayState {
   seed :: FrogSeed
-, staveware :: Staveware
+, _staveware :: Staveware
 , meshes :: [Mesh]
 , frog :: Frogwit
 , euler :: Point
@@ -47,6 +48,7 @@ data PlayState = PlayState {
 
 instance Stately PlayState where
   name _ = PlayName
+  staveware = _staveware
   update news = do
     cam <- updateCamera news
     let viewMatrix = frogLookAt (cPosition cam) (cTarget cam)
@@ -61,7 +63,7 @@ instance Stately PlayState where
         orthographicMatrix = getOrthographicMatrix display
         (width, height) = size display
     lift $ mapM_ (drawMesh (getPerspectiveMatrix display) viewMatrix orthographicMatrix time) (meshes statewit)
-    lift $ stavewrite (staveware statewit) (Vertex2 (0.1*width) $ 0.9*height) 1 lightwhelk "omg frogs!!!!"
+    stavewrite (Vertex2 (0.1*width) $ 0.9*height) 1 lightwhelk "omg frogs!!!!"
 
 instance Show PlayState where
   show (PlayState _ _ _ f _ _ p c) = show f ++ show p ++ show c
@@ -69,7 +71,7 @@ instance Show PlayState where
 makePlayState :: Staveware -> [Mesh] -> PlayState
 makePlayState ware ms = PlayState {
   seed = defaultSeed
-, staveware = ware
+, _staveware = ware
 , meshes = ms
 , frog = makeFrog
 , euler = Vertex2 0.3 1.57079633
