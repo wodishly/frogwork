@@ -1,4 +1,8 @@
-module Statework where
+{-# LANGUAGE FlexibleInstances #-}
+module Statework (
+  stavewrite
+, spellgreat
+) where
 
 import Control.Monad (forM_, unless)
 import Control.Monad.State (MonadState (get), MonadTrans (lift), StateT)
@@ -25,12 +29,17 @@ import Blee (Blee, bleeToGLVector4)
 import FastenShade (Programful (uniformMap))
 import Rime (Point, Polyhedron, (*^), (<+>))
 import Shade (Mesh (elementCount, vbo), bufferSize, drawFaces, useMesh)
-import State (Stately (staveware))
-import Stavemake (Stave (Stave, advance, texture), greatness, sharpness, Stavebook)
+import State (Stately (staveware), preent)
+import Stavemake (Stave (Stave, advance, texture), Stavebook, greatness, sharpness)
 
+class Spellstead a where
+  nook :: a -> GLfloat -> GLfloat -> Stave -> Polyhedron
 
-stavewrite :: Stately a => Point -> GLfloat -> Blee -> String -> StateT a IO ()
-stavewrite bottomLeft scale blee spell = do
+data Stead = Middle deriving (Show, Eq)
+instance Spellstead Stead where
+
+stavewrite :: (Spellstead a, Stately b) => a -> GLfloat -> Blee -> String -> StateT b IO ()
+stavewrite stead scale blee spell = do
   statewit <- get
   let (book, mesh) = staveware statewit
   lift $ do
@@ -42,7 +51,7 @@ stavewrite bottomLeft scale blee spell = do
       unless (member char book) (error $ "cant write" ++ show char)
 
       let stave = book!char
-          vertices = stavenooks stave scale bottomLeft (advances!!i)
+          vertices = nook stead scale (advances!!i) stave
 
       activeTexture $= TextureUnit 0
       textureBinding Texture2D $= Just (texture stave)
@@ -55,17 +64,20 @@ stavewrite bottomLeft scale blee spell = do
       bindBuffer ArrayBuffer $= Nothing
       drawFaces $ elementCount mesh
 
-spellwidth :: Stavebook -> String -> Vertex2 GLfloat
-spellwidth book spell = 
+spellgreat :: Stavebook -> String -> Vertex2 GLfloat
+spellgreat book = foldr (
+  (\(Vertex2 x y) (Vertex2 a b) -> Vertex2 (x+a) (max y b))
+  . (\(Stave _ (Vertex2 w h) step _) -> Vertex2 (w+step) h)
+  . (book!)) (Vertex2 0 0)
 
-stavenooks :: Stave -> GLfloat -> Point -> GLfloat -> Polyhedron
-stavenooks stave scale bottomLeft step = [
-    Vertex3 (x+w) (y+h) 0
-  , Vertex3 (x+w)  y    0
-  , Vertex3  x     y    0
-  , Vertex3  x    (y+h) 0
-  ] where
-    (Stave (Vertex2 left top) z@(Vertex2 _ height) _ _) = stave
-    scale' = scale * greatness / fromIntegral sharpness
-    Vertex2 x y = bottomLeft <+> (scale' *^ Vertex2 (left + step) (top - height))
-    Vertex2 w h = scale' *^ z
+instance Spellstead (Vertex2 GLfloat) where
+  nook bottomLeft scale step stave = [
+      Vertex3 (x+w) (y+h) 0
+    , Vertex3 (x+w)  y    0
+    , Vertex3  x     y    0
+    , Vertex3  x    (y+h) 0
+    ] where
+      (Stave (Vertex2 left top) z@(Vertex2 _ height) _ _) = stave
+      scale' = scale * greatness / fromIntegral sharpness
+      Vertex2 x y = bottomLeft <+> (scale' *^ Vertex2 (left + step) (top - height))
+      Vertex2 w h = scale' *^ z
