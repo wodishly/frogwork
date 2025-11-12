@@ -213,19 +213,7 @@ data Animation = Animation {
 , aTime :: Float
 }
 
-(*^) :: (Functor f, Num a) => a -> f a -> f a
-(*^) a = fmap (a*)
-{-# INLINE (*^) #-}
-slerp :: Point4 -> Point4 -> Float -> Point4
-slerp (Vertex4 qw qx qy qz) (Vertex4 pw px py pz) t
-  | 1.0 - cosphi < 1e-8 = q
-  | otherwise           = ((sin ((1-t)*phi) *^ q) <+> sin (t*phi) *^ f p) ^/ sin phi
-  where
-    q = Vertex4 qx qy qz qw
-    p = Vertex4 px py pz pw
-    dqp = dot (toFrogVector q) (toFrogVector p)
-    (cosphi, f) = if dqp < 0 then (-dqp, (-1 *^)) else (dqp, id)
-    phi = acos cosphi
+
 
 collectively :: Point3 -> Point4 -> Point3 -> FrogMatrix
 collectively pos (Vertex4 x y z s) sc = fromAffine (toFrogList sc) (toFrogList pos) <>
@@ -255,26 +243,45 @@ frame values times now =
       t = clamp (0, 1) $ (now - currentT) / (nextT - currentT)
   in (currentV, nextV, t)
 
-local3 :: MothFile -> Float -> (MothTale -> Mothly3) -> [Vertex3 GLfloat]
-local3 mammoth now prop = map (\mothtale ->
-        let Mothly3 positions times = prop mothtale
-            (currentV, nextV, t) = frame positions times now
-        in currentV <+> (t *^ (nextV <-> currentV))
+type Interpolation a = a -> a -> Float -> a
+flerp :: (Applicative a, Num b) => a b -> a b -> b -> a b
+flerp x y t = x <+> (t *^ (y <-> x))
+{-# INLINE (*^) #-}
+(*^) :: (Functor f, Num a) => a -> f a -> f a
+(*^) a = fmap (a*)
+swizzle :: Vertex4 a -> Vertex4 a
+swizzle v = let Vertex4 y z real x = v in Vertex4 x y z real
+slerp :: Point4 -> Point4 -> Float -> Point4
+slerp (Vertex4 qw qx qy qz) (Vertex4 pw px py pz) t
+  | 1.0 - cosphi < 1e-8 = swizzle q
+  | otherwise           = swizzle $ ((sin ((1-t)*phi) *^ q) <+> sin (t*phi) *^ f p) ^/ sin phi
+  where
+    q = Vertex4 qx qy qz qw
+    p = Vertex4 px py pz pw
+    dqp = dot (toFrogVector q) (toFrogVector p)
+    (cosphi, f) = if dqp < 0 then (-dqp, (-1 *^)) else (dqp, id)
+    phi = acos cosphi
+
+local :: Functor a => MothFile -> Float -> Interpolation (a GLfloat) -> (MothTale -> ([a GLfloat], [GLfloat])) -> [a GLfloat]
+local mammoth now interpolate prop = map (\mothtale ->
+        let (values, times) = prop mothtale
+            (currentV, nextV, t) = frame values times now
+        in interpolate currentV nextV t
        ) $ chronicles mammoth
+
+m3 :: (MothTale -> Mothly3) -> (MothTale -> ([Vertex3 GLfloat], [GLfloat]))
+m3 prop t = let Mothly3 values times = prop t in (values, times)
+m4 :: (MothTale -> Mothly4) -> (MothTale -> ([Vertex4 GLfloat], [GLfloat]))
+m4 prop t = let Mothly4 values times = prop t in (values, times)
 
 play :: Animation -> Float -> IO [GLfloat]
 play animoth now = do
   let mammoth = aMoth animoth
       fossil = skeleton mammoth
       mothNow = mod' (now - aTime animoth) 1.0
-      confused = local3 mammoth mothNow MOTH.position
-      confounded = map (\mothtale ->
-        let Mothly4 quaternions times = MOTH.quaternion mothtale
-            (currentQ, nextQ, t) = frame quaternions times mothNow
-            Vertex4 y z real x = slerp currentQ nextQ t
-        in Vertex4 x y z real
-        ) $ chronicles mammoth
-      dazed = local3 mammoth mothNow MOTH.scale
+      confused = local mammoth mothNow flerp $ m3 MOTH.position
+      confounded = local mammoth mothNow slerp $ m4 MOTH.quaternion
+      dazed = local mammoth mothNow flerp $ m3  MOTH.scale
 
   let be = zipWith3
       bonewards = be collectively confused confounded dazed
