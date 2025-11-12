@@ -30,11 +30,13 @@ import qualified Graphics.GL as GLRaw (glUniformMatrix4fv)
 
 import FastenMain (assetsBasePath, shaderBasePath)
 import FastenShade
-import Matrix (FrogMatrix)
+import Matrix (FrogMatrix, toFrogList)
 import Mean (Twain, twimap, twin, doBoth)
 import FrogSpell
+import MothSpell as MOTH
 import Spell (summon)
 import Time
+import Numeric.LinearAlgebra.HMatrix (toList)
 
 drawFaces :: Int32 -> IO ()
 drawFaces count = drawElements Triangles count UnsignedInt (bufferOffset 0)
@@ -61,11 +63,12 @@ data Mesh = Mesh {
   , _uniformMap :: UniformMap
   , elementCount :: Int32
   , transform :: FrogMatrix
+  , moth :: Maybe MothFile
 }
 
 instance Programful Mesh where
   program = _program
-  uniformMap (Mesh _ _ _ _ _ _ x _ _) = x
+  uniformMap (Mesh _ _ _ _ _ _ x _ _ _) = x
 
 data Concoction = Concoction Program UniformMap (Maybe String)
 
@@ -74,7 +77,7 @@ instance Programful Concoction where
   uniformMap (Concoction _ x _) = x
 
 instance Pathlikeful Maybe Concoction where
-  filePath (Concoction _ _ x) = x
+  frogFilePath (Concoction _ _ x) = x
 
 makeAsset :: String -> AssetMeshProfile
 makeAsset = AssetMeshProfile
@@ -125,7 +128,7 @@ brewProfile :: MeshProfile -> IO Concoction
 brewProfile mProfile = do
   -- parse profile
   let (sProfile, path) = case mProfile of
-        Left assetful -> (shaderProfile assetful, Just . asset . runIdentity . filePath $ assetful)
+        Left assetful -> (shaderProfile assetful, Just . asset . runIdentity . frogFilePath $ assetful)
         Right assetless -> (shaderProfile assetless, Nothing)
 
   p <- brew (paths sProfile)
@@ -172,6 +175,17 @@ drawMesh projectionMatrix viewMatrix orthographicMatrix time mesh = do
       UniformLocation viewLocation <- get uLoc
       S.unsafeWith (flatten viewMatrix) (GLRaw.glUniformMatrix4fv viewLocation 1 1)
     _ -> return ()
+  
+  case moth mesh of
+    Just meshmoth -> do
+      let skellington = concatMap (toList . flatten . MOTH.matrix) $ skeleton meshmoth
+      case HM.lookup "u_bone_matrices" (uniformMap mesh) of
+        Just uLoc -> do
+          UniformLocation bonesLocation <- get uLoc
+          withArray skellington $ 
+            \ptr -> GLRaw.glUniformMatrix4fv bonesLocation (fromIntegral $ boneCount meshmoth) 0 ptr
+        _ -> return ()
+    Nothing -> return ()
 
   case HM.lookup "u_time" (uniformMap mesh) of
     Just _ -> do
@@ -196,6 +210,7 @@ makeAssetMesh mprofile = do
   -- read all the data
   bytes <- summon (fromJust path)
   let frogFile = runGet frogify bytes
+  print frogFile
 
   -- position attribute
   vao' <- genObjectName
@@ -235,6 +250,35 @@ makeAssetMesh mprofile = do
     $= (ToFloat, VertexArrayDescriptor 3 Float 0 (bufferOffset 0))
   vertexAttribArray (AttribLocation 2) $= Enabled
 
+  -- bone attributes
+  print $ boneInfluence frogFile
+  case boneInfluence frogFile of
+    4 -> do
+      sbo <- genObjectName
+      bindBuffer ArrayBuffer $= Just sbo
+
+      withArray (boneBuffer frogFile) $ \ptr ->
+        bufferData ArrayBuffer $= (bufferSize (boneBuffer frogFile), ptr, StaticDraw)
+
+      vertexAttribPointer (AttribLocation 3)
+        $= (KeepIntegral, VertexArrayDescriptor 4 Int 0 (bufferOffset 0))
+      vertexAttribArray (AttribLocation 3) $= Enabled
+
+      wbo <- genObjectName
+      bindBuffer ArrayBuffer $= Just wbo
+
+      withArray (weightBuffer frogFile) $ \ptr ->
+        bufferData ArrayBuffer $= (bufferSize (weightBuffer frogFile), ptr, StaticDraw)
+
+      print $ weightBuffer frogFile
+
+      vertexAttribPointer (AttribLocation 4)
+        $= (ToFloat, VertexArrayDescriptor 4 Float 0 (bufferOffset 0))
+      vertexAttribArray (AttribLocation 4) $= Enabled
+
+
+    _ -> print ("tfw no 🅱ones" :: String) 
+
   -- index buffer
   ebo <- genObjectName
   bindBuffer ElementArrayBuffer $= Just ebo
@@ -259,6 +303,7 @@ makeAssetMesh mprofile = do
     hmap
     (indexCount frogFile)
     (ident 4)
+    Nothing
 
 uploadTexture :: PixelFormat -> (GLsizei, GLsizei) -> Ptr Word8 -> IO TextureObject
 uploadTexture format (w, h) pointer = do
@@ -333,3 +378,4 @@ makeSimpleMesh profile = do
     hmap
     (fromIntegral $ length ib)
     (ident 4)
+    Nothing

@@ -26,8 +26,6 @@ import Game (
   )
 import FastenMain (openGLWindow)
 import Happen (waxwane)
-import Spell (summon, unwrappingly)
-import MothSpell (mothify)
 
 
 main :: IO ()
@@ -43,10 +41,6 @@ birth :: SDL.Window -> SDL.GLContext -> IO Allwit
 birth window context = do
   display <- waxwane window
   (staveware, meshes) <- begetMeshes
-
-  cocoon <- summon "assets/bunny.moth"
-  let mothFile = unwrappingly mothify cocoon
-  print mothFile
 
   let allwit = makeAllwit staveware window display context
         (makePlayState staveware meshes)

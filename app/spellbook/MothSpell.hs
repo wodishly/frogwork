@@ -1,7 +1,5 @@
 {-# OPTIONS_GHC -Wno-type-defaults #-}
-module MothSpell (
-  mothify
-) where
+module MothSpell where
 
 import Data.Binary.Get (Get)
 import Foreign (Word8)

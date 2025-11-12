@@ -59,13 +59,15 @@ import FastenShade (
 
 import Happen (unwrapHappenMouse, unwrapHappenWheel, unwrapHappenWindow, waxwane)
 import Key (KeySet, anyKeysBegun, keyBegun, listen, unkeys)
-import Matrix (RenderView, fromTranslation)
+import Matrix (RenderView, fromTranslation, fromAffine)
 import Mean (full, weep)
 import Rime (Point)
 import SDL (LocationMode (RelativeLocation), ($=))
-import Shade (Mesh, makeAsset, makeAssetMesh, makeSimpleMesh, setMeshTransform)
+import Shade (Mesh (Mesh, moth), makeAsset, makeAssetMesh, makeSimpleMesh, setMeshTransform)
 import Stave (Staveware, makeFeather)
 import Time (Time, beginTime, keepTime)
+import Spell (summon, unwrappingly)
+import MothSpell (mothify)
 
 
 data Allwit = Allwit {
@@ -101,8 +103,13 @@ makeAllwit = Allwit
 
 begetMeshes :: IO (Staveware, [Mesh])
 begetMeshes = do
-  froggy <- makeAssetMesh (makeAsset "bunny")
-    >>= setMeshTransform (fromTranslation [0, 0, 0])
+  cocoon <- summon "assets/bunny.moth"
+  let mothFile = unwrappingly mothify cocoon
+  -- print mothFile
+
+  bun <- makeAssetMesh (makeAsset "bunny")
+  let bunny = bun { moth = Just mothFile }
+  froggy <- setMeshTransform (fromAffine [0.5, 0.5, 0.5] [0, 0.65, 0]) bunny
 
   earth <- makeSimpleMesh defaultSimpleMeshProfile
 

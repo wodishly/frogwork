@@ -137,6 +137,16 @@ fromTranslation [x, y, z] = (4><4) [
   ]
 fromTranslation _ = dimensionError 3
 
+{-# INLINE fromAffine #-}
+fromAffine :: FrogList -> FrogList -> FrogMatrix
+fromAffine [s, t, u] [x, y, z] = (4><4) [
+  s, 0, 0, x,
+  0, t, 0, y,
+  0, 0, u, z,
+  0, 0, 0, 1
+  ]
+fromAffine _ _ = dimensionError 3
+
 {-# INLINE getPerspectiveMatrix #-}
 getPerspectiveMatrix :: RenderView -> FrogMatrix
 getPerspectiveMatrix (RenderView asp _ fov' near' far') = (4><4) [
