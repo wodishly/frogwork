@@ -1,5 +1,6 @@
 module Game (
   Allwit (..)
+, Overwindow
 , makeAllwit
 , begetMeshes
 , fand
@@ -10,26 +11,39 @@ module Game (
 , settleState
 , showLeechwit
 , updateAll
+, waxwane
 ) where
 
 import Control.Lens (Lens', makeLenses, (.~), (^.))
-import Control.Monad (unless, when, void)
+import Control.Monad (unless, void, when)
 import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT, execStateT)
 import Data.Function (applyWhen)
 
+import SDL (LocationMode (AbsoluteLocation, RelativeLocation))
 import SDL.Input.Keyboard.Codes
-import Graphics.Rendering.OpenGL (Vertex2 (Vertex2), Vertex3 (Vertex3), HasSetter (($=)))
+import Graphics.Rendering.OpenGL (
+    BlendingFactor (OneMinusSrcAlpha, SrcAlpha)
+  , Capability (Enabled)
+  , ComparisonFunction (Lequal)
+  , HasSetter (($=))
+  , Position (Position)
+  , Size (Size)
+  , Vertex2 (Vertex2)
+  , Vertex3 (Vertex3)
+  )
+import qualified Graphics.Rendering.OpenGL as GL (get, blend, blendFunc, depthFunc, viewport)
 
 import qualified SDL (
     Event
   , GLContext
-  , LocationMode (AbsoluteLocation)
+  , V2 (V2)
   , Window
   , glSwapWindow
   , pollEvents
   , setMouseLocationMode
   , ticks
   , windowGrab
+  , windowSize
   )
 
 import State (
@@ -41,9 +55,10 @@ import State (
   , isShowingKeys
   , isShowingTicks
   , isRunningTests
-  , loop, preent
+  , loop
+  , preent
   )
-import MenuState (MenuState (hand, finger))
+import MenuState (MenuState (finger, hand))
 import PauseState (PauseState)
 import PlayState (PlayState)
 
@@ -56,12 +71,10 @@ import FastenShade (
   , quadUvBuffer
   )
 
-import Happen (unwrapHappenMouse, unwrapHappenWheel, unwrapHappenWindow, waxwane)
-import Key (KeySet, anyKeysBegun, keyBegun, listen, unkeys)
-import Matrix (RenderView, fromTranslation)
-import Mean (full, weep)
-import Rime (Point)
-import SDL (LocationMode (RelativeLocation))
+import Happen (Mousewit, unwrapHappenPointer, unwrapHappenWheel, unwrapHappenWindow, Overwindow)
+import Key (Keyset, anyKeysBegun, keyBegun, listen, unkeys)
+import Matrix (RenderView (..), fromTranslation)
+import Mean (full, weep, twimap)
 import Shade (Mesh, makeAsset, makeAssetMesh, makeSimpleMesh, setMeshTransform)
 import Stavemake (Staveware, makeFeather)
 import Time (Time, beginTime, keepTime)
@@ -70,16 +83,14 @@ import Time (Time, beginTime, keepTime)
 data Allwit = Allwit {
   time :: Time
 , settings :: Settings
-, keyset :: KeySet
-, mouse :: Point
-, wheel :: Point
+, keyset :: Keyset
+, mouse :: Mousewit
 , events :: [SDL.Event]
 , nowState :: StateName
 
-, staveware :: Staveware
-, window :: SDL.Window
+, overwindow :: Overwindow
 , display :: RenderView
-, context :: SDL.GLContext
+, staveware :: Staveware
 
 , _playState :: PlayState
 , _pauseState :: PauseState
@@ -87,14 +98,20 @@ data Allwit = Allwit {
 }
 makeLenses ''Allwit
 
-makeAllwit :: Staveware -> SDL.Window -> RenderView -> SDL.GLContext
+window :: Allwit -> SDL.Window
+window = fst . overwindow
+
+-- unused; unsunder when used
+_context :: Allwit -> SDL.GLContext
+_context = snd . overwindow
+
+makeAllwit :: Overwindow -> RenderView -> Staveware
   -> PlayState -> PauseState -> MenuState -> Allwit
 makeAllwit = Allwit
   beginTime
   makeSettings
   unkeys
-  (Vertex2 0 0)
-  (Vertex2 0 0)
+  (Vertex2 0 0, Vertex2 0 0)
   []
   MenuName
 
@@ -122,7 +139,7 @@ begetMeshes = do
   return ((x, hack), [froggy, earth, farsee, hack])
 
 news :: Allwit -> News
-news allwit = (keyset allwit, mouse allwit, wheel allwit, display allwit, time allwit)
+news allwit = (keyset allwit, mouse allwit, display allwit, time allwit)
 
 updateEvents :: StateT Allwit IO ()
 updateEvents = do
@@ -145,23 +162,14 @@ updateMouse :: StateT Allwit IO ()
 updateMouse = do
   allwit <- get
   -- todo sum instead of head
-  let m = unwrapHappenMouse (events allwit)
-  if full m
-    then put allwit { mouse = head m }
-    else put allwit { mouse = Vertex2 0 0}
-
-updateWheel :: StateT Allwit IO ()
-updateWheel = do
-  allwit <- get
-  let w = unwrapHappenWheel (events allwit)
-  if full w
-    then put allwit { wheel = head w }
-    else put allwit { wheel = Vertex2 0 0}
+  let p = unwrapHappenPointer (events allwit)
+      w = unwrapHappenWheel (events allwit)
+  put allwit { mouse = twimap (\x -> if full x then head x else Vertex2 0 0) (p, w) }
 
 updateWindow :: StateT Allwit IO ()
 updateWindow = do
   allwit <- get
-  when (or.unwrapHappenWindow $ events allwit) $ do
+  when (or . unwrapHappenWindow $ events allwit) $ do
     dis <- lift (waxwane $ window allwit)
     put allwit { display = dis }
 
@@ -176,7 +184,6 @@ updateAll = do
   updateTime
   updateKeys
   updateMouse
-  updateWheel
   updateWindow
   updateSettings
 
@@ -202,7 +209,9 @@ settleState :: StateT Allwit IO ()
 settleState = do
   allwit <- get
   put allwit { nowState =
-    if keyBegun (keyset allwit) ScancodeP && nowState allwit == PlayName
+    if keyBegun (keyset allwit) ScancodeR
+      then MenuName
+    else if keyBegun (keyset allwit) ScancodeP && nowState allwit == PlayName
       then PauseName
     else if keyBegun (keyset allwit) ScancodeP && nowState allwit == PauseName
       then PlayName
@@ -224,7 +233,7 @@ settleState = do
 setWindowGrab :: Bool -> StateT Allwit IO ()
 setWindowGrab setting =
   get >>= ($= setting) . SDL.windowGrab . window
-  >> void (SDL.setMouseLocationMode $ if setting then SDL.RelativeLocation else SDL.AbsoluteLocation)
+  >> void (SDL.setMouseLocationMode $ if setting then RelativeLocation else AbsoluteLocation)
 
 goto :: Stately a => Lens' Allwit a -> StateT Allwit IO ()
 goto lens = do
@@ -236,6 +245,23 @@ blit :: StateT Allwit IO ()
 blit = get >>= SDL.glSwapWindow . window
 
 again :: StateT Allwit IO () -> StateT Allwit IO ()
+-- pointlessly
+-- again = (get >>=) . ($ (unless . ($ [ScancodeQ, ScancodeEscape]) . anyKeysBegun . keyset)) . (.) . (&)
 again f = do
   allwit <- get
   unless (anyKeysBegun (keyset allwit) [ScancodeQ, ScancodeEscape]) f
+
+waxwane :: SDL.Window -> IO RenderView
+waxwane wind = do
+  SDL.V2 width height <- (fromIntegral <$>) <$> GL.get (SDL.windowSize wind)
+  GL.viewport $= (Position 0 0, Size width height)
+  GL.depthFunc $= Just Lequal
+  GL.blend $= Enabled
+  GL.blendFunc $= (SrcAlpha, OneMinusSrcAlpha)
+  return RenderView {
+      aspect = fromIntegral width / fromIntegral height
+    , size = (fromIntegral width, fromIntegral height)
+    , fov = pi / 4.0
+    , near = 0.1
+    , far = 100.0
+  }

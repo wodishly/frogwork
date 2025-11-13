@@ -1,8 +1,8 @@
 module Rime where
 
-import Graphics.Rendering.OpenGL (GLfloat, Vertex2, Vertex3)
+import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2), Vertex3)
 
-import Mean (doBoth)
+import Mean (doBoth, toBoth)
 
 
 type Point2 = Vertex2 GLfloat
@@ -11,6 +11,10 @@ type Point = Point2
 
 type Polygon = [Point2]
 type Polyhedron = [Point3]
+
+{-# INLINE asPoint #-}
+asPoint :: Real a => a -> Point
+asPoint = toBoth Vertex2 . realToFrac
 
 {-# INLINE average #-}
 average :: Real a => [a] -> GLfloat
@@ -34,4 +38,3 @@ infixl 6 <+>
 {-# INLINE (^*) #-}
 (^*) :: (Applicative f, Num a) => f a -> a -> f a
 (^*) = flip (*^)
-

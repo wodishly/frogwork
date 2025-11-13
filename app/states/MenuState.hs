@@ -3,21 +3,18 @@ module MenuState (
 , makeMenuState
 ) where
 
-import Numeric.LinearAlgebra (ident)
-import Control.Monad.State (MonadState (get, put), StateT, MonadTrans (lift))
+import Control.Monad.State (MonadState (get, put), StateT)
 
 import SDL.Input.Keyboard.Codes
 import Graphics.Rendering.OpenGL (Vertex2(Vertex2))
 
 import State (StateName (MenuName, PlayName), Stately (..))
 
-import Blee (bg, darkwhelk, lightwhelk, Blee, red, blue)
-import Key (KeySet, keyBegun)
-import Matrix (getOrthographicMatrix, getPerspectiveMatrix, RenderView (size))
-import Shade (drawMesh)
+import Blee (Blee, bg, blue, darkwhelk, lightwhelk, red)
+import Key (Keyset, keyBegun)
+import Matrix (RenderView (size))
+import Stavework (Stake (..), stavewrite, renderFeather)
 import Stavemake (Staveware)
-import Rime ((*^))
-import Statework (stavewrite)
 
 
 data MenuState = MenuState {
@@ -30,25 +27,20 @@ data MenuState = MenuState {
 instance Stately MenuState where
   name _ = MenuName
   staveware = _staveware
-  update (keyset, _, _, _, _) = do
+  update (keyset, _, _, _) = do
     _ <- get
     menuFare keyset
 
-  render (_, _, _, display, time) = do
+  render (_, _, display, time) = do
     statewit <- get
     bg darkwhelk
-    lift $ drawMesh
-      (getPerspectiveMatrix display)
-      (ident 4)
-      (getOrthographicMatrix display)
-      time
-      (snd $ staveware statewit)
+    renderFeather display time (staveware statewit)
 
     let (width, height) = size display
-    stavewrite ((1/8) *^ Vertex2 width (height*4)) 1 lightwhelk "WƐLKƏM TU FRⱰGFƆRD!"
-    stavewrite ((1/8) *^ Vertex2 width (height*3)) 1 (whelken statewit 0) "plej"
-    stavewrite ((1/8) *^ Vertex2 width (height*2)) 1 (whelken statewit 1) "frɒg"
-    stavewrite ((1/8) *^ Vertex2 width  height   ) 1 (whelken statewit 2) "towd"
+    stavewrite (Vertex2 (width/2) (height*3/4)) (Middle, Middle) (Vertex2 1 1) lightwhelk "WƐLKƏM TU FRⱰGFƆRD!"
+    stavewrite (Vertex2 (width/2) (height*3/7)) (Middle, Middle) (Vertex2 1 1) (whelken statewit 0) "plej"
+    stavewrite (Vertex2 (width/2) (height*2/7)) (Middle, Middle) (Vertex2 1 1) (whelken statewit 1) "frɒg"
+    stavewrite (Vertex2 (width/2) (height  /7)) (Middle, Middle) (Vertex2 1 1) (whelken statewit 2) "towd"
 
 whelken :: MenuState -> Int -> Blee
 whelken statewit n = if mod (finger statewit) (length $ hand statewit) == n then red else blue
@@ -61,7 +53,7 @@ makeMenuState ware = MenuState {
 , _staveware = ware
 }
 
-menuFare :: KeySet -> StateT MenuState IO ()
+menuFare :: Keyset -> StateT MenuState IO ()
 menuFare keyset = do
   menuwit <- get
   if keyBegun keyset ScancodeReturn

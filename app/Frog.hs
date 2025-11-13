@@ -10,12 +10,12 @@ import Numeric.LinearAlgebra ((!))
 import SDL.Input.Keyboard.Codes
 import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2), Vertex3 (Vertex3))
 
-import Key (KeySet, keyBegun, wasd)
+import Key (Keyset, keyBegun, wasd)
 import Matrix (FrogVector, hat)
-import Rime (Point3, (<+>), (*^))
-import Time (Time, throttle)
 import Mean (doBoth)
+import Rime (Point3, (*^), (<+>))
 import State (News)
+import Time (Time, throttle)
 
 
 data Frogwit = Frogwit {
@@ -42,7 +42,7 @@ makeFrog = Frogwit {
 hasLeapsLeft :: Frogwit -> Bool
 hasLeapsLeft = uncurry (<) . doBoth leapCount utleaps
 
-leap :: KeySet -> StateT Frogwit IO Bool
+leap :: Keyset -> StateT Frogwit IO Bool
 leap keys = do
   frogwit <- get
   if keyBegun keys ScancodeSpace && hasLeapsLeft frogwit
@@ -69,7 +69,7 @@ fall time = do
   return (dy frogwit /= 0)
 
 walk :: News -> FrogVector -> StateT Frogwit IO Bool
-walk (keys, _, _, _, time) forward = do
+walk (keys, _, _, time) forward = do
   frogwit <- get
   let direction = hat $ Vertex3 (forward!0) 0 -(forward!2)
       didWalk = dz < 0 where Vertex2 _ dz = wasd keys
@@ -80,5 +80,5 @@ walk (keys, _, _, _, time) forward = do
     else return False
 
 moveFrog :: News -> FrogVector -> StateT Frogwit IO Bool
-moveFrog news@(keys, _, _, _, time) forward = do
+moveFrog news@(keys, _, _, time) forward = do
   or <$> sequence [walk news forward, leap keys, fall time]

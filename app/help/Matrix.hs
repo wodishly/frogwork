@@ -73,6 +73,9 @@ class Vertex v => FrogVertex v where
 -- | Shapeshifts hmatrix's @Vector GLfloat@ to OpenGL's @Vertex GLfloat@.
   fromFrogVector :: FrogVector -> v
 
+  -- | componentwise multiplication
+  (^*^) :: v -> v -> v
+
   hat :: v -> v
 
 instance FrogVertex (Vertex2 GLfloat) where
@@ -88,6 +91,8 @@ instance FrogVertex (Vertex2 GLfloat) where
   hat z
     | nought z = z
     | otherwise = (/norm z) <$> z
+  {-# INLINE (^*^) #-}
+  (^*^) (Vertex2 x y) (Vertex2 a b) = Vertex2 (x*a) (y*b)
 
 instance FrogVertex (Vertex3 GLfloat) where
   {-# INLINE fromSDL #-}
@@ -102,6 +107,8 @@ instance FrogVertex (Vertex3 GLfloat) where
   hat z
     | nought z = z
     | otherwise = (/norm z) <$> z
+  {-# INLINE (^*^) #-}
+  (^*^) (Vertex3 x y z) (Vertex3 a b c) = Vertex3 (x*a) (y*b) (z*c)
 
 {-# INLINE norm #-}
 norm :: FrogVertex v => v -> GLfloat

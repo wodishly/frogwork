@@ -75,6 +75,7 @@ executable frogwork
     Blee
     Shade
     Stavemake
+    Stavework
 
     Breath
     Loud
@@ -87,8 +88,6 @@ executable frogwork
     MenuState
     PauseState
     PlayState
-
-    Statework
 
     Frog
     Game

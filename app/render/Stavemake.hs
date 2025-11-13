@@ -133,13 +133,6 @@ makeStavebook = makeStavebook'' False
 makeStavebook' :: FT_UInt -> FilePath -> IO Stavebook
 makeStavebook' = makeStavebook'' True
 
--- allbestave :: FT_Face -> Int -> Int -> IO ()
--- allbestave feather n thatch = do
---   (code, gindex) <- ft_Get_Next_Char feather (if n==0 then Nothing else Just (fromIntegral n))
---   when (gindex /= 1 && n < thatch) $ do
---     print (code, gindex, chr $ fromIntegral code)
---     allbestave feather (n+1) thatch
-
 -- | Based on [this page](https://zyghost.com/articles/Haskell-font-rendering-with-freetype2-and-opengl.html).
 makeStavebook'' :: Bool -> FT_UInt -> FilePath -> IO Stavebook
 makeStavebook'' loud great path = do
@@ -151,11 +144,7 @@ makeStavebook'' loud great path = do
   feather' <- peek feather
   when loud $ putStrLn "made feather!"
 
-  -- allbestave feather 161 500
-
   stavebook <- forM (map chr tokenwit) $ \stave -> do
-
-    -- print stave
 
     finger <- ft_Get_Char_Index feather (fromIntegral $ fromEnum stave)
     ft_Load_Glyph feather finger FT_LOAD_RENDER
@@ -164,8 +153,9 @@ makeStavebook'' loud great path = do
 
     let slot = frGlyph feather'
     slot' <- peek slot
+
     let staveTell = frNum_glyphs feather'
-    let shape = gsrFormat slot'
+        shape = gsrFormat slot'
     when loud $ putStrLn "made slot!"
     when loud $ putStrLn $ "slot is: " ++ show slot
     when loud $ putStrLn $ "stave tell is: " ++ show staveTell
@@ -192,6 +182,7 @@ makeStavebook'' loud great path = do
     let (w', h') = (fromIntegral w, fromIntegral h)
         pitch = 4 - mod w' 4
         nw = fromIntegral (pitch + w')
+
     when loud $ putStrLn "did some reckoning..."
 
     tex' <- flip withArray (uploadTexture Red (nw, h')) . pad pitch w' 0

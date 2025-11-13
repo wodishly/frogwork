@@ -13,14 +13,14 @@ module State (
 import Control.Lens (makeLenses)
 import Control.Monad.State (StateT, MonadTrans (lift))
 
-import Key (KeySet)
+import Happen (Mousewit)
+import Key (Keyset)
 import Matrix (RenderView)
-import Rime (Point)
 import Stavemake (Staveware)
 import Time (Time)
 
 
-type News = (KeySet, Point, Point, RenderView, Time)
+type News = (Keyset, Mousewit, RenderView, Time)
 
 data StateName = PlayName | PauseName | MenuName deriving (Show, Eq, Ord)
 
@@ -41,6 +41,7 @@ makeSettings = Settings {
 class Stately a where
   name :: a -> StateName
   staveware :: a -> Staveware
+
   update :: News -> StateT a IO ()
   render :: News -> StateT a IO ()
 

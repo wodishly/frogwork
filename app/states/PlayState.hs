@@ -1,4 +1,5 @@
 {- HLINT ignore "Use head" -}
+{-# OPTIONS_GHC -Wno-type-defaults #-}
 module PlayState (
   PlayState (..)
 , makePlayState
@@ -18,10 +19,11 @@ import Key (arrow)
 import Matrix (FrogVector, RenderView (size), aught, frogLookAt, frogZero, getOrthographicMatrix, getPerspectiveMatrix)
 import Mean (given, hit)
 import Random (FrogSeed, defaultSeed)
-import Rime (Point, Point3, clamp)
+import Rime (Point, Point3, clamp, asPoint)
 import Shade (Mesh, drawMesh, setMeshTransform)
 import Stavemake (Staveware)
-import Statework (stavewrite)
+import Stavework (stavewrite, Stake (..), renderFeather)
+default (Int, Float)
 
 
 data Camera = Camera {
@@ -55,15 +57,22 @@ instance Stately PlayState where
         forward = flatten $ (viewMatrix ¿ [2]) ?? (Take 3, All)
     updateFrog news forward
 
-  render (_, _, _, display, time) = do
+  render (_, _, display, time) = do
     statewit <- get
     bg black
+
+    -- this is redundant, since the great `mapM_`
+    -- below already renders the stavebook mesh.
+    -- but we have it here for now for consistency
+    -- with the other stately render works.
+    renderFeather display time (staveware statewit)
+
     let cam = camera statewit
     let viewMatrix = frogLookAt (cPosition cam) (cTarget cam)
         orthographicMatrix = getOrthographicMatrix display
         (width, height) = size display
     lift $ mapM_ (drawMesh (getPerspectiveMatrix display) viewMatrix orthographicMatrix time) (meshes statewit)
-    stavewrite (Vertex2 (0.1*width) $ 0.9*height) 1 lightwhelk "omg frogs!!!!"
+    stavewrite (Vertex2 (width/2) (height/2)) (Middle, Middle) (asPoint 1) lightwhelk "omg frogs!!!!"
 
 instance Show PlayState where
   show (PlayState _ _ _ f _ _ p c) = show f ++ show p ++ show c
@@ -81,10 +90,10 @@ makePlayState ware ms = PlayState {
 }
 
 updateCamera :: News -> StateT PlayState IO Camera
-updateCamera (keys, mouse, wheel, _, _) = do
+updateCamera (keys, (pointer, wheel), _, _) = do
   statewit <- get
   let Vertex3 x _ z = position $ frog statewit
-  let Vertex2 dx dy = given aught mouse (arrow keys)
+  let Vertex2 dx dy = given aught pointer (arrow keys)
       Vertex2 pitch yaw = euler statewit
       pitch' = clamp (0, 1) $ pitch + dy / 100.0
       yaw' = yaw + dx / 100.0
