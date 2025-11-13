@@ -61,11 +61,8 @@ instance Stately PlayState where
     statewit <- get
     bg black
 
-    -- this is redundant, since the great `mapM_`
-    -- below already renders the stavebook mesh.
-    -- but we have it here for now for consistency
-    -- with the other stately render works.
-    renderFeather display time (staveware statewit)
+    -- why does this line make the last written stave have a black background?
+    -- renderFeather display time (staveware statewit)
 
     let cam = camera statewit
     let viewMatrix = frogLookAt (cPosition cam) (cTarget cam)
