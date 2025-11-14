@@ -33,7 +33,7 @@ import Graphics.Rendering.OpenGL (
 
 import Blee (Blee, bleeToGLVector4)
 import FastenShade (Programful (uniformMap))
-import Matrix (FrogVertex ((^*^)), RenderView, getOrthographicMatrix, getPerspectiveMatrix)
+import Matrix (FrogVertex ((^*^)), RenderView, getOrthographicMatrix, getPerspectiveMatrix, size)
 import Mean (Twain)
 import Rime (Point, Polyhedron, (<+>), (^*))
 import Shade (Mesh (elementCount, vbo), bufferSize, drawFaces, drawMesh, useMesh)
@@ -45,13 +45,15 @@ import Time (Time)
 data Stake = North | South | East | West | Middle deriving (Show, Eq)
 type Stakes = Twain Stake
 
-stavewrite :: (Stately b) => Point -> Stakes -> Point -> Blee -> String -> StateT b IO ()
-stavewrite stead stakes scale blee spell =
+stavewrite :: (Stately b) => RenderView -> Point -> Stakes -> Point -> Blee -> String -> StateT b IO ()
+stavewrite display stead stakes scale' blee spell =
   get >>= \statewit
   -> let (book, mesh) = staveware statewit in lift $
     useMesh mesh
 
     >> let advances = scanl (+) 0 (map (advance . (book!)) spell)
+           (w, h) = size display
+           scale = Vertex2 (1/800) (1/600) ^*^ Vertex2 w h ^*^ scale'
            offset = reckonStakes book stakes scale spell in
 
     forM_ (zip [0..] spell) $ \(i, char) ->

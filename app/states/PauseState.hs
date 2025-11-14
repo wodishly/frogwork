@@ -26,7 +26,7 @@ instance Stately PauseState where
     bg black
     renderFeather display time (staveware statewit)
     let (width, height) = size display
-    stavewrite (Vertex2 (width/2) (height/2)) (Middle, Middle) (Vertex2 1 1) white "pɔz"
+    stavewrite display (Vertex2 (width/2) (height/2)) (Middle, Middle) (Vertex2 1 1) white "pɔz"
 
 makePauseState :: Staveware -> PauseState
 makePauseState = PauseState

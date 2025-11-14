@@ -69,7 +69,7 @@ instance Stately PlayState where
         orthographicMatrix = getOrthographicMatrix display
         (width, height) = size display
     lift $ mapM_ (drawMesh (getPerspectiveMatrix display) viewMatrix orthographicMatrix time) (meshes statewit)
-    stavewrite (Vertex2 (width/2) (height/2)) (Middle, Middle) (asPoint 1) lightwhelk "omg frogs!!!!"
+    stavewrite display (Vertex2 (width/2) (height/2)) (Middle, Middle) (asPoint 1) lightwhelk "omg frogs!!!!"
 
 instance Show PlayState where
   show (PlayState _ _ _ f _ _ p c) = show f ++ show p ++ show c

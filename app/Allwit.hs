@@ -72,7 +72,7 @@ import FastenShade (
   )
 
 import Matrix (RenderView (..), fromAffine, fromTranslation)
-import Mean (twimap, full, weep, ssss)
+import Mean (twimap, full, weep, ssss, doBoth)
 import Time (Time, beginTime, keepTime)
 
 import Happen (Mousewit, Overwindow, unwrapHappenPointer, unwrapHappenWheel, unwrapHappenWindow)
@@ -181,8 +181,7 @@ updateMouse :: StateT Allwit IO ()
 updateMouse = do
   allwit <- get
   -- todo sum instead of head
-  let p = unwrapHappenPointer (events allwit)
-      w = unwrapHappenWheel (events allwit)
+  let (p, w) = doBoth unwrapHappenPointer unwrapHappenWheel (events allwit)
   put allwit { mouse = twimap (\x -> if full x then head x else Vertex2 0 0) (p, w) }
 
 updateWindow :: StateT Allwit IO ()
@@ -192,11 +191,11 @@ updateWindow = do
     dis <- lift (waxwane $ window allwit)
     put allwit { display = dis }
 
-updateSettings :: StateT Allwit IO ()
-updateSettings = do
+updateAllSettings :: StateT Allwit IO ()
+updateAllSettings = do
   allwit <- get
-  when (keyBegun (keyset allwit) ScancodeK) $ updateSetting isShowingKeys
-  when (keyBegun (keyset allwit) ScancodeT) $ updateSetting isShowingTicks
+  when (keyBegun (keyset allwit) ScancodeK) (updateOnlyOneSetting isShowingKeys)
+  when (keyBegun (keyset allwit) ScancodeT) (updateOnlyOneSetting isShowingTicks)
   case choosen (allwit^.willState) of
     Just (Right ch) -> do
       let newset = ch (settings allwit)
@@ -214,6 +213,11 @@ updateSettings = do
       }
     _ -> return ()
 
+updateOnlyOneSetting :: Lens' Settings Bool -> StateT Allwit IO ()
+updateOnlyOneSetting lens = do
+  allwit <- get
+  put allwit { settings = toggle lens (settings allwit) }
+
 updateAll :: StateT Allwit IO ()
 updateAll = do
   updateEvents
@@ -221,12 +225,7 @@ updateAll = do
   updateKeys
   updateMouse
   updateWindow
-  updateSettings
-
-updateSetting :: Lens' Settings Bool -> StateT Allwit IO ()
-updateSetting lens = do
-  allwit <- get
-  put allwit { settings = toggle lens (settings allwit) }
+  updateAllSettings
 
 showLeechwit :: StateT Allwit IO ()
 showLeechwit = do
@@ -278,7 +277,7 @@ blit = get >>= SDL.glSwapWindow . window
 again :: StateT Allwit IO () -> StateT Allwit IO ()
 again f = do
   allwit <- get
-  unless (EndName == nowState allwit || anyKeysBegun (keyset allwit) [ScancodeQ, ScancodeEscape]) f
+  unless (nowState allwit == EndName || anyKeysBegun (keyset allwit) [ScancodeQ, ScancodeEscape]) f
 
 waxwane :: SDL.Window -> IO RenderView
 waxwane wind = do

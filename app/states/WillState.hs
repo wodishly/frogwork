@@ -18,6 +18,7 @@ import Mean (ssss)
 import Stavemake (Staveware)
 import Stavework (Stake (..), renderFeather, stavewrite)
 import Data.Maybe (fromMaybe)
+import Control.Monad (when)
 
 
 data WillState = WillState {
@@ -45,10 +46,10 @@ instance Stately WillState where
     renderFeather display time (staveware statewit)
 
     let (width, height) = size display
-    stavewrite (Vertex2 (width/2) (height*3/4)) (Middle, Middle) (Vertex2 1 1) lightwhelk "WꞮLZ"
-    stavewrite (Vertex2 (width/2) (height*3/7)) (Middle, Middle) (Vertex2 1 1) (choosewhelk statewit 0) "tɛl kiz"
-    stavewrite (Vertex2 (width/2) (height*2/7)) (Middle, Middle) (Vertex2 1 1) (choosewhelk statewit 1) "tɛl tɪks"
-    stavewrite (Vertex2 (width/2) (height  /7)) (Middle, Middle) (Vertex2 1 1) (choosewhelk statewit 2) "bæk"
+    stavewrite display (Vertex2 (width/2) (height*3/4)) (Middle, Middle) (Vertex2 1 1) lightwhelk "WꞮLZ"
+    stavewrite display (Vertex2 (width/2) (height*3/7)) (Middle, Middle) (Vertex2 1 1) (choosewhelk statewit 0) "tɛl kiz"
+    stavewrite display (Vertex2 (width/2) (height*2/7)) (Middle, Middle) (Vertex2 1 1) (choosewhelk statewit 1) "tɛl tɪks"
+    stavewrite display (Vertex2 (width/2) (height  /7)) (Middle, Middle) (Vertex2 1 1) (choosewhelk statewit 2) "bæk"
 
 choosewhelk :: WillState -> Int -> Blee
 choosewhelk statewit n = if ssss (mod.finger) (length.hand) statewit == n then red else blue
@@ -77,12 +78,9 @@ unchoose sets = do
 choosefare :: Keyset -> StateT WillState IO ()
 choosefare keyset = do
   willwit <- get
-  put $ if keyBegun keyset ScancodeReturn
-  then willwit { choosen = Just $ ssss ((!!) . hand) finger willwit }
-  else willwit {
-    finger = if keyBegun keyset ScancodeUp
-        then ssss (mod.pred.finger) (length.hand) willwit
-      else if keyBegun keyset ScancodeDown
-        then ssss (mod.succ.finger) (length.hand) willwit
-        else finger willwit
-    }
+  if keyBegun keyset ScancodeUp
+    then put $ willwit { finger = ssss (mod.pred.finger) (length.hand) willwit }
+  else if keyBegun keyset ScancodeDown
+    then put $ willwit { finger = ssss (mod.succ.finger) (length.hand) willwit }
+  else when (keyBegun keyset ScancodeReturn) $
+    put $ willwit { choosen = Just $ ssss ((!!) . hand) finger willwit }
