@@ -8,7 +8,7 @@ import Control.Monad.State (MonadState (get, put), StateT)
 import SDL.Input.Keyboard.Codes
 import Graphics.Rendering.OpenGL (Vertex2(Vertex2))
 
-import State (StateName (TitleName, PlayName, EndName), Stately (..))
+import State (StateName (TitleName, PlayName, EndName, WillName), Stately (..))
 
 import Blee (Blee, bg, blue, darkwhelk, lightwhelk, red)
 import Key (Keyset, keyBegun)
@@ -49,7 +49,7 @@ choosewhelk statewit n = if ssss (mod.finger) (length.hand) statewit == n then r
 
 makeTitleState :: Staveware -> TitleState
 makeTitleState ware = TitleState {
-  hand = [PlayName, PlayName, EndName]
+  hand = [PlayName, WillName, EndName]
 , finger = 0
 , choosen = Nothing
 , _staveware = ware

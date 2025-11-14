@@ -7,10 +7,11 @@ module State (
 , isShowingKeys
 , isShowingTicks
 , makeSettings
+, toggle
 , preent
 ) where
 
-import Control.Lens (makeLenses)
+import Control.Lens (makeLenses, Lens', (.~), (^.))
 import Control.Monad.State (StateT, MonadTrans (lift))
 
 import Happen (Mousewit)
@@ -39,6 +40,9 @@ makeLenses ''Settings
 
 makeSettings :: Settings
 makeSettings = Settings False False False
+
+toggle :: Lens' Settings Bool -> Settings -> Settings
+toggle lens settings = (lens.~not (settings^.lens)) settings
 
 class Stately a where
   name :: a -> StateName

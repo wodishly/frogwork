@@ -13,10 +13,6 @@ import qualified SDL (
   , quit
   )
 
-import TitleState (makeTitleState)
-import PauseState (makePauseState)
-import PlayState (makePlayState)
-
 import Allwit (
     Allwit
   , Overwindow
@@ -34,8 +30,6 @@ import FastenMain (openGLWindow)
 import Matrix (RenderView)
 import Shade (Mesh)
 import Stavemake (Staveware)
-import WillState (makeWillState)
-import EndState (makeEndState)
 
 
 main :: IO ()
@@ -54,12 +48,7 @@ main = do
 birth :: Overwindow -> RenderView -> (Staveware, [Mesh]) -> IO Allwit
 birth overwindow display (staveware, meshes) = do
 
-  let allwit = makeAllwit overwindow display staveware
-        (makeTitleState staveware)
-        (makeWillState staveware)
-        (makePlayState staveware meshes)
-        (makePauseState staveware)
-        (makeEndState staveware)
+  let allwit = makeAllwit overwindow staveware display meshes
 
   fand allwit
   return allwit

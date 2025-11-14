@@ -17,7 +17,6 @@ module Allwit (
 import Control.Lens (Lens', makeLenses, (.~), (^.))
 import Control.Monad (unless, void, when)
 import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT, execStateT)
-import Data.Function (applyWhen)
 
 import SDL (LocationMode (AbsoluteLocation, RelativeLocation))
 import SDL.Input.Keyboard.Codes
@@ -35,7 +34,6 @@ import qualified Graphics.Rendering.OpenGL as GL (get, blend, blendFunc, depthFu
 
 import qualified SDL (
     Event
-  , GLContext
   , V2 (V2)
   , Window
   , glSwapWindow
@@ -56,11 +54,13 @@ import State (
   , isShowingTicks
   , isRunningTests
   , loop
-  , preent
+  , preent, toggle
   )
-import TitleState (TitleState (finger, hand))
-import PauseState (PauseState)
-import PlayState (PlayState)
+import TitleState (TitleState (finger, hand), makeTitleState)
+import WillState (WillState (choosen), makeWillState, unchoose)
+import PauseState (PauseState, makePauseState)
+import PlayState (PlayState, makePlayState)
+import EndState (EndState, makeEndState)
 
 import FastenShade (
     ShaderProfile (..)
@@ -71,33 +71,32 @@ import FastenShade (
   , quadUvBuffer
   )
 
-import Matrix
-    ( RenderView, fromTranslation, fromAffine, RenderView(..) )
-import Mean ( full, weep, twimap, ssss )
-import Shade (Mesh (meshAnimation), makeAsset, makeAssetMesh, makeSimpleMesh, setMeshTransform)
-import Happen (Mousewit, unwrapHappenPointer, unwrapHappenWheel, unwrapHappenWindow, Overwindow)
-import Key (Keyset, anyKeysBegun, keyBegun, listen, unkeys)
-import Stavemake (Staveware, makeFeather)
+import Matrix (RenderView (..), fromAffine, fromTranslation)
+import Mean (twimap, full, weep, ssss)
 import Time (Time, beginTime, keepTime)
-import WillState (WillState)
-import EndState (EndState)
-import Spell (summon, unwrappingly)
+
+import Happen (Mousewit, Overwindow, unwrapHappenPointer, unwrapHappenWheel, unwrapHappenWindow)
+import Key (Keyset, anyKeysBegun, keyBegun, listen, unkeys)
+
 import MothSpell (mothify)
-import Skeleton (Animation(..))
+import Skeleton (Animation (..))
+import Shade (Mesh (meshAnimation), makeAsset, makeAssetMesh, makeSimpleMesh, setMeshTransform)
+import Spell (summon, unwrappingly)
+import Stavemake (Staveware, makeFeather)
 
 
 data Allwit = Allwit {
-  time :: Time
+  overwindow :: Overwindow
 , settings :: Settings
-, keyset :: Keyset
-, mouse :: Mousewit
 , events :: [SDL.Event]
-, nowState :: StateName
-
-, overwindow :: Overwindow
-, display :: RenderView
 , staveware :: Staveware
 
+, keyset :: Keyset
+, mouse :: Mousewit
+, display :: RenderView
+, time :: Time
+
+, nowState :: StateName
 , _titleState :: TitleState
 , _willState :: WillState
 , _playState :: PlayState
@@ -109,19 +108,23 @@ makeLenses ''Allwit
 window :: Allwit -> SDL.Window
 window = fst . overwindow
 
--- unused; unsunder when used
-_context :: Allwit -> SDL.GLContext
-_context = snd . overwindow
-
-makeAllwit :: Overwindow -> RenderView -> Staveware
-  -> TitleState -> WillState -> PlayState -> PauseState -> EndState -> Allwit
-makeAllwit = Allwit
-  beginTime
-  makeSettings
-  unkeys
-  (Vertex2 0 0, Vertex2 0 0)
-  []
-  TitleName
+makeAllwit :: Overwindow -> Staveware -> RenderView -> [Mesh] -> Allwit
+makeAllwit overwind ware dis meshes = let sets = makeSettings in
+  Allwit
+    overwind
+    sets
+    []
+    ware
+    unkeys
+    (Vertex2 0 0, Vertex2 0 0)
+    dis
+    beginTime
+    TitleName
+    (makeTitleState ware)
+    (makeWillState ware sets)
+    (makePlayState ware meshes)
+    (makePauseState ware)
+    (makeEndState ware)
 
 begetMeshes :: IO (Staveware, [Mesh])
 begetMeshes = do
@@ -191,8 +194,25 @@ updateWindow = do
 
 updateSettings :: StateT Allwit IO ()
 updateSettings = do
-  toggleIsShowingKeys
-  toggleIsShowingTicks
+  allwit <- get
+  when (keyBegun (keyset allwit) ScancodeK) $ updateSetting isShowingKeys
+  when (keyBegun (keyset allwit) ScancodeT) $ updateSetting isShowingTicks
+  case choosen (allwit^.willState) of
+    Just (Right ch) -> do
+      let newset = ch (settings allwit)
+      state <- lift (execStateT (unchoose $ Just newset) $ allwit^.willState)
+      put allwit {
+          settings = newset
+        , _willState = state
+      }
+    Just (Left ch) -> do
+      put allwit { nowState = ch }
+      state <- lift (execStateT (unchoose Nothing) $ allwit^.willState)
+      put allwit {
+          nowState = ch
+        , _willState = state
+      }
+    _ -> return ()
 
 updateAll :: StateT Allwit IO ()
 updateAll = do
@@ -203,20 +223,10 @@ updateAll = do
   updateWindow
   updateSettings
 
-toggleIsShowingKeys :: StateT Allwit IO ()
-toggleIsShowingKeys = toggleSetting ScancodeK isShowingKeys
-
-toggleIsShowingTicks :: StateT Allwit IO ()
-toggleIsShowingTicks = toggleSetting ScancodeT isShowingTicks
-
-toggleSetting :: Scancode -> Lens' Settings Bool -> StateT Allwit IO ()
-toggleSetting keycode lens = do
+updateSetting :: Lens' Settings Bool -> StateT Allwit IO ()
+updateSetting lens = do
   allwit <- get
-  put allwit { settings =
-    applyWhen (keyBegun (keyset allwit) keycode)
-      (lens.~not (settings allwit^.lens))
-      (settings allwit)
-  }
+  put allwit { settings = toggle lens (settings allwit) }
 
 showLeechwit :: StateT Allwit IO ()
 showLeechwit = do
@@ -233,11 +243,11 @@ settleState = do
   put allwit { nowState =
     if keyBegun (keyset allwit) ScancodeR
       then TitleName
-    else if keyBegun (keyset allwit) ScancodeP && nowState allwit == PlayName
+    else if nowState allwit == PlayName && keyBegun (keyset allwit) ScancodeP
       then PauseName
-    else if keyBegun (keyset allwit) ScancodeP && nowState allwit == PauseName
+    else if nowState allwit == PauseName && keyBegun (keyset allwit) ScancodeP
       then PlayName
-    else if keyBegun (keyset allwit) ScancodeReturn && nowState allwit == TitleName
+    else if nowState allwit == TitleName && keyBegun (keyset allwit) ScancodeReturn
       then ssss ((!!) . hand) finger (_titleState allwit)
 
     else nowState allwit
@@ -250,16 +260,17 @@ settleState = do
     EndName -> goto endState
 
 setWindowGrab :: Bool -> StateT Allwit IO ()
-setWindowGrab setting =
-  get >>= ($= setting) . SDL.windowGrab . window
-  >> void (SDL.setMouseLocationMode $ if setting then RelativeLocation else AbsoluteLocation)
+setWindowGrab setting = do
+  allwit <- get
+  SDL.windowGrab (window allwit) $= setting
+  void $ SDL.setMouseLocationMode $ if setting then RelativeLocation else AbsoluteLocation
 
 goto :: Stately a => Lens' Allwit a -> StateT Allwit IO ()
 goto lens = do
   allwit <- get
   setWindowGrab (PlayName == name (allwit^.lens))
   state <- lift (execStateT (loop $ news allwit) $ allwit^.lens)
-  put ((lens.~state) allwit)
+  put $ (lens.~state) allwit
 
 blit :: StateT Allwit IO ()
 blit = get >>= SDL.glSwapWindow . window
