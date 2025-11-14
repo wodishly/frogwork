@@ -58,7 +58,7 @@ import State (
   , loop
   , preent
   )
-import MenuState (MenuState (finger, hand))
+import TitleState (TitleState (finger, hand))
 import PauseState (PauseState)
 import PlayState (PlayState)
 
@@ -94,7 +94,7 @@ data Allwit = Allwit {
 
 , _playState :: PlayState
 , _pauseState :: PauseState
-, _menuState :: MenuState
+, _titleState :: TitleState
 }
 makeLenses ''Allwit
 
@@ -106,14 +106,14 @@ _context :: Allwit -> SDL.GLContext
 _context = snd . overwindow
 
 makeAllwit :: Overwindow -> RenderView -> Staveware
-  -> PlayState -> PauseState -> MenuState -> Allwit
+  -> PlayState -> PauseState -> TitleState -> Allwit
 makeAllwit = Allwit
   beginTime
   makeSettings
   unkeys
   (Vertex2 0 0, Vertex2 0 0)
   []
-  MenuName
+  TitleName
 
 begetMeshes :: IO (Staveware, [Mesh])
 begetMeshes = do
@@ -210,13 +210,13 @@ settleState = do
   allwit <- get
   put allwit { nowState =
     if keyBegun (keyset allwit) ScancodeR
-      then MenuName
+      then TitleName
     else if keyBegun (keyset allwit) ScancodeP && nowState allwit == PlayName
       then PauseName
     else if keyBegun (keyset allwit) ScancodeP && nowState allwit == PauseName
       then PlayName
-    else if keyBegun (keyset allwit) ScancodeReturn && nowState allwit == MenuName
-      then fst (hand (_menuState allwit)!!finger (_menuState allwit))
+    else if keyBegun (keyset allwit) ScancodeReturn && nowState allwit == TitleName
+      then fst (hand (_titleState allwit)!!finger (_titleState allwit))
       else nowState allwit
   }
   case nowState allwit of
@@ -226,9 +226,9 @@ settleState = do
     PauseName -> do
       setWindowGrab False
       goto pauseState
-    MenuName -> do
+    TitleName -> do
       setWindowGrab False
-      goto menuState
+      goto titleState
 
 setWindowGrab :: Bool -> StateT Allwit IO ()
 setWindowGrab setting =

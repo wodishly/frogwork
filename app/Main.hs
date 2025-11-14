@@ -13,7 +13,7 @@ import qualified SDL (
   , quit
   )
 
-import MenuState (makeMenuState)
+import TitleState (makeTitleState)
 import PauseState (makePauseState)
 import PlayState (makePlayState)
 
@@ -55,7 +55,7 @@ birth overwindow display (staveware, meshes) = do
   let allwit = makeAllwit overwindow display staveware
         (makePlayState staveware meshes)
         (makePauseState staveware)
-        (makeMenuState staveware)
+        (makeTitleState staveware)
 
   fand allwit
   return allwit

@@ -1,6 +1,6 @@
-module MenuState (
-  MenuState (..)
-, makeMenuState
+module TitleState (
+  TitleState (..)
+, makeTitleState
 ) where
 
 import Control.Monad.State (MonadState (get, put), StateT)
@@ -8,7 +8,7 @@ import Control.Monad.State (MonadState (get, put), StateT)
 import SDL.Input.Keyboard.Codes
 import Graphics.Rendering.OpenGL (Vertex2(Vertex2))
 
-import State (StateName (MenuName, PlayName), Stately (..))
+import State (StateName (TitleName, PlayName), Stately (..))
 
 import Blee (Blee, bg, blue, darkwhelk, lightwhelk, red)
 import Key (Keyset, keyBegun)
@@ -17,19 +17,19 @@ import Stavework (Stake (..), stavewrite, renderFeather)
 import Stavemake (Staveware)
 
 
-data MenuState = MenuState {
+data TitleState = TitleState {
   hand :: [(StateName, String)]
 , finger :: Int
 , choosen :: Maybe StateName
 , _staveware :: Staveware
 }
 
-instance Stately MenuState where
-  name _ = MenuName
+instance Stately TitleState where
+  name _ = TitleName
   staveware = _staveware
   update (keyset, _, _, _) = do
     _ <- get
-    menuFare keyset
+    titleFare keyset
 
   render (_, _, display, time) = do
     statewit <- get
@@ -42,26 +42,26 @@ instance Stately MenuState where
     stavewrite (Vertex2 (width/2) (height*2/7)) (Middle, Middle) (Vertex2 1 1) (whelken statewit 1) "frɒg"
     stavewrite (Vertex2 (width/2) (height  /7)) (Middle, Middle) (Vertex2 1 1) (whelken statewit 2) "towd"
 
-whelken :: MenuState -> Int -> Blee
+whelken :: TitleState -> Int -> Blee
 whelken statewit n = if mod (finger statewit) (length $ hand statewit) == n then red else blue
 
-makeMenuState :: Staveware -> MenuState
-makeMenuState ware = MenuState {
+makeTitleState :: Staveware -> TitleState
+makeTitleState ware = TitleState {
   hand = [(PlayName, "play"), (PlayName, "frog"), (PlayName, "toad")]
 , finger = 0
 , choosen = Nothing
 , _staveware = ware
 }
 
-menuFare :: Keyset -> StateT MenuState IO ()
-menuFare keyset = do
-  menuwit <- get
+titleFare :: Keyset -> StateT TitleState IO ()
+titleFare keyset = do
+  titlewit <- get
   if keyBegun keyset ScancodeReturn
-  then put menuwit { choosen = Just . fst $ hand menuwit!!finger menuwit }
-  else put menuwit {
+  then put titlewit { choosen = Just . fst $ hand titlewit!!finger titlewit }
+  else put titlewit {
     finger = if keyBegun keyset ScancodeUp
-        then mod (pred $ finger menuwit) (length $ hand menuwit)
+        then mod (pred $ finger titlewit) (length $ hand titlewit)
       else if keyBegun keyset ScancodeDown
-        then mod (succ $ finger menuwit) (length $ hand menuwit)
-        else finger menuwit
+        then mod (succ $ finger titlewit) (length $ hand titlewit)
+        else finger titlewit
     }

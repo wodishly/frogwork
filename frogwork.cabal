@@ -85,7 +85,7 @@ executable frogwork
     Tung
 
     State
-    MenuState
+    TitleState
     PauseState
     PlayState
 
@@ -118,6 +118,7 @@ executable frogwork
     , random
     , vector
     , freetype2
+    , split
 
   -- Directories containing source files.
   hs-source-dirs: app

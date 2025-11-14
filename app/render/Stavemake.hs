@@ -40,6 +40,7 @@ import FastenMain (wayToFeathers)
 import Mean (doBoth, (.>>.))
 import Rime (Point)
 import Shade (Mesh (..), uploadTexture)
+import Data.List.Split (chunksOf)
 
 
 type Stavebook = HashMap Char Stave
@@ -116,12 +117,9 @@ glyphFormatName = ("ft_GLYPH_FORMAT_" ++) . \case
     _ -> "NONE"
 
 -- this function is a huge memory leak. why?
-pad :: Int -> Int -> a -> [a] -> [a]
-pad _ _ _ [] = []
-pad amount width something bitmapData = left ++ b ++ recourse where
-  (left, right) = splitAt width bitmapData
-  b = replicate amount something
-  recourse = pad amount width something right
+pad :: Num a => Int -> Int -> [a] -> [a]
+pad _ _ [] = []
+pad gap width bitmap = concatMap (++ replicate gap 0) (chunksOf width bitmap)
 
 makeFeather :: FilePath -> IO Stavebook
 makeFeather = makeStavebook sharpness . printf "%s/%s.ttf" wayToFeathers
@@ -170,7 +168,7 @@ makeStavebook'' loud great path = do
         FT_Vector x _ = gsrAdvance slot'
     when loud $ putStrLn "here's the stuff we're going to save"
     when loud $ putStrLn $ "  bearing: " ++ show (l, t)
-    when loud $ putStrLn $ "  size: " ++ show (w, h)
+    putStrLn $ "  size: " ++ show (w, h)
     when loud $ putStrLn $ "  advance: " ++ show (x, 0 :: Int)
 
     when loud $ putStrLn "here's some other stuff:"
@@ -181,12 +179,12 @@ makeStavebook'' loud great path = do
     when loud $ putStrLn ""
 
     let (w', h') = (fromIntegral w, fromIntegral h)
-        pitch = 4 - mod w' 4
-        nw = fromIntegral (pitch + w')
+        gap = 4 - mod w' 4
+        nw = fromIntegral (gap + w')
 
     when loud $ putStrLn "did some reckoning..."
 
-    tex' <- flip withArray (uploadTexture Red (nw, h')) . pad pitch w' 0
+    tex' <- flip withArray (uploadTexture Red (nw, h')) . pad gap w'
       =<< peekArray (fromIntegral $ w*h) (bBuffer bitmap)
 
     -- does this do anything? unsure if safe to destroy

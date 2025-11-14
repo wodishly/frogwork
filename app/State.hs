@@ -22,7 +22,7 @@ import Time (Time)
 
 type News = (Keyset, Mousewit, RenderView, Time)
 
-data StateName = PlayName | PauseName | MenuName deriving (Show, Eq, Ord)
+data StateName = PlayName | PauseName | TitleName deriving (Show, Eq, Ord)
 
 data Settings = Settings {
   _isShowingTicks :: Bool
