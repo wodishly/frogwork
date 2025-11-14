@@ -73,13 +73,10 @@ import FastenShade (
 
 import Matrix
     ( RenderView, fromTranslation, fromAffine, RenderView(..) )
-import Mean (full, weep, twimap)
+import Mean ( full, weep, twimap, ssss )
 import Shade (Mesh (meshAnimation), makeAsset, makeAssetMesh, makeSimpleMesh, setMeshTransform)
 import Happen (Mousewit, unwrapHappenPointer, unwrapHappenWheel, unwrapHappenWindow, Overwindow)
 import Key (Keyset, anyKeysBegun, keyBegun, listen, unkeys)
-import Matrix (RenderView (..), fromTranslation)
-import Mean (full, weep, twimap, ssss)
-import Shade (Mesh, makeAsset, makeAssetMesh, makeSimpleMesh, setMeshTransform)
 import Stavemake (Staveware, makeFeather)
 import Time (Time, beginTime, keepTime)
 import WillState (WillState)
@@ -195,7 +192,7 @@ updateWindow = do
 updateSettings :: StateT Allwit IO ()
 updateSettings = do
   toggleIsShowingKeys
-  toggleIsShowingTicks 
+  toggleIsShowingTicks
 
 updateAll :: StateT Allwit IO ()
 updateAll = do
