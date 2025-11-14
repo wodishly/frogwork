@@ -1,10 +1,6 @@
 module Rime where
 
-<<<<<<< HEAD
-import Graphics.Rendering.OpenGL (GLfloat, GLint, Vertex2, Vertex3, Vertex4)
-=======
-import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2), Vertex3)
->>>>>>> main
+import Graphics.Rendering.OpenGL (GLfloat, GLint, Vertex2 (Vertex2), Vertex3, Vertex4)
 
 import Mean (doBoth, toBoth)
 

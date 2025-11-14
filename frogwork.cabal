@@ -74,7 +74,6 @@ executable frogwork
     Blee
     Shade
     Skeleton
-    Stave
     Stavemake
     Stavework
 
@@ -89,11 +88,10 @@ executable frogwork
     MothSpell
     Spell
 
-    MenuState
-    State
-    TitleState
     PauseState
     PlayState
+    State
+    TitleState
 
     Frog
     Game

@@ -65,25 +65,18 @@ import PlayState (PlayState)
 import FastenShade (
     ShaderProfile (..)
   , SimpleMeshProfile (..)
-  , defaultAssetMeshProfile
+
   , defaultSimpleMeshProfile
   , iBuffer
   , quadUvBuffer
   )
 
-import Happen (unwrapHappenMouse, unwrapHappenWheel, unwrapHappenWindow, waxwane)
-import Key (KeySet, anyKeysBegun, keyBegun, listen, unkeys)
-import Matrix (RenderView, fromTranslation, fromAffine)
-import Mean (full, weep)
-import Rime (Point)
-import SDL (LocationMode (RelativeLocation), ($=))
+import Matrix
+    ( RenderView, fromTranslation, fromAffine, RenderView(..) )
+import Mean (full, weep, twimap)
 import Shade (Mesh (meshAnimation), makeAsset, makeAssetMesh, makeSimpleMesh, setMeshTransform)
-import Stave (Staveware, makeFeather)
 import Happen (Mousewit, unwrapHappenPointer, unwrapHappenWheel, unwrapHappenWindow, Overwindow)
 import Key (Keyset, anyKeysBegun, keyBegun, listen, unkeys)
-import Matrix (RenderView (..), fromTranslation)
-import Mean (full, weep, twimap)
-import Shade (Mesh, makeAsset, makeAssetMesh, makeSimpleMesh, setMeshTransform)
 import Stavemake (Staveware, makeFeather)
 import Time (Time, beginTime, keepTime)
 import Spell (summon, unwrappingly)
