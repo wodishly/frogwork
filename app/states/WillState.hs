@@ -16,7 +16,7 @@ import Key (Keyset, keyBegun)
 import Matrix (RenderView (size))
 import Mean (ssss)
 import Stavemake (Staveware)
-import Stavework (Stake (..), renderFeather, stavewrite)
+import Stavework (renderFeather, stavewrite)
 import Data.Maybe (fromMaybe)
 import Control.Monad (when)
 
@@ -46,10 +46,10 @@ instance Stately WillState where
     renderFeather display time (staveware statewit)
 
     let (width, height) = size display
-    stavewrite display (Vertex2 (width/2) (height*3/4)) (Middle, Middle) (Vertex2 1 1) lightwhelk "WꞮLZ"
-    stavewrite display (Vertex2 (width/2) (height*3/7)) (Middle, Middle) (Vertex2 1 1) (choosewhelk statewit 0) "tɛl kiz"
-    stavewrite display (Vertex2 (width/2) (height*2/7)) (Middle, Middle) (Vertex2 1 1) (choosewhelk statewit 1) "tɛl tɪks"
-    stavewrite display (Vertex2 (width/2) (height  /7)) (Middle, Middle) (Vertex2 1 1) (choosewhelk statewit 2) "bæk"
+    stavewrite display (Vertex2 (width/2) (height*3/4)) lightwhelk "WꞮLZ"
+    stavewrite display (Vertex2 (width/2) (height*3/7)) (choosewhelk statewit 0) "tɛl kiz"
+    stavewrite display (Vertex2 (width/2) (height*2/7)) (choosewhelk statewit 1) "tɛl tɪks"
+    stavewrite display (Vertex2 (width/2) (height  /7)) (choosewhelk statewit 2) "bæk"
 
 choosewhelk :: WillState -> Int -> Blee
 choosewhelk statewit n = if ssss (mod.finger) (length.hand) statewit == n then red else blue

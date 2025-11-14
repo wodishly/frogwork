@@ -9,9 +9,10 @@ import State (StateName (PauseName), Stately (..))
 
 import Blee (bg, black, white)
 import Matrix (RenderView (size))
-import Stavework (Stake (..), stavewrite, renderFeather)
+import Stavework (stavewrite, renderFeather)
 import Stavemake (Staveware)
 import Control.Monad.State (MonadState(get))
+import Rime ((*^))
 
 
 newtype PauseState = PauseState Staveware
@@ -26,7 +27,7 @@ instance Stately PauseState where
     bg black
     renderFeather display time (staveware statewit)
     let (width, height) = size display
-    stavewrite display (Vertex2 (width/2) (height/2)) (Middle, Middle) (Vertex2 1 1) white "pɔz"
+    stavewrite display ((1/2) *^ Vertex2 width height) white "pɔz"
 
 makePauseState :: Staveware -> PauseState
 makePauseState = PauseState

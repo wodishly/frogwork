@@ -19,10 +19,10 @@ import Key (arrow)
 import Matrix (FrogVector, RenderView (size), aught, frogLookAt, frogZero, getOrthographicMatrix, getPerspectiveMatrix)
 import Mean (given, hit)
 import Random (FrogSeed, defaultSeed)
-import Rime (Point, Point3, asPoint, clamp)
+import Rime (Point, Point3, clamp)
 import Shade (Mesh, drawMesh, setMeshTransform)
 import Stavemake (Staveware)
-import Stavework (Stake (..), stavewrite)
+import Stavework (stavewrite)
 
 
 data Camera = Camera {
@@ -69,7 +69,7 @@ instance Stately PlayState where
         orthographicMatrix = getOrthographicMatrix display
         (width, height) = size display
     lift $ mapM_ (drawMesh (getPerspectiveMatrix display) viewMatrix orthographicMatrix time) (meshes statewit)
-    stavewrite display (Vertex2 (width/2) (height/2)) (Middle, Middle) (asPoint 1) lightwhelk "omg frogs!!!!"
+    stavewrite display (Vertex2 (width/2) (height/2)) lightwhelk "omg frogs!!!!"
 
 instance Show PlayState where
   show (PlayState _ _ _ f _ _ p c) = show f ++ show p ++ show c

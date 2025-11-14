@@ -14,7 +14,7 @@ import Blee (Blee, bg, blue, darkwhelk, lightwhelk, red)
 import Key (Keyset, keyBegun)
 import Matrix (RenderView (size))
 import Stavemake (Staveware)
-import Stavework (Stake (..), renderFeather, stavewrite)
+import Stavework (renderFeather, stavewrite)
 import Mean (ssss)
 
 
@@ -39,10 +39,10 @@ instance Stately TitleState where
     renderFeather display time (staveware statewit)
 
     let (width, height) = size display
-    stavewrite display (Vertex2 (width/2) (height*3/4)) (Middle, Middle) (Vertex2 1 1) lightwhelk "WƐLKƏM TU FRⱰGFƆRD!"
-    stavewrite display (Vertex2 (width/2) (height*3/7)) (Middle, Middle) (Vertex2 1 1) (choosewhelk statewit 0) "plej"
-    stavewrite display (Vertex2 (width/2) (height*2/7)) (Middle, Middle) (Vertex2 1 1) (choosewhelk statewit 1) "wɪlz"
-    stavewrite display (Vertex2 (width/2) (height  /7)) (Middle, Middle) (Vertex2 1 1) (choosewhelk statewit 2) "ɛnd"
+    stavewrite display (Vertex2 (width/2) (height*3/4)) lightwhelk "WƐLKƏM TU FRⱰGFƆRD!"
+    stavewrite display (Vertex2 (width/2) (height*3/7)) (choosewhelk statewit 0) "plej"
+    stavewrite display (Vertex2 (width/2) (height*2/7)) (choosewhelk statewit 1) "wɪlz"
+    stavewrite display (Vertex2 (width/2) (height  /7)) (choosewhelk statewit 2) "ɛnd"
 
 choosewhelk :: TitleState -> Int -> Blee
 choosewhelk statewit n = if ssss (mod.finger) (length.hand) statewit == n then red else blue

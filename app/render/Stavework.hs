@@ -45,8 +45,12 @@ import Time (Time)
 data Stake = North | South | East | West | Middle deriving (Show, Eq)
 type Stakes = Twain Stake
 
-stavewrite :: (Stately b) => RenderView -> Point -> Stakes -> Point -> Blee -> String -> StateT b IO ()
-stavewrite display stead stakes scale' blee spell =
+-- | Write at center-aligned scale 1.
+stavewrite :: (Stately b) => RenderView -> Point -> Blee -> String -> StateT b IO ()
+stavewrite = ((($ Vertex2 1 1) . ($ (Middle, Middle))) .) . stavewrite'
+
+stavewrite' :: (Stately b) => RenderView -> Point -> Stakes -> Point -> Blee -> String -> StateT b IO ()
+stavewrite' display stead stakes scale' blee spell =
   get >>= \statewit
   -> let (book, mesh) = staveware statewit in lift $
     useMesh mesh
