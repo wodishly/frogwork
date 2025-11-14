@@ -203,7 +203,6 @@ makeAssetMesh mprofile = do
   -- read all the data
   bytes <- summon (fromJust path)
   let frogFile = runGet frogify bytes
-  print frogFile
 
   -- position attribute
   vao' <- genObjectName
@@ -244,7 +243,6 @@ makeAssetMesh mprofile = do
   vertexAttribArray (AttribLocation 2) $= Enabled
 
   -- bone attributes
-  print $ boneInfluence frogFile
   case boneInfluence frogFile of
     4 -> do
       sbo <- genObjectName
@@ -262,8 +260,6 @@ makeAssetMesh mprofile = do
 
       withArray (weightBuffer frogFile) $ \ptr ->
         bufferData ArrayBuffer $= (bufferSize (weightBuffer frogFile), ptr, StaticDraw)
-
-      print $ weightBuffer frogFile
 
       vertexAttribPointer (AttribLocation 4)
         $= (ToFloat, VertexArrayDescriptor 4 Float 0 (bufferOffset 0))
