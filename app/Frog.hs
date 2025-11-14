@@ -11,9 +11,8 @@ import SDL.Input.Keyboard.Codes
 import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2), Vertex3 (Vertex3))
 
 import Key (Keyset, keyBegun, wasd)
-import Matrix (FrogVector, hat)
 import Mean (doBoth)
-import Rime (Point3, (*^), (<+>))
+import Rime (Point3, (*^), (<+>), FrogVector, hat)
 import State (News)
 import Time (Time, throttle)
 

@@ -1,16 +1,28 @@
 module Skeleton where
 
+import Data.Fixed (mod')
+import Data.List (findIndex)
 import Data.Maybe (fromMaybe)
-import Numeric.LinearAlgebra (flatten, toList)
 
+import Numeric.LinearAlgebra (dot, flatten, toList, (><))
 import Graphics.Rendering.OpenGL as GL
 
-import Matrix (FrogMatrix, toFrogList, FrogVertex (toFrogVector), fromAffine)
+import Matrix (FrogMatrix, fromAffine)
+import Rime (
+    FrogVertex (toFrogVector)
+  , Point3
+  , Point4
+  , clamp
+  , toFrogList
+  , (<+>)
+  , (<->)
+  , (*^)
+  , (^/)
+  )
+
 import MothSpell as MOTH
-import Data.List (findIndex)
-import Rime (clamp, (<->), (<+>), Point4, (^/), Point3)
-import Numeric.LinearAlgebra.HMatrix ( dot, (><) )
-import Data.Fixed (mod')
+
+type Interpolation a = a -> a -> Float -> a
 
 data Animation = Animation {
   aMoth :: MothFile
@@ -21,10 +33,10 @@ collectively :: Point3 -> Point4 -> Point3 -> FrogMatrix
 collectively position3d (Vertex4 x y z s) scale3d =
   fromAffine (toFrogList scale3d) (toFrogList position3d) <>
   (4><4) [
-    1 - 2*y**2 - 2*z**2, 2*x*y - 2*s*z, 2*x*z + 2*s*y, 0
-  , 2*x*y + 2*s*z, 1 - 2*x**2 - 2*z**2, 2*y*z - 2*s*x, 0
-  , 2*x*z - 2*s*y, 2*y*z + 2*s*x, 1 - 2*x**2 - 2*y**2, 0
-  , 0, 0, 0, 1
+    1 - 2*y**2 - 2*z**2,       2*x*y - 2*s*z,       2*x*z + 2*s*y, 0
+  ,       2*x*y + 2*s*z, 1 - 2*x**2 - 2*z**2,       2*y*z - 2*s*x, 0
+  ,       2*x*z - 2*s*y,       2*y*z + 2*s*x, 1 - 2*x**2 - 2*y**2, 0
+  ,                   0,                   0,                   0, 1
   ]
 
 worldify :: Maybe FrogMatrix -> [FrogMatrix] -> [MothBone] -> Int -> FrogMatrix
@@ -50,22 +62,21 @@ frame values times now =
       t = clamp (0, 1) $ (now - currentT) / (nextT - currentT)
   in (currentV, nextV, t)
 
-type Interpolation a = a -> a -> Float -> a
-
-{-# INLINE (*^) #-}
-(*^) :: (Functor f, Num a) => a -> f a -> f a
-(*^) a = fmap (a*)
-
+{-# INLINE swizzle #-}
 swizzle :: Vertex4 a -> Vertex4 a
-swizzle v = let Vertex4 y z real x = v in Vertex4 x y z real
+swizzle (Vertex4 y z real x) = Vertex4 x y z real
+
+{-# INLINE unswizzle #-}
+unswizzle :: Vertex4 a -> Vertex4 a
+unswizzle (Vertex4 x y z real) = Vertex4 y z real x
 
 slerp :: Point4 -> Point4 -> Float -> Point4
-slerp (Vertex4 qw qx qy qz) (Vertex4 pw px py pz) t
+slerp q' p' t
   | 1.0 - cosphi < 1e-8 = swizzle q
   | otherwise           = swizzle $ ((sin ((1-t)*phi) *^ q) <+> sin (t*phi) *^ f p) ^/ sin phi
   where
-    q = Vertex4 qx qy qz qw
-    p = Vertex4 px py pz pw
+    q = unswizzle q'
+    p = unswizzle p'
     dqp = dot (toFrogVector q) (toFrogVector p)
     (cosphi, f) = if dqp < 0 then (-dqp, (-1 *^)) else (dqp, id)
     phi = acos cosphi
@@ -73,16 +84,17 @@ slerp (Vertex4 qw qx qy qz) (Vertex4 pw px py pz) t
 vlerp :: (Applicative a, Num b) => a b -> a b -> b -> a b
 vlerp x y t = x <+> (t *^ (y <-> x))
 
-local :: Functor a => MothFile -> Float -> Interpolation (a GLfloat) -> (MothTale -> ([a GLfloat], [GLfloat])) -> [a GLfloat]
+local :: FrogVertex v => MothFile -> Float -> Interpolation v -> (MothTale -> ([v], [GLfloat])) -> [v]
 local mammoth now interpolate prop = map (\mothtale ->
         let (values, times) = prop mothtale
             (currentV, nextV, t) = frame values times now
         in interpolate currentV nextV t
        ) $ chronicles mammoth
 
-m3 :: (MothTale -> Mothly3) -> (MothTale -> ([Vertex3 GLfloat], [GLfloat]))
+m3 :: (MothTale -> Mothly3) -> MothTale -> ([Point3], [GLfloat])
 m3 prop t = let Mothly3 values times = prop t in (values, times)
-m4 :: (MothTale -> Mothly4) -> (MothTale -> ([Vertex4 GLfloat], [GLfloat]))
+
+m4 :: (MothTale -> Mothly4) -> MothTale -> ([Point4], [GLfloat])
 m4 prop t = let Mothly4 values times = prop t in (values, times)
 
 play :: Animation -> Float -> IO [GLfloat]
@@ -92,7 +104,7 @@ play animoth now' = do
       now = mod' (now' - aTime animoth) 1.0 -- 1.0 is duration
       confused = local mammoth now vlerp $ m3 MOTH.position
       confounded = local mammoth now slerp $ m4 MOTH.quaternion
-      dazed = local mammoth now vlerp $ m3  MOTH.scale
+      dazed = local mammoth now vlerp $ m3 MOTH.scale
 
   let be = zipWith3
       bonewards = be collectively confused confounded dazed

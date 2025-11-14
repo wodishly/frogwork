@@ -1,29 +1,26 @@
 {- HLINT ignore "Use head" -}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE InstanceSigs #-}
 module Matrix where
 
 import Numeric.LinearAlgebra as H (
-    Element
-  , Matrix
-  , Vector
-  , asColumn
+    asColumn
   , asRow
   , cross
   , fromList
   , fromRows
-  , size
   , toList
   , (><)
   , (|||)
   )
+import Graphics.Rendering.OpenGL (GLfloat)
 
-import Foreign (Int32)
-import Graphics.Rendering.OpenGL (GLfloat, Vertex, Vertex2 (Vertex2), Vertex3 (Vertex3), Vertex4 (Vertex4))
-
-import qualified SDL (Point (P), V2 (V2))
+import qualified Numeric.LinearAlgebra as H (
+    Element
+  , Matrix
+  , Vector
+  )
 
 import Mean (sq, dimensionError)
+import Rime
 
 
 -- * On the sundering of rimes.
@@ -35,8 +32,9 @@ import Mean (sq, dimensionError)
 --   the third that which in its own tongue is called Numeric.LinearAlgebra, in ours hmatrix.
 -- These all are of sundry shape and meaning.
 --
--- No reckoning ("computation") should be done with SDL. Any rime ("number")
---   begotten thereof should be cast at once, by way of @fromSDL@, to be of OpenGL.
+-- No reckoning ("computation") should be done with SDL.
+--   Any rime ("number") begotten thereof should be cast at once,
+--   by way of @fromSDL@, to be of OpenGL.
 -- Anything to be drawn must, at the end of its fare, be of hmatrix,
 --   either built by hand or cast by way of @toFrogVector@.
 -- All other reckoning should be of OpenGL; here @fromFrogVector@ is given
@@ -44,103 +42,24 @@ import Mean (sq, dimensionError)
 --
 -- The yokes ("types") of earthcraft follow as follows:
 --   Begotten of SDL alone:
---     - V2 Int32
---     - Point V2 Int32
+--     - @V2 Int32@
+--     - @Point V2 Int32@
+--     * Mind that @Point@ and @V2@ are from Linear.Affine and Linear.V2.
 --   Begotten of OpenGL alone:
---     - GLfloat
---     - [GLfloat], also called FrogList
---     - Vertex2 GLfloat, also called Point2, also called Point
---     - Vertex3 GLfloat, also called Point3
---     - [Vertex2 GLfloat], also called Polygon
---     - [Vertex3 GLfloat], also called Polyhedron
+--     - @GLfloat@
+--     - @[GLfloat]@, also called FrogList
+--     - @Vertex2 GLfloat@, also called @Point2@, also called @Point@
+--     - @Vertex3 GLfloat@, also called @Point3@
+--     - @[Vertex2 GLfloat]@, also called @Polygon@
+--     - @[Vertex3 GLfloat]@, also called @Polyhedron@
 --   Begotten of OpenGL and hmatrix:
---     - Vector GLfloat, also called FrogVector
---     - Matrix GLfloat, also called FrogMatrix
+--     - @Vector GLfloat@, also called @FrogVector@
+--     - @Matrix GLfloat@, also called @FrogMatrix@
+--     * Mind that @Vector@ is from Data.Vector.Storable.
 --
 -- Godspeed.
 
-class Vertex v => FrogVertex v where
--- | Shapeshifts SDL's @P V2 Int32@ to OpenGL's @Vertex2 GLfloat@.
-  fromSDL :: SDL.Point SDL.V2 Int32 -> v
-
--- | Shapeshifts OpenGL's @Vertex GLfloat@ to hmatrix's @Vector GLfloat@.
-  toFrogList :: v -> FrogList
-
--- | Shapeshifts OpenGL's @Vertex GLfloat@ to hmatrix's @Vector GLfloat@.
-  {-# INLINE toFrogVector #-}
-  toFrogVector :: v -> FrogVector
-  toFrogVector = fromList . toFrogList
-
--- | Shapeshifts hmatrix's @Vector GLfloat@ to OpenGL's @Vertex GLfloat@.
-  fromFrogVector :: FrogVector -> v
-
-  -- | componentwise multiplication
-  (^*^) :: v -> v -> v
-
-  hat :: v -> v
-
-instance FrogVertex (Vertex2 GLfloat) where
-  {-# INLINE fromSDL #-}
-  fromSDL (SDL.P (SDL.V2 x y)) = fromIntegral <$> Vertex2 x y
-  {-# INLINE toFrogList #-}
-  toFrogList (Vertex2 x y) = [x, y]
-  {-# INLINE fromFrogVector #-}
-  fromFrogVector v
-    | H.size v == 2 = let l = toList v in Vertex2 (l!!0) (l!!1)
-    | otherwise = dimensionError 2
-  {-# INLINE hat #-}
-  hat z
-    | nought z = z
-    | otherwise = (/norm z) <$> z
-  {-# INLINE (^*^) #-}
-  (^*^) (Vertex2 x y) (Vertex2 a b) = Vertex2 (x*a) (y*b)
-
-instance FrogVertex (Vertex3 GLfloat) where
-  {-# INLINE fromSDL #-}
-  fromSDL (SDL.P (SDL.V2 x y)) = fromIntegral <$> Vertex3 x y 0
-  {-# INLINE toFrogList #-}
-  toFrogList (Vertex3 x y z) = [x, y, z]
-  {-# INLINE fromFrogVector #-}
-  fromFrogVector v
-    | H.size v == 3 = let l = toList v in Vertex3 (l!!0) (l!!1) (l!!2)
-    | otherwise = dimensionError 3
-  {-# INLINE hat #-}
-  hat z
-    | nought z = z
-    | otherwise = (/norm z) <$> z
-  {-# INLINE (^*^) #-}
-  (^*^) (Vertex3 x y z) (Vertex3 a b c) = Vertex3 (x*a) (y*b) (z*c)
-
-instance FrogVertex (Vertex4 GLfloat) where
-  {-# INLINE fromSDL #-}
-  fromSDL :: SDL.Point SDL.V2 Int32 -> Vertex4 GLfloat
-  fromSDL (SDL.P (SDL.V2 x y)) = fromIntegral <$> Vertex4 x y 0 0
-  {-# INLINE toFrogList #-}
-  toFrogList (Vertex4 x y z w) = [x, y, z, w]
-  {-# INLINE fromFrogVector #-}
-  fromFrogVector v
-    | H.size v == 4 = let l = toList v in Vertex4 (l!!0) (l!!1) (l!!2) (l!!3)
-    | otherwise = dimensionError 3
-  {-# INLINE hat #-}
-  hat z
-    | nought z = z
-    | otherwise = (/norm z) <$> z
-
-{-# INLINE norm #-}
-norm :: FrogVertex v => v -> GLfloat
-norm = sqrt . sum . map sq . toFrogList
-
-{-# INLINE nought #-}
-nought :: FrogVertex v => v -> Bool
-nought = (== 0) . norm
-
-{-# INLINE aught #-}
-aught :: FrogVertex v => v -> Bool
-aught = not.nought
-
-type FrogList = [GLfloat]
-type FrogVector = Vector GLfloat
-type FrogMatrix = Matrix GLfloat
+type FrogMatrix = H.Matrix GLfloat
 
 data RenderView = RenderView {
     aspect :: GLfloat
@@ -188,33 +107,25 @@ getOrthographicMatrix (RenderView _ (w, h) _ _ _) = (4><4) [
   , 0,   0,   0,  1
   ]
 
-{-# INLINE frogZero #-}
-frogZero :: FrogVector
-frogZero = fromList [0, 0, 0]
-
-{-# INLINE frogUp #-}
-frogUp :: FrogVector
-frogUp = fromList [0, 1, 0]
-
 frogLookAt :: FrogVector -> FrogVector -> FrogMatrix
 frogLookAt eye target =
   let dir = normalize (eye - target)
-      right = normalize (cross frogUp dir)
+      right = normalize (cross (fromList [0, 1, 0]) dir)
       up = cross dir right
       rotation = fromRows [right, up, dir, fromList (replicate 3 0)] ||| col [0, 0, 0, 1]
       translation = fromTranslation (toList -eye)
   in rotation <> translation
 
 {-# INLINE row #-}
-row :: Element t => [t] -> Matrix t
+row :: H.Element t => [t] -> H.Matrix t
 row = asRow.fromList
 
 {-# INLINE col #-}
-col :: Element t => [t] -> Matrix t
+col :: H.Element t => [t] -> H.Matrix t
 col = asColumn.fromList
 
 {-# INLINE normalize #-}
-normalize :: (Fractional t, Element t, Floating t) => Vector t -> Vector t
+normalize :: (Fractional t, H.Element t, Floating t) => H.Vector t -> H.Vector t
 normalize v =
   let l = toList v
       d = sqrt $ sum $ map sq l

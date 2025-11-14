@@ -16,10 +16,10 @@ import State (News, StateName (..), Stately (..))
 
 import Blee (bg, black, lightwhelk)
 import Key (arrow)
-import Matrix (FrogVector, RenderView (size), aught, frogLookAt, frogZero, getOrthographicMatrix, getPerspectiveMatrix)
+import Matrix (RenderView (size), frogLookAt, getOrthographicMatrix, getPerspectiveMatrix)
 import Mean (given, hit)
 import Random (FrogSeed, defaultSeed)
-import Rime (Point, Point3, clamp, asPoint)
+import Rime (Point, Point3, clamp, asPoint, FrogVector, aught)
 import Shade (Mesh, drawMesh, setMeshTransform)
 import Stavemake (Staveware)
 import Stavework (stavewrite, Stake (..))
@@ -33,7 +33,7 @@ data Camera = Camera {
 
 makeCamera :: Camera
 makeCamera = Camera {
-  cPosition = frogZero
+  cPosition = fromList [0, 0, 0]
 , cTarget = fromList [0, 0, 1]
 }
 
