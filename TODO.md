@@ -1,17 +1,20 @@
+- sound
+- loudness
 - staves
   - [🌗] missing staves
   - [🌑] staves that slant
   - [🌑] staves that stir
   - [🌑] staves that follow
   - [🌑] the staveframe
-- loudness
-- animations (in progress, `*.moth` files)
+- animations (`*.moth` files complete!)
   - [⭐️] parser 
   - [⭐️] serializer
-  - [🌗] store bone info in `*.frog` files
-  - [🌑] rest pose 
-  - [🌑] interpolate keyframes 
-  - [🌑] multiply in vertex shader
+  - [⭐️] store bone info in `*.frog` files
+  - [⭐️] animation vertex shader
+  - [⭐️] rest pose 
+  - [⭐️] interpolate keyframes 
+  - [🌑] clean up code
+  - [🌑] animation controls (pause/play, etc.)
 - uniform buffer objects for shared data
 - lighting
   - [⭐️] normals

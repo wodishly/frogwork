@@ -65,19 +65,23 @@ import PlayState (PlayState)
 import FastenShade (
     ShaderProfile (..)
   , SimpleMeshProfile (..)
-  , defaultAssetMeshProfile
+
   , defaultSimpleMeshProfile
   , iBuffer
   , quadUvBuffer
   )
 
+import Matrix
+    ( RenderView, fromTranslation, fromAffine, RenderView(..) )
+import Mean (full, weep, twimap)
+import Shade (Mesh (meshAnimation), makeAsset, makeAssetMesh, makeSimpleMesh, setMeshTransform)
 import Happen (Mousewit, unwrapHappenPointer, unwrapHappenWheel, unwrapHappenWindow, Overwindow)
 import Key (Keyset, anyKeysBegun, keyBegun, listen, unkeys)
-import Matrix (RenderView (..), fromTranslation)
-import Mean (full, weep, twimap)
-import Shade (Mesh, makeAsset, makeAssetMesh, makeSimpleMesh, setMeshTransform)
 import Stavemake (Staveware, makeFeather)
 import Time (Time, beginTime, keepTime)
+import Spell (summon, unwrappingly)
+import MothSpell (mothify)
+import Skeleton (Animation(..))
 
 
 data Allwit = Allwit {
@@ -117,8 +121,16 @@ makeAllwit = Allwit
 
 begetMeshes :: IO (Staveware, [Mesh])
 begetMeshes = do
-  froggy <- makeAssetMesh defaultAssetMeshProfile
-    >>= setMeshTransform (fromTranslation [0, 0, 0])
+  cocoon <- summon "assets/bunny.moth"
+  let mothFile = unwrappingly mothify cocoon
+  -- print mothFile
+
+  bun <- makeAssetMesh (makeAsset "bunny")
+  t <- SDL.ticks
+  let now = (fromIntegral t / 1000) :: Float
+      maamimation = Animation { aMoth = mothFile, aTime = now }
+      bunny = bun { meshAnimation = Just maamimation }
+  froggy <- setMeshTransform (fromAffine [1.0, 1.0, 1.0] [0, 0, 0]) bunny
 
   earth <- makeSimpleMesh defaultSimpleMeshProfile
 

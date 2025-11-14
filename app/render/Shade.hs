@@ -9,6 +9,7 @@ module Shade (
 , makeAssetMesh
 , makeSimpleMesh
 , uploadTexture
+, Animation (..)
 ) where
 
 import Control.Monad (unless)
@@ -17,7 +18,7 @@ import Data.Bifunctor (Bifunctor (second))
 import Data.Binary.Get (runGet)
 import Data.HashMap.Lazy ((!))
 import Data.Maybe (fromJust)
-import Numeric.LinearAlgebra (flatten, ident)
+import Numeric.LinearAlgebra (flatten)
 import Text.Printf (printf)
 
 import Foreign (Int32, Ptr, Storable, new, nullPtr, plusPtr, sizeOf, withArray, Word8)
@@ -30,11 +31,15 @@ import qualified Graphics.GL as GLRaw (glUniformMatrix4fv)
 
 import FastenMain (assetsBasePath, shaderBasePath)
 import FastenShade
-import File
 import Matrix (FrogMatrix)
 import Mean (Twain, twimap, twin, doBoth)
-import Time (Time (lifetime))
-
+import FrogSpell
+import MothSpell as MOTH
+import Spell (summon)
+import Time
+import Numeric.LinearAlgebra.HMatrix ( ident )
+import Skeleton (Animation (..), play)
+import Data.Vector.Storable (Vector)
 
 drawFaces :: Int32 -> IO ()
 drawFaces count = drawElements Triangles count UnsignedInt (bufferOffset 0)
@@ -61,11 +66,12 @@ data Mesh = Mesh {
   , _uniformMap :: UniformMap
   , elementCount :: Int32
   , transform :: FrogMatrix
+  , meshAnimation :: Maybe Animation
 }
 
 instance Programful Mesh where
   program = _program
-  uniformMap (Mesh _ _ _ _ _ _ x _ _) = x
+  uniformMap (Mesh _ _ _ _ _ _ x _ _ _) = x
 
 data Concoction = Concoction Program UniformMap (Maybe String)
 
@@ -74,7 +80,7 @@ instance Programful Concoction where
   uniformMap (Concoction _ x _) = x
 
 instance Pathlikeful Maybe Concoction where
-  filePath (Concoction _ _ x) = x
+  frogFilePath (Concoction _ _ x) = x
 
 makeAsset :: String -> AssetMeshProfile
 makeAsset = AssetMeshProfile
@@ -125,7 +131,7 @@ brewProfile :: MeshProfile -> IO Concoction
 brewProfile mProfile = do
   -- parse profile
   let (sProfile, path) = case mProfile of
-        Left assetful -> (shaderProfile assetful, Just . asset . runIdentity . filePath $ assetful)
+        Left assetful -> (shaderProfile assetful, Just . asset . runIdentity . frogFilePath $ assetful)
         Right assetless -> (shaderProfile assetless, Nothing)
 
   p <- brew (paths sProfile)
@@ -139,44 +145,44 @@ useMesh mesh = do
   bindVertexArrayObject $= Just (vao mesh)
   textureBinding Texture2D $= tex mesh
 
+-- idk if i like this, but something like this
+allocVector :: Storable a => Mesh -> Vector a -> String -> (GLint -> (Ptr a -> IO ())) -> IO ()
+allocVector mesh prop uniformKey callback = case HM.lookup uniformKey (uniformMap mesh) of
+    Just uLoc -> do
+      UniformLocation location <- get uLoc
+      _ <- S.unsafeWith prop (callback location)
+      return ()
+    _ -> return ()
+
+uniformMatrix :: GLint -> Ptr GLfloat -> IO ()
+uniformMatrix loc = GLRaw.glUniformMatrix4fv loc 1 1
+
 drawMesh :: FrogMatrix -> FrogMatrix -> FrogMatrix -> Time -> Mesh -> IO ()
 drawMesh projectionMatrix viewMatrix orthographicMatrix time mesh = do
   useMesh mesh
 
-  -- the bindings seem to be broken here? :(
-  -- projLocation <- uniforms HM.! "u_projection_matrix"
-  -- m <- newMatrix ColumnMajor (S.toList projectionMatrix) :: IO (GLmatrix GLfloat)
-  -- withMatrix m $ const $ uniformv projLocation 1
+  allocVector mesh (flatten $ transform mesh) "u_model_matrix" uniformMatrix
+  -- TODO: move these to a Uniform Buffer Object
+  allocVector mesh (flatten projectionMatrix) "u_projection_matrix" uniformMatrix
+  allocVector mesh (flatten viewMatrix) "u_view_matrix" uniformMatrix
+  allocVector mesh (flatten orthographicMatrix) "u_orthographic_matrix" uniformMatrix
 
-  case HM.lookup "u_model_matrix" (uniformMap mesh) of
-    Just uLoc -> do
-      UniformLocation mLocation <- get uLoc
-      S.unsafeWith (flatten $ transform mesh) (GLRaw.glUniformMatrix4fv mLocation 1 1)
-    _ -> return ()
-
-  -- -- TODO: move these to a Uniform Buffer Object
-  case HM.lookup "u_projection_matrix" (uniformMap mesh) of
-    Just uLoc -> do
-      UniformLocation projLocation <- get uLoc
-      S.unsafeWith (flatten projectionMatrix) (GLRaw.glUniformMatrix4fv projLocation 1 1)
-    _ -> return ()
-
-  case HM.lookup "u_orthographic_matrix" (uniformMap mesh) of
-    Just uLoc -> do
-      UniformLocation orthLocation <- get uLoc
-      S.unsafeWith (flatten orthographicMatrix) (GLRaw.glUniformMatrix4fv orthLocation 1 1)
-    _ -> return ()
-
-  case HM.lookup "u_view_matrix" (uniformMap mesh) of
-    Just uLoc -> do
-      UniformLocation viewLocation <- get uLoc
-      S.unsafeWith (flatten viewMatrix) (GLRaw.glUniformMatrix4fv viewLocation 1 1)
-    _ -> return ()
+  let now = (fromIntegral (lifetime time) / 1000) :: Float
+  case meshAnimation mesh of
+    Just animation -> do
+      skellington <- play animation now
+      case HM.lookup "u_bone_matrices" (uniformMap mesh) of
+        Just uLoc -> do
+          UniformLocation bonesLocation <- get uLoc
+          withArray skellington $
+            GLRaw.glUniformMatrix4fv bonesLocation (fromIntegral $ boneCount $ aMoth animation) 1
+        _ -> return ()
+    Nothing -> return ()
 
   case HM.lookup "u_time" (uniformMap mesh) of
     Just _ -> do
       timeLocation <- uniformMap mesh ! "u_time"
-      (uniform timeLocation :: StateVar GLfloat) $= (fromIntegral (lifetime time) / 1000)
+      (uniform timeLocation :: StateVar GLfloat) $= now
     _ -> return ()
 
   case HM.lookup "u_texture" (uniformMap mesh) of
@@ -189,13 +195,15 @@ drawMesh projectionMatrix viewMatrix orthographicMatrix time mesh = do
 
   drawFaces (elementCount mesh)
 
+
 makeAssetMesh :: AssetMeshProfile -> IO Mesh
 makeAssetMesh mprofile = do
   (Concoction pro hmap path) <- brewProfile (Left mprofile)
 
   -- read all the data
-  bytes <- getFrogBytes (fromJust path)
-  let frogFile = runGet parseFrogFile bytes
+  bytes <- summon (fromJust path)
+  let frogFile = runGet frogify bytes
+  print frogFile
 
   -- position attribute
   vao' <- genObjectName
@@ -235,6 +243,35 @@ makeAssetMesh mprofile = do
     $= (ToFloat, VertexArrayDescriptor 3 Float 0 (bufferOffset 0))
   vertexAttribArray (AttribLocation 2) $= Enabled
 
+  -- bone attributes
+  print $ boneInfluence frogFile
+  case boneInfluence frogFile of
+    4 -> do
+      sbo <- genObjectName
+      bindBuffer ArrayBuffer $= Just sbo
+
+      withArray (boneBuffer frogFile) $ \ptr ->
+        bufferData ArrayBuffer $= (bufferSize (boneBuffer frogFile), ptr, StaticDraw)
+
+      vertexAttribPointer (AttribLocation 3)
+        $= (KeepIntegral, VertexArrayDescriptor 4 Int 0 (bufferOffset 0))
+      vertexAttribArray (AttribLocation 3) $= Enabled
+
+      wbo <- genObjectName
+      bindBuffer ArrayBuffer $= Just wbo
+
+      withArray (weightBuffer frogFile) $ \ptr ->
+        bufferData ArrayBuffer $= (bufferSize (weightBuffer frogFile), ptr, StaticDraw)
+
+      print $ weightBuffer frogFile
+
+      vertexAttribPointer (AttribLocation 4)
+        $= (ToFloat, VertexArrayDescriptor 4 Float 0 (bufferOffset 0))
+      vertexAttribArray (AttribLocation 4) $= Enabled
+
+
+    _ -> print ("tfw no 🅱ones" :: String) 
+
   -- index buffer
   ebo <- genObjectName
   bindBuffer ElementArrayBuffer $= Just ebo
@@ -259,6 +296,7 @@ makeAssetMesh mprofile = do
     hmap
     (indexCount frogFile)
     (ident 4)
+    Nothing
 
 uploadTexture :: PixelFormat -> (GLsizei, GLsizei) -> Ptr Word8 -> IO TextureObject
 uploadTexture format (w, h) pointer = do
@@ -333,3 +371,4 @@ makeSimpleMesh profile = do
     hmap
     (fromIntegral $ length ib)
     (ident 4)
+    Nothing

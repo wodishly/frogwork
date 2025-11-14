@@ -25,7 +25,7 @@ class Shaderful a where
   shaderProfile :: a -> ShaderProfile
 
 class Monad m => Pathlikeful m a where
-  filePath :: a -> m String
+  frogFilePath :: a -> m String
 
 class Programful a where
   program :: a -> Program
@@ -38,7 +38,7 @@ instance Shaderful AssetMeshProfile where
   shaderProfile _ = defaultAssetShaderProfile
 
 instance Pathlikeful Identity AssetMeshProfile where
-  filePath (AssetMeshProfile s) = Identity s
+  frogFilePath (AssetMeshProfile s) = Identity s
 
 data SimpleMeshProfile = SimpleMeshProfile {
     vbuffer :: Polyhedron
@@ -64,7 +64,7 @@ defaultAssetMeshProfile = AssetMeshProfile "test"
 defaultAssetShaderProfile :: ShaderProfile
 defaultAssetShaderProfile = ShaderProfile {
     names = ("vertex", "texture_fragment")
-  , uniforms = ["u_projection_matrix", "u_model_matrix", "u_texture", "u_view_matrix", "u_time"]
+  , uniforms = ["u_projection_matrix", "u_model_matrix", "u_texture", "u_view_matrix", "u_bone_matrices", "u_time"]
 }
 
 defaultSimpleMeshProfile :: SimpleMeshProfile

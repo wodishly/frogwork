@@ -1,5 +1,6 @@
 {- HLINT ignore "Use head" -}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE InstanceSigs #-}
 module Matrix where
 
 import Numeric.LinearAlgebra as H (
@@ -18,7 +19,7 @@ import Numeric.LinearAlgebra as H (
   )
 
 import Foreign (Int32)
-import Graphics.Rendering.OpenGL (GLfloat, Vertex, Vertex2 (Vertex2), Vertex3 (Vertex3))
+import Graphics.Rendering.OpenGL (GLfloat, Vertex, Vertex2 (Vertex2), Vertex3 (Vertex3), Vertex4 (Vertex4))
 
 import qualified SDL (Point (P), V2 (V2))
 
@@ -110,6 +111,21 @@ instance FrogVertex (Vertex3 GLfloat) where
   {-# INLINE (^*^) #-}
   (^*^) (Vertex3 x y z) (Vertex3 a b c) = Vertex3 (x*a) (y*b) (z*c)
 
+instance FrogVertex (Vertex4 GLfloat) where
+  {-# INLINE fromSDL #-}
+  fromSDL :: SDL.Point SDL.V2 Int32 -> Vertex4 GLfloat
+  fromSDL (SDL.P (SDL.V2 x y)) = fromIntegral <$> Vertex4 x y 0 0
+  {-# INLINE toFrogList #-}
+  toFrogList (Vertex4 x y z w) = [x, y, z, w]
+  {-# INLINE fromFrogVector #-}
+  fromFrogVector v
+    | H.size v == 4 = let l = toList v in Vertex4 (l!!0) (l!!1) (l!!2) (l!!3)
+    | otherwise = dimensionError 3
+  {-# INLINE hat #-}
+  hat z
+    | nought z = z
+    | otherwise = (/norm z) <$> z
+
 {-# INLINE norm #-}
 norm :: FrogVertex v => v -> GLfloat
 norm = sqrt . sum . map sq . toFrogList
@@ -143,6 +159,16 @@ fromTranslation [x, y, z] = (4><4) [
   0, 0, 0, 1
   ]
 fromTranslation _ = dimensionError 3
+
+{-# INLINE fromAffine #-}
+fromAffine :: FrogList -> FrogList -> FrogMatrix
+fromAffine [s, t, u] [x, y, z] = (4><4) [
+  s, 0, 0, x,
+  0, t, 0, y,
+  0, 0, u, z,
+  0, 0, 0, 1
+  ]
+fromAffine _ _ = dimensionError 3
 
 {-# INLINE getPerspectiveMatrix #-}
 getPerspectiveMatrix :: RenderView -> FrogMatrix
