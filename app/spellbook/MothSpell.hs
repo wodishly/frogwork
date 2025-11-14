@@ -12,8 +12,14 @@ import Matrix (FrogMatrix)
 import Spell ((✿), int, u8, s32, f32, f32x3, f32x4)
 
 data MothFile = MothFile {
+  tomeCount :: Word8,
   boneCount :: Word8,
   skeleton :: [MothBone],
+  library :: [MothTome]
+} deriving (Show, Eq)
+
+data MothTome = MothTome {
+  duration :: GLfloat,
   chronicles :: [MothTale]
 } deriving (Show, Eq)
 
@@ -44,6 +50,14 @@ exoskeleton = do
   floats <- 16 ✿ f32
   return $! MothBone parent $ (4><4) floats
 
+tome :: Word8 -> Get MothTome
+tome bonemany = do
+  time <- f32
+  let times = int bonemany
+      tell = times
+  tales <- tell ✿ tale
+  return $! MothTome time tales
+
 tale :: Get MothTale
 tale = do
   t <- threetale
@@ -69,15 +83,13 @@ fourtale = do
 
 mothify :: Get MothFile
 mothify = do
+  tomemany <- u8
   bonemany <- u8
   bones <- bonemany ✿ exoskeleton
-
-  let times = int bonemany
-      tell = times
-  tales <- tell ✿ tale
-
+  tomes <- tomemany ✿ tome bonemany
   return $!
     MothFile 
+      tomemany
       bonemany 
       bones
-      tales
+      tomes

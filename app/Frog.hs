@@ -33,7 +33,7 @@ makeFrog = Frogwit {
     position = Vertex3 0 0 0
   , dy = 0
   , speed = 2
-  , aLeap = 4
+  , aLeap = 5
   , weight = -8
   , leapCount = 0
   , utleaps = 2
@@ -79,6 +79,9 @@ walk (keys, _, _, time) forward = do
     then put frogwit { position = position' } >> return True
     else return False
 
-moveFrog :: News -> FrogVector -> StateT Frogwit IO Bool
+moveFrog :: News -> FrogVector -> StateT Frogwit IO (Bool, Bool)
 moveFrog news@(keys, _, _, time) forward = do
-  or <$> sequence [walk news forward, leap keys, fall time]
+  didJump <- leap keys
+  didFall <- fall time
+  didMove <- or <$> sequence [walk news forward, return didJump, return didFall]
+  return (didMove, didJump || didFall)

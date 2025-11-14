@@ -11,11 +11,30 @@ import Data.List (findIndex)
 import Rime (clamp, (<->), (<+>), Point4, (^/), Point3)
 import Numeric.LinearAlgebra.HMatrix ( dot, (><) )
 import Data.Fixed (mod')
+import Time (doCurrentTime)
 
 data Animation = Animation {
   aMoth :: MothFile
 , aTime :: Float
-}
+, tomeIndex :: Int
+, playing :: Bool
+, looped :: Bool
+} deriving (Show)
+
+makeAnimation :: MothFile -> IO Animation
+makeAnimation mothFile = do
+  now <- doCurrentTime
+  return Animation { aMoth = mothFile, aTime = now, tomeIndex = -1, playing = False, looped = False }
+
+play :: Animation -> Int -> IO Animation
+play a clip = do
+  t <- if not (playing a) || clip /= tomeIndex a then doCurrentTime else return $ aTime a
+  return a { playing = True, tomeIndex = clip, aTime = t }
+
+once :: Animation -> Animation
+once a = a { looped = False }
+evermore :: Animation -> Animation
+evermore a = a { looped = True }
 
 collectively :: Point3 -> Point4 -> Point3 -> FrogMatrix
 collectively position3d (Vertex4 x y z s) scale3d =
@@ -73,7 +92,7 @@ slerp (Vertex4 qw qx qy qz) (Vertex4 pw px py pz) t
 vlerp :: (Applicative a, Num b) => a b -> a b -> b -> a b
 vlerp x y t = x <+> (t *^ (y <-> x))
 
-local :: Functor a => MothFile -> Float -> Interpolation (a GLfloat) -> (MothTale -> ([a GLfloat], [GLfloat])) -> [a GLfloat]
+local :: Functor a => MothTome -> Float -> Interpolation (a GLfloat) -> (MothTale -> ([a GLfloat], [GLfloat])) -> [a GLfloat]
 local mammoth now interpolate prop = map (\mothtale ->
         let (values, times) = prop mothtale
             (currentV, nextV, t) = frame values times now
@@ -85,11 +104,17 @@ m3 prop t = let Mothly3 values times = prop t in (values, times)
 m4 :: (MothTale -> Mothly4) -> (MothTale -> ([Vertex4 GLfloat], [GLfloat]))
 m4 prop t = let Mothly4 values times = prop t in (values, times)
 
-play :: Animation -> Float -> IO [GLfloat]
-play animoth now' = do
-  let mammoth = aMoth animoth
-      fossil = skeleton mammoth
-      now = mod' (now' - aTime animoth) 1.0 -- 1.0 is duration
+continue :: Animation -> Float -> IO ([GLfloat], Bool)
+continue animoth now' = do
+  let moth = aMoth animoth
+      mammoth = library moth !! tomeIndex animoth
+      fossil = skeleton moth
+      time = now' - aTime animoth
+      forever = looped animoth
+      now = if forever
+        then mod' time (MOTH.duration mammoth)
+        else clamp (0, MOTH.duration mammoth) time
+      finished = not forever && (time >= MOTH.duration mammoth)
       confused = local mammoth now vlerp $ m3 MOTH.position
       confounded = local mammoth now slerp $ m4 MOTH.quaternion
       dazed = local mammoth now vlerp $ m3  MOTH.scale
@@ -98,4 +123,4 @@ play animoth now' = do
       bonewards = be collectively confused confounded dazed
       ma'ammoth = map (worldify Nothing bonewards fossil) [0..(length fossil - 1)]
 
-  return $ concatMap (toList . flatten) ma'ammoth
+  return (concatMap (toList . flatten) ma'ammoth, finished)

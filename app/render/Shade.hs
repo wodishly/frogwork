@@ -38,7 +38,7 @@ import MothSpell as MOTH
 import Spell (summon)
 import Time
 import Numeric.LinearAlgebra.HMatrix ( ident )
-import Skeleton (Animation (..), play)
+import Skeleton (Animation (..), continue)
 import Data.Vector.Storable (Vector)
 
 drawFaces :: Int32 -> IO ()
@@ -168,16 +168,17 @@ drawMesh projectionMatrix viewMatrix orthographicMatrix time mesh = do
   allocVector mesh (flatten orthographicMatrix) "u_orthographic_matrix" uniformMatrix
 
   let now = (fromIntegral (lifetime time) / 1000) :: Float
-  case meshAnimation mesh of
-    Just animation -> do
-      skellington <- play animation now
+      meshmoth = meshAnimation mesh
+  case (meshmoth, maybe False playing meshmoth) of
+    (Just animation, True) -> do
+      (skellington, _finished) <- continue animation now
       case HM.lookup "u_bone_matrices" (uniformMap mesh) of
         Just uLoc -> do
           UniformLocation bonesLocation <- get uLoc
           withArray skellington $
             GLRaw.glUniformMatrix4fv bonesLocation (fromIntegral $ boneCount $ aMoth animation) 1
         _ -> return ()
-    Nothing -> return ()
+    _ -> return ()
 
   case HM.lookup "u_time" (uniformMap mesh) of
     Just _ -> do
@@ -203,7 +204,6 @@ makeAssetMesh mprofile = do
   -- read all the data
   bytes <- summon (fromJust path)
   let frogFile = runGet frogify bytes
-  print frogFile
 
   -- position attribute
   vao' <- genObjectName
@@ -244,7 +244,6 @@ makeAssetMesh mprofile = do
   vertexAttribArray (AttribLocation 2) $= Enabled
 
   -- bone attributes
-  print $ boneInfluence frogFile
   case boneInfluence frogFile of
     4 -> do
       sbo <- genObjectName
@@ -262,8 +261,6 @@ makeAssetMesh mprofile = do
 
       withArray (weightBuffer frogFile) $ \ptr ->
         bufferData ArrayBuffer $= (bufferSize (weightBuffer frogFile), ptr, StaticDraw)
-
-      print $ weightBuffer frogFile
 
       vertexAttribPointer (AttribLocation 4)
         $= (ToFloat, VertexArrayDescriptor 4 Float 0 (bufferOffset 0))

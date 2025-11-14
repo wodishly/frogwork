@@ -72,14 +72,14 @@ import FastenShade (
   )
 
 import Matrix (RenderView (..), fromAffine, fromTranslation)
-import Mean (twimap, full, weep, ssss)
+import Mean (twimap, full, weep, ssss, ly)
 import Time (Time, beginTime, keepTime)
 
 import Happen (Mousewit, Overwindow, unwrapHappenPointer, unwrapHappenWheel, unwrapHappenWindow)
 import Key (Keyset, anyKeysBegun, keyBegun, listen, unkeys)
 
 import MothSpell (mothify)
-import Skeleton (Animation (..))
+import Skeleton (Animation (..), makeAnimation, play, evermore)
 import Shade (Mesh (meshAnimation), makeAsset, makeAssetMesh, makeSimpleMesh, setMeshTransform)
 import Spell (summon, unwrappingly)
 import Stavemake (Staveware, makeFeather)
@@ -130,14 +130,12 @@ begetMeshes :: IO (Staveware, [Mesh])
 begetMeshes = do
   cocoon <- summon "assets/bunny.moth"
   let mothFile = unwrappingly mothify cocoon
-  -- print mothFile
 
-  bun <- makeAssetMesh (makeAsset "bunny")
-  t <- SDL.ticks
-  let now = (fromIntegral t / 1000) :: Float
-      maamimation = Animation { aMoth = mothFile, aTime = now }
-      bunny = bun { meshAnimation = Just maamimation }
-  froggy <- setMeshTransform (fromAffine [1.0, 1.0, 1.0] [0, 0, 0]) bunny
+  bun <- makeAssetMesh $ makeAsset "bunny"
+  bunAnimation' <- makeAnimation mothFile
+  bunAnimation <- (play . evermore) bunAnimation' 5
+  froggy <- setMeshTransform (fromAffine [1.0, 1.0, 1.0] [0, 0, 0]) $
+    bun { meshAnimation = Just bunAnimation }
 
   earth <- makeSimpleMesh defaultSimpleMeshProfile
 
