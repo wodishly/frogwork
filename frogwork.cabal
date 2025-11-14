@@ -75,6 +75,8 @@ executable frogwork
     Shade
     Skeleton
     Stave
+    Stavemake
+    Stavework
 
     Breath
     Loud
@@ -88,10 +90,11 @@ executable frogwork
     Spell
 
     MenuState
+    State
+    TitleState
     PauseState
     PlayState
 
-    State
     Frog
     Game
 
@@ -121,6 +124,7 @@ executable frogwork
     , random
     , vector
     , freetype2
+    , split
 
   -- Directories containing source files.
   hs-source-dirs: app

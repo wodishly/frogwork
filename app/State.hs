@@ -11,17 +11,18 @@ module State (
 ) where
 
 import Control.Lens (makeLenses)
-import Control.Monad.State (MonadTrans (lift), StateT)
+import Control.Monad.State (StateT, MonadTrans (lift))
 
-import Key (KeySet)
+import Happen (Mousewit)
+import Key (Keyset)
 import Matrix (RenderView)
-import Rime (Point)
+import Stavemake (Staveware)
 import Time (Time)
 
 
-type News = (KeySet, Point, Point, RenderView, Time)
+type News = (Keyset, Mousewit, RenderView, Time)
 
-data StateName = PlayName | PauseName | MenuName deriving (Show, Eq, Ord)
+data StateName = PlayName | PauseName | TitleName deriving (Show, Eq, Ord)
 
 data Settings = Settings {
   _isShowingTicks :: Bool
@@ -39,12 +40,16 @@ makeSettings = Settings {
 
 class Stately a where
   name :: a -> StateName
+  staveware :: a -> Staveware
+
   update :: News -> StateT a IO ()
   render :: News -> StateT a IO ()
+
   loop :: News -> StateT a IO ()
   loop news = do
     update news
     render news
 
+-- | Do NOT give this (Stately b) =>, or else we cannot @preent@ from @Allwit@.
 preent :: Show a => a -> StateT b IO ()
 preent = lift . print

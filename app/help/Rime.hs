@@ -1,8 +1,12 @@
 module Rime where
 
+<<<<<<< HEAD
 import Graphics.Rendering.OpenGL (GLfloat, GLint, Vertex2, Vertex3, Vertex4)
+=======
+import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2), Vertex3)
+>>>>>>> main
 
-import Mean (doBoth)
+import Mean (doBoth, toBoth)
 
 
 type Point2 = Vertex2 GLfloat
@@ -16,6 +20,10 @@ type Polytope = [Point4]
 
 type LatticePoint4 = Vertex4 GLint
 type ZPolytope = [LatticePoint4]
+
+{-# INLINE asPoint #-}
+asPoint :: Real a => a -> Point
+asPoint = toBoth Vertex2 . realToFrac
 
 {-# INLINE average #-}
 average :: Real a => [a] -> GLfloat

@@ -1,4 +1,5 @@
 {- HLINT ignore "Use head" -}
+{-# OPTIONS_GHC -Wno-type-defaults #-}
 module PlayState (
   PlayState (..)
 , makePlayState
@@ -8,7 +9,7 @@ import Control.Monad (when)
 import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT (runStateT))
 import Numeric.LinearAlgebra (Extractor (..), flatten, fromColumns, fromList, toColumns, (!), (??), (¿))
 
-import Graphics.Rendering.OpenGL as GL (Program, Vertex2 (Vertex2), VertexArrayObject, Vertex3 (Vertex3), GLfloat)
+import Graphics.Rendering.OpenGL as GL (GLfloat, Program, Vertex2 (Vertex2), Vertex3 (Vertex3), VertexArrayObject)
 
 import Frog (Frogwit (position), makeFrog, moveFrog)
 import State (News, StateName (..), Stately (..))
@@ -18,9 +19,11 @@ import Key (arrow)
 import Matrix (FrogVector, RenderView (size), aught, frogLookAt, frogZero, getOrthographicMatrix, getPerspectiveMatrix)
 import Mean (given, hit)
 import Random (FrogSeed, defaultSeed)
-import Rime (Point, Point3, clamp)
+import Rime (Point, Point3, clamp, asPoint)
 import Shade (Mesh, drawMesh, setMeshTransform)
-import Stave (Staveware, stavewrite)
+import Stavemake (Staveware)
+import Stavework (stavewrite, Stake (..))
+default (Int, Float)
 
 
 data Camera = Camera {
@@ -36,7 +39,7 @@ makeCamera = Camera {
 
 data PlayState = PlayState {
   seed :: FrogSeed
-, staveware :: Staveware
+, _staveware :: Staveware
 , meshes :: [Mesh]
 , frog :: Frogwit
 , euler :: Point
@@ -47,21 +50,26 @@ data PlayState = PlayState {
 
 instance Stately PlayState where
   name _ = PlayName
+  staveware = _staveware
   update news = do
     cam <- updateCamera news
     let viewMatrix = frogLookAt (cPosition cam) (cTarget cam)
         forward = flatten $ (viewMatrix ¿ [2]) ?? (Take 3, All)
     updateFrog news forward
 
-  render (_, _, _, display, time) = do
+  render (_, _, display, time) = do
     statewit <- get
     bg black
+
+    -- why does this line make the last written stave have a black background?
+    -- renderFeather display time (staveware statewit)
+
     let cam = camera statewit
     let viewMatrix = frogLookAt (cPosition cam) (cTarget cam)
         orthographicMatrix = getOrthographicMatrix display
         (width, height) = size display
     lift $ mapM_ (drawMesh (getPerspectiveMatrix display) viewMatrix orthographicMatrix time) (meshes statewit)
-    lift $ stavewrite (staveware statewit) (Vertex2 (0.1*width) $ 0.9*height) 1 lightwhelk "omg frogs!!!!"
+    stavewrite (Vertex2 (width/2) (height/2)) (Middle, Middle) (asPoint 1) lightwhelk "omg frogs!!!!"
 
 instance Show PlayState where
   show (PlayState _ _ _ f _ _ p c) = show f ++ show p ++ show c
@@ -69,7 +77,7 @@ instance Show PlayState where
 makePlayState :: Staveware -> [Mesh] -> PlayState
 makePlayState ware ms = PlayState {
   seed = defaultSeed
-, staveware = ware
+, _staveware = ware
 , meshes = ms
 , frog = makeFrog
 , euler = Vertex2 0.3 1.57079633
@@ -79,10 +87,10 @@ makePlayState ware ms = PlayState {
 }
 
 updateCamera :: News -> StateT PlayState IO Camera
-updateCamera (keys, mouse, wheel, _, _) = do
+updateCamera (keys, (pointer, wheel), _, _) = do
   statewit <- get
   let Vertex3 x _ z = position $ frog statewit
-  let Vertex2 dx dy = given aught mouse (arrow keys)
+  let Vertex2 dx dy = given aught pointer (arrow keys)
       Vertex2 pitch yaw = euler statewit
       pitch' = clamp (0, 1) $ pitch + dy / 100.0
       yaw' = yaw + dx / 100.0

@@ -4,9 +4,7 @@ import Control.Monad.State (StateT, execStateT)
 
 import qualified Graphics.Rendering.OpenGL as GL
 import qualified SDL (
-    GLContext
-  , Window
-  , createWindow
+    createWindow
   , destroyWindow
   , getKeyboardState
   , glCreateContext
@@ -15,17 +13,27 @@ import qualified SDL (
   , quit
   )
 
-import MenuState (makeMenuState)
+import TitleState (makeTitleState)
 import PauseState (makePauseState)
 import PlayState (makePlayState)
 
 import Game (
-    Allwit, makeAllwit
-  , fand, updateAll, showLeechwit
-  , settleState, blit, again, begetMeshes
+    Allwit
+  , Overwindow
+  , again
+  , begetMeshes
+  , blit
+  , fand
+  , makeAllwit
+  , settleState
+  , showLeechwit
+  , updateAll
+  , waxwane
   )
 import FastenMain (openGLWindow)
-import Happen (waxwane)
+import Matrix (RenderView)
+import Shade (Mesh)
+import Stavemake (Staveware)
 
 
 main :: IO ()
@@ -34,18 +42,20 @@ main = do
   _ <- SDL.getKeyboardState
   window <- SDL.createWindow "frogwork" openGLWindow
   context <- SDL.glCreateContext window
-
-  birth window context >>= execStateT live >> die window context
-
-birth :: SDL.Window -> SDL.GLContext -> IO Allwit
-birth window context = do
   display <- waxwane window
-  (staveware, meshes) <- begetMeshes
 
-  let allwit = makeAllwit staveware window display context
+  begetMeshes
+    >>= birth (window, context) display
+    >>= execStateT live
+    >> die (window, context)
+
+birth :: Overwindow -> RenderView -> (Staveware, [Mesh]) -> IO Allwit
+birth overwindow display (staveware, meshes) = do
+
+  let allwit = makeAllwit overwindow display staveware
         (makePlayState staveware meshes)
         (makePauseState staveware)
-        (makeMenuState staveware)
+        (makeTitleState staveware)
 
   fand allwit
   return allwit
@@ -58,8 +68,8 @@ live = do
   blit
   again live
 
-die :: SDL.Window -> SDL.GLContext -> IO ()
-die window context = do
+die :: Overwindow -> IO ()
+die (window, context) = do
   GL.finish
   SDL.glDeleteContext context
   SDL.destroyWindow window

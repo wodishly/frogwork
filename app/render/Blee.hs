@@ -21,7 +21,7 @@ import Graphics.Rendering.OpenGL (
   , GLfloat
   , clear
   , clearColor
-  , ($=), Vector4 (Vector4)
+  , Vector4 (Vector4), HasSetter (($=))
   )
 
 import Rime (clamp)

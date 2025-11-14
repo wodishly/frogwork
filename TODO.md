@@ -1,5 +1,11 @@
-- fonts
 - sound
+- loudness
+- staves
+  - [🌗] missing staves
+  - [🌑] staves that slant
+  - [🌑] staves that stir
+  - [🌑] staves that follow
+  - [🌑] the staveframe
 - animations (`*.moth` files complete!)
   - [⭐️] parser 
   - [⭐️] serializer
