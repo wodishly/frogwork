@@ -1,3 +1,7 @@
+{-|
+@Stavemake@ is for anything to do with writing the stave.
+@Stavework@ imports @State@, so @State@ must not import @Stavework@.
+-}
 module Stavework (
   stavewrite
 , spellgreat
@@ -8,6 +12,7 @@ module Stavework (
 import Control.Monad (forM_, unless)
 import Control.Monad.State (MonadState (get), MonadTrans (lift), StateT)
 import Data.HashMap.Lazy (member, (!))
+import Numeric.LinearAlgebra (ident)
 
 import Foreign (withArray)
 import Graphics.Rendering.OpenGL (
@@ -28,14 +33,13 @@ import Graphics.Rendering.OpenGL (
 
 import Blee (Blee, bleeToGLVector4)
 import FastenShade (Programful (uniformMap))
-import Rime (Point, Polyhedron, (<+>), (^*))
-import Shade (Mesh (elementCount, vbo), bufferSize, drawFaces, useMesh, drawMesh)
-import State (Stately (staveware))
-import Stavemake (Stave (Stave, advance, texture), Stavebook, greatness, sharpness, Staveware)
+import Matrix (FrogVertex ((^*^)), RenderView, getOrthographicMatrix, getPerspectiveMatrix)
 import Mean (Twain)
-import Matrix (FrogVertex((^*^)), RenderView, getPerspectiveMatrix, getOrthographicMatrix)
+import Rime (Point, Polyhedron, (<+>), (^*))
+import Shade (Mesh (elementCount, vbo), bufferSize, drawFaces, drawMesh, useMesh)
+import State (Stately (staveware))
+import Stavemake (Stave (Stave, advance, texture), Stavebook, Staveware, greatness, sharpness)
 import Time (Time)
-import Numeric.LinearAlgebra (ident)
 
 
 data Stake = North | South | East | West | Middle deriving (Show, Eq)

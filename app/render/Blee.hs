@@ -42,6 +42,10 @@ from255 :: Int -> Int -> Int -> Int -> Blee
 from255 = (((. f) .) .) . (((. f) .) . ((. f) . Color4) . f)
   where f = (/255) . fromIntegral
 
+from256 :: Int -> Int -> Int -> Int -> Blee
+from256 = (((. f) .) .) . (((. f) .) . ((. f) . Color4) . f)
+  where f = (/255) . (- 1) . fromIntegral
+
 bleeToGLVector4 :: Blee -> Vector4 GLfloat
 bleeToGLVector4 (Color4 r g b a) = Vector4 r g b a
 
@@ -52,10 +56,10 @@ white :: Blee
 white = Color4 1 1 1 1
 
 lightwhelk :: Blee
-lightwhelk = from255 203 203 255 255
+lightwhelk = from256 204 204 256 256
 
 darkwhelk :: Blee
-darkwhelk = from255 53 59 79 255
+darkwhelk = from256 54 60 80 256
 
 red :: Blee
 red = Color4 1 0 0 1

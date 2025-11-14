@@ -1,6 +1,6 @@
-module TitleState (
-  TitleState (..)
-, makeTitleState
+module WillState (
+  WillState (..)
+, makeWillState
 ) where
 
 import Control.Monad.State (MonadState (get, put), StateT)
@@ -8,7 +8,7 @@ import Control.Monad.State (MonadState (get, put), StateT)
 import SDL.Input.Keyboard.Codes
 import Graphics.Rendering.OpenGL (Vertex2(Vertex2))
 
-import State (StateName (TitleName, PlayName, EndName), Stately (..))
+import State (StateName (WillName), Stately (..))
 
 import Blee (Blee, bg, blue, darkwhelk, lightwhelk, red)
 import Key (Keyset, keyBegun)
@@ -18,15 +18,15 @@ import Stavework (Stake (..), renderFeather, stavewrite)
 import Mean (ssss)
 
 
-data TitleState = TitleState {
-  hand :: [StateName]
+data WillState = WillState {
+  hand :: [IO ()]
 , finger :: Int
-, choosen :: Maybe StateName
+, choosen :: Maybe (IO ())
 , _staveware :: Staveware
 }
 
-instance Stately TitleState where
-  name _ = TitleName
+instance Stately WillState where
+  name _ = WillName
   staveware = _staveware
 
   update (keyset, _, _, _) = do
@@ -44,18 +44,21 @@ instance Stately TitleState where
     stavewrite (Vertex2 (width/2) (height*2/7)) (Middle, Middle) (Vertex2 1 1) (choosewhelk statewit 1) "wɪlz"
     stavewrite (Vertex2 (width/2) (height  /7)) (Middle, Middle) (Vertex2 1 1) (choosewhelk statewit 2) "ɛnd"
 
-choosewhelk :: TitleState -> Int -> Blee
+choosewhelk :: WillState -> Int -> Blee
 choosewhelk statewit n = if ssss (mod.finger) (length.hand) statewit == n then red else blue
 
-makeTitleState :: Staveware -> TitleState
-makeTitleState ware = TitleState {
-  hand = [PlayName, PlayName, EndName]
+makeWillState :: Staveware -> WillState
+makeWillState ware = WillState {
+  hand = [
+--     toggleSetting ScancodeK isShowingKeys
+--   , toggleSetting ScancodeT isShowingTicks
+  ]
 , finger = 0
 , choosen = Nothing
 , _staveware = ware
 }
 
-choosefare :: Keyset -> StateT TitleState IO ()
+choosefare :: Keyset -> StateT WillState IO ()
 choosefare keyset = do
   titlewit <- get
   put $ if keyBegun keyset ScancodeReturn

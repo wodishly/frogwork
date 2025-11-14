@@ -86,11 +86,13 @@ executable frogwork
 
     State
     TitleState
+    WillState
     PauseState
     PlayState
+    EndState
 
     Frog
-    Game
+    Allwit
 
   -- LANGUAGE extensions used by modules in this package.
   default-extensions:

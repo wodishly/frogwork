@@ -17,7 +17,7 @@ import TitleState (makeTitleState)
 import PauseState (makePauseState)
 import PlayState (makePlayState)
 
-import Game (
+import Allwit (
     Allwit
   , Overwindow
   , again
@@ -34,6 +34,8 @@ import FastenMain (openGLWindow)
 import Matrix (RenderView)
 import Shade (Mesh)
 import Stavemake (Staveware)
+import WillState (makeWillState)
+import EndState (makeEndState)
 
 
 main :: IO ()
@@ -53,9 +55,11 @@ birth :: Overwindow -> RenderView -> (Staveware, [Mesh]) -> IO Allwit
 birth overwindow display (staveware, meshes) = do
 
   let allwit = makeAllwit overwindow display staveware
+        (makeTitleState staveware)
+        (makeWillState staveware)
         (makePlayState staveware meshes)
         (makePauseState staveware)
-        (makeTitleState staveware)
+        (makeEndState staveware)
 
   fand allwit
   return allwit

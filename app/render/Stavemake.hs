@@ -1,3 +1,7 @@
+{-|
+@Stavemake@ is for anything to do with begetting the stave.
+@State@ imports @Stavemake@, so @Stavemake@ must not import @State@.
+-}
 module Stavemake (
   Stave (..)
 , Stavebook
@@ -168,7 +172,7 @@ makeStavebook'' loud great path = do
         FT_Vector x _ = gsrAdvance slot'
     when loud $ putStrLn "here's the stuff we're going to save"
     when loud $ putStrLn $ "  bearing: " ++ show (l, t)
-    putStrLn $ "  size: " ++ show (w, h)
+    when loud $ putStrLn $ "  size: " ++ show (w, h)
     when loud $ putStrLn $ "  advance: " ++ show (x, 0 :: Int)
 
     when loud $ putStrLn "here's some other stuff:"

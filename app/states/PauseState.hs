@@ -18,18 +18,15 @@ newtype PauseState = PauseState Staveware
 
 instance Stately PauseState where
   name _ = PauseName
-  update _ = do
-    _ <- get
-    return ()
+  staveware (PauseState ware) = ware
 
+  update _ = return ()
   render (_, _, display, time) = do
     statewit <- get
     bg black
     renderFeather display time (staveware statewit)
     let (width, height) = size display
     stavewrite (Vertex2 (width/2) (height/2)) (Middle, Middle) (Vertex2 1 1) white "pɔz"
-
-  staveware (PauseState ware) = ware
 
 makePauseState :: Staveware -> PauseState
 makePauseState = PauseState

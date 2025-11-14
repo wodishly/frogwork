@@ -66,15 +66,37 @@ twin x = (x, x)
 
 -- | Applies the same thing to both arguments of a binary operation.
 --
--- A better name is wanting.
+-- An alias for the W combinator @wwww@.
 --
--- A better description is wanting.
+-- A better name is wanting.
 --
 -- >>> toBoth (+) 1
 -- 2
 {-# INLINE toBoth #-}
 toBoth :: (a -> a -> b) -> a -> b
-toBoth f x = f x x
+toBoth = wwww
+
+-- | W combinator, so named as not to clutter the namespace.
+{-# INLINE wwww #-}
+wwww :: (a -> a -> b) -> a -> b
+wwww f x = f x x
+
+-- | S combinator, so named as not to clutter the namespace.
+--
+-- prop> @ssss (f . h) g x = uncurry f (doBoth h g x)@
+{-# INLINE ssss #-}
+ssss :: (a -> b -> c) -> (a -> b) -> a -> c
+ssss f g x = f x (g x)
+-- Proof.
+--
+-- uncurry f (doBoth h g x)
+-- = (uncurry (\a b -> f a b)) (doBoth (\c -> h c) (\c -> g c) x)
+-- = (\(a, b) -> f a b) (bimap (\c -> h c) (\c -> g c) (twin x))
+-- = (\(a, b) -> f a b) (bimap (\c -> h c) (\c -> g c) (x, x))
+-- = (\(a, b) -> f a b) (h x, g x)
+-- = f (h x) (g x)
+-- = (f . h) x (g x)
+-- = ssss (f . h) g x ∎
 
 -- | Returns a twain of both functions applied to the argument.
 --
@@ -86,6 +108,7 @@ doBoth f g = bimap f g . twin
 
 -- | Applies a function to both things of a twain.
 --
+-- Mind that @twimap f@ is equivalent to @uncurry (on (,) f)$.
 -- >>> twimap (*2) (1,2)
 -- (2,4)
 {-# INLINE twimap #-}

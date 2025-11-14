@@ -19,11 +19,10 @@ import Key (arrow)
 import Matrix (FrogVector, RenderView (size), aught, frogLookAt, frogZero, getOrthographicMatrix, getPerspectiveMatrix)
 import Mean (given, hit)
 import Random (FrogSeed, defaultSeed)
-import Rime (Point, Point3, clamp, asPoint)
+import Rime (Point, Point3, asPoint, clamp)
 import Shade (Mesh, drawMesh, setMeshTransform)
 import Stavemake (Staveware)
-import Stavework (stavewrite, Stake (..))
-default (Int, Float)
+import Stavework (Stake (..), stavewrite)
 
 
 data Camera = Camera {
@@ -51,6 +50,7 @@ data PlayState = PlayState {
 instance Stately PlayState where
   name _ = PlayName
   staveware = _staveware
+
   update news = do
     cam <- updateCamera news
     let viewMatrix = frogLookAt (cPosition cam) (cTarget cam)

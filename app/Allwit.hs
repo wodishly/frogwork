@@ -1,4 +1,4 @@
-module Game (
+module Allwit (
   Allwit (..)
 , Overwindow
 , makeAllwit
@@ -48,7 +48,7 @@ import qualified SDL (
 
 import State (
     News
-  , Stately
+  , Stately (name)
   , StateName (..)
   , Settings
   , makeSettings
@@ -74,10 +74,12 @@ import FastenShade (
 import Happen (Mousewit, unwrapHappenPointer, unwrapHappenWheel, unwrapHappenWindow, Overwindow)
 import Key (Keyset, anyKeysBegun, keyBegun, listen, unkeys)
 import Matrix (RenderView (..), fromTranslation)
-import Mean (full, weep, twimap)
+import Mean (full, weep, twimap, ssss)
 import Shade (Mesh, makeAsset, makeAssetMesh, makeSimpleMesh, setMeshTransform)
 import Stavemake (Staveware, makeFeather)
 import Time (Time, beginTime, keepTime)
+import WillState (WillState)
+import EndState (EndState)
 
 
 data Allwit = Allwit {
@@ -92,9 +94,11 @@ data Allwit = Allwit {
 , display :: RenderView
 , staveware :: Staveware
 
+, _titleState :: TitleState
+, _willState :: WillState
 , _playState :: PlayState
 , _pauseState :: PauseState
-, _titleState :: TitleState
+, _endState :: EndState
 }
 makeLenses ''Allwit
 
@@ -106,7 +110,7 @@ _context :: Allwit -> SDL.GLContext
 _context = snd . overwindow
 
 makeAllwit :: Overwindow -> RenderView -> Staveware
-  -> PlayState -> PauseState -> TitleState -> Allwit
+  -> TitleState -> WillState -> PlayState -> PauseState -> EndState -> Allwit
 makeAllwit = Allwit
   beginTime
   makeSettings
@@ -175,8 +179,8 @@ updateWindow = do
 
 updateSettings :: StateT Allwit IO ()
 updateSettings = do
-  toggleSetting ScancodeK isShowingKeys
-  toggleSetting ScancodeT isShowingTicks
+  toggleIsShowingKeys
+  toggleIsShowingTicks 
 
 updateAll :: StateT Allwit IO ()
 updateAll = do
@@ -186,6 +190,12 @@ updateAll = do
   updateMouse
   updateWindow
   updateSettings
+
+toggleIsShowingKeys :: StateT Allwit IO ()
+toggleIsShowingKeys = toggleSetting ScancodeK isShowingKeys
+
+toggleIsShowingTicks :: StateT Allwit IO ()
+toggleIsShowingTicks = toggleSetting ScancodeT isShowingTicks
 
 toggleSetting :: Scancode -> Lens' Settings Bool -> StateT Allwit IO ()
 toggleSetting keycode lens = do
@@ -216,19 +226,16 @@ settleState = do
     else if keyBegun (keyset allwit) ScancodeP && nowState allwit == PauseName
       then PlayName
     else if keyBegun (keyset allwit) ScancodeReturn && nowState allwit == TitleName
-      then fst (hand (_titleState allwit)!!finger (_titleState allwit))
-      else nowState allwit
+      then ssss ((!!) . hand) finger (_titleState allwit)
+
+    else nowState allwit
   }
   case nowState allwit of
-    PlayName -> do
-      setWindowGrab True
-      goto playState
-    PauseName -> do
-      setWindowGrab False
-      goto pauseState
-    TitleName -> do
-      setWindowGrab False
-      goto titleState
+    TitleName -> goto titleState
+    WillName -> goto willState
+    PlayName -> goto playState
+    PauseName -> goto pauseState
+    EndName -> goto endState
 
 setWindowGrab :: Bool -> StateT Allwit IO ()
 setWindowGrab setting =
@@ -238,6 +245,7 @@ setWindowGrab setting =
 goto :: Stately a => Lens' Allwit a -> StateT Allwit IO ()
 goto lens = do
   allwit <- get
+  setWindowGrab (PlayName == name (allwit^.lens))
   state <- lift (execStateT (loop $ news allwit) $ allwit^.lens)
   put ((lens.~state) allwit)
 
@@ -245,11 +253,9 @@ blit :: StateT Allwit IO ()
 blit = get >>= SDL.glSwapWindow . window
 
 again :: StateT Allwit IO () -> StateT Allwit IO ()
--- pointlessly
--- again = (get >>=) . ($ (unless . ($ [ScancodeQ, ScancodeEscape]) . anyKeysBegun . keyset)) . (.) . (&)
 again f = do
   allwit <- get
-  unless (anyKeysBegun (keyset allwit) [ScancodeQ, ScancodeEscape]) f
+  unless (EndName == nowState allwit || anyKeysBegun (keyset allwit) [ScancodeQ, ScancodeEscape]) f
 
 waxwane :: SDL.Window -> IO RenderView
 waxwane wind = do

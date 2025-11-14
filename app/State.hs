@@ -22,7 +22,13 @@ import Time (Time)
 
 type News = (Keyset, Mousewit, RenderView, Time)
 
-data StateName = PlayName | PauseName | TitleName deriving (Show, Eq, Ord)
+data StateName
+  = TitleName
+  | WillName
+  | PlayName
+  | PauseName
+  | EndName
+  deriving (Show, Eq, Ord)
 
 data Settings = Settings {
   _isShowingTicks :: Bool
@@ -32,11 +38,7 @@ data Settings = Settings {
 makeLenses ''Settings
 
 makeSettings :: Settings
-makeSettings = Settings {
-  _isShowingTicks = False
-, _isShowingKeys = False
-, _isRunningTests = False
-}
+makeSettings = Settings False False False
 
 class Stately a where
   name :: a -> StateName
@@ -50,6 +52,6 @@ class Stately a where
     update news
     render news
 
--- | Do NOT give this (Stately b) =>, or else we cannot @preent@ from @Allwit@.
+-- | Curse this not with `(Stately b) =>`, lest @preent@ no longer become @Allwit@.
 preent :: Show a => a -> StateT b IO ()
 preent = lift . print
