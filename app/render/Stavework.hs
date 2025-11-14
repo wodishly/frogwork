@@ -33,12 +33,12 @@ import Graphics.Rendering.OpenGL (
 
 import Blee (Blee, bleeToGLVector4)
 import FastenShade (Programful (uniformMap))
-import Matrix (FrogVertex ((^*^)), RenderView, getOrthographicMatrix, getPerspectiveMatrix, size)
-import Mean (Twain)
-import Rime (Point, Polyhedron, (<+>), (^*))
-import Shade (Mesh (elementCount, vbo), bufferSize, drawFaces, drawMesh, useMesh)
+import Rime (FrogVertex((^*^)), Point, Polyhedron, (<+>), (^*))
+import Shade (Mesh (elementCount, vbo), bufferSize, drawFaces, useMesh, drawMesh)
 import State (Stately (staveware))
-import Stavemake (Stave (Stave, advance, texture), Stavebook, Staveware, greatness, sharpness)
+import Stavemake (Stave (Stave, advance, texture), Stavebook, greatness, sharpness, Staveware)
+import Mean (Twain)
+import Matrix (RenderView (size), getPerspectiveMatrix, getOrthographicMatrix)
 import Time (Time)
 
 

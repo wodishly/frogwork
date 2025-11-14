@@ -18,10 +18,10 @@ import Data.Bifunctor (Bifunctor (second))
 import Data.Binary.Get (runGet)
 import Data.HashMap.Lazy ((!))
 import Data.Maybe (fromJust)
-import Numeric.LinearAlgebra (flatten)
 import Text.Printf (printf)
 
 import Foreign (Int32, Ptr, Storable, new, nullPtr, plusPtr, sizeOf, withArray, Word8)
+import Numeric.LinearAlgebra (Vector, flatten, ident)
 import Graphics.Rendering.OpenGL as GL
 
 import qualified Data.ByteString as BS (readFile)
@@ -31,15 +31,14 @@ import qualified Graphics.GL as GLRaw (glUniformMatrix4fv)
 
 import FastenMain (assetsBasePath, shaderBasePath)
 import FastenShade
-import Matrix (FrogMatrix)
-import Mean (Twain, twimap, twin, doBoth)
 import FrogSpell
-import MothSpell as MOTH
+import Matrix (FrogMatrix)
+import Mean (Twain, doBoth, twimap, twin)
+import Skeleton (Animation (..), play)
 import Spell (summon)
 import Time
-import Numeric.LinearAlgebra.HMatrix ( ident )
-import Skeleton (Animation (..), play)
-import Data.Vector.Storable (Vector)
+
+import MothSpell as MOTH
 
 drawFaces :: Int32 -> IO ()
 drawFaces count = drawElements Triangles count UnsignedInt (bufferOffset 0)
@@ -148,11 +147,10 @@ useMesh mesh = do
 -- idk if i like this, but something like this
 allocVector :: Storable a => Mesh -> Vector a -> String -> (GLint -> (Ptr a -> IO ())) -> IO ()
 allocVector mesh prop uniformKey callback = case HM.lookup uniformKey (uniformMap mesh) of
-    Just uLoc -> do
-      UniformLocation location <- get uLoc
-      _ <- S.unsafeWith prop (callback location)
-      return ()
-    _ -> return ()
+  Just uLoc -> do
+    UniformLocation location <- get uLoc
+    S.unsafeWith prop (callback location)
+  _ -> return ()
 
 uniformMatrix :: GLint -> Ptr GLfloat -> IO ()
 uniformMatrix loc = GLRaw.glUniformMatrix4fv loc 1 1
@@ -167,7 +165,7 @@ drawMesh projectionMatrix viewMatrix orthographicMatrix time mesh = do
   allocVector mesh (flatten viewMatrix) "u_view_matrix" uniformMatrix
   allocVector mesh (flatten orthographicMatrix) "u_orthographic_matrix" uniformMatrix
 
-  let now = (fromIntegral (lifetime time) / 1000) :: Float
+  let now = fromIntegral (lifetime time) / 1000
   case meshAnimation mesh of
     Just animation -> do
       skellington <- play animation now
@@ -182,7 +180,7 @@ drawMesh projectionMatrix viewMatrix orthographicMatrix time mesh = do
   case HM.lookup "u_time" (uniformMap mesh) of
     Just _ -> do
       timeLocation <- uniformMap mesh ! "u_time"
-      (uniform timeLocation :: StateVar GLfloat) $= now
+      uniform timeLocation $= now
     _ -> return ()
 
   case HM.lookup "u_texture" (uniformMap mesh) of
@@ -195,7 +193,6 @@ drawMesh projectionMatrix viewMatrix orthographicMatrix time mesh = do
 
   drawFaces (elementCount mesh)
 
-
 makeAssetMesh :: AssetMeshProfile -> IO Mesh
 makeAssetMesh mprofile = do
   (Concoction pro hmap path) <- brewProfile (Left mprofile)
@@ -203,7 +200,6 @@ makeAssetMesh mprofile = do
   -- read all the data
   bytes <- summon (fromJust path)
   let frogFile = runGet frogify bytes
-  print frogFile
 
   -- position attribute
   vao' <- genObjectName
@@ -244,7 +240,6 @@ makeAssetMesh mprofile = do
   vertexAttribArray (AttribLocation 2) $= Enabled
 
   -- bone attributes
-  print $ boneInfluence frogFile
   case boneInfluence frogFile of
     4 -> do
       sbo <- genObjectName
@@ -262,8 +257,6 @@ makeAssetMesh mprofile = do
 
       withArray (weightBuffer frogFile) $ \ptr ->
         bufferData ArrayBuffer $= (bufferSize (weightBuffer frogFile), ptr, StaticDraw)
-
-      print $ weightBuffer frogFile
 
       vertexAttribPointer (AttribLocation 4)
         $= (ToFloat, VertexArrayDescriptor 4 Float 0 (bufferOffset 0))

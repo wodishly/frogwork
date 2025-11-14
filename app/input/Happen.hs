@@ -25,9 +25,8 @@ import SDL (
 
 import qualified SDL (Point (P))
 
-import Matrix (fromSDL)
 import Mean (doBoth)
-import Rime (Point)
+import Rime (Point, fromSDL)
 
 
 type Keywit = (Scancode, InputMotion)
