@@ -22,7 +22,7 @@ import Random (FrogSeed, defaultSeed)
 import Rime (Point, Point3, clamp, asPoint)
 import Shade (Mesh, drawMesh, setMeshTransform)
 import Stavemake (Staveware)
-import Stavework (stavewrite, Stake (..), renderFeather)
+import Stavework (stavewrite, Stake (..))
 default (Int, Float)
 
 

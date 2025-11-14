@@ -115,6 +115,7 @@ glyphFormatName = ("ft_GLYPH_FORMAT_" ++) . \case
     FT_GLYPH_FORMAT_PLOTTER -> "PLOTTER"
     _ -> "NONE"
 
+-- this function is a huge memory leak. why?
 pad :: Int -> Int -> a -> [a] -> [a]
 pad _ _ _ [] = []
 pad amount width something bitmapData = left ++ b ++ recourse where
