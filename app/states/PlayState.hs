@@ -49,6 +49,9 @@ data PlayState = PlayState {
 , writings :: [Writing]
 }
 
+instance Show PlayState where
+  show (PlayState _ _ _ f _ _ p c _) = show f ++ show p ++ show c
+
 instance Stately PlayState where
   name _ = PlayName
   staveware = _staveware
@@ -57,8 +60,7 @@ instance Stately PlayState where
     cam <- updateCamera news
     let viewMatrix = frogLookAt (cPosition cam) (cTarget cam)
         forward = flatten $ (viewMatrix ¿ [2]) ?? (Take 3, All)
-    _ <- updateFrog news forward
-    return ()
+    updateFrog news forward
 
   render news@(_, _, display, time) = do
     playwit <- get
@@ -72,9 +74,6 @@ instance Stately PlayState where
         orthographicMatrix = getOrthographicMatrix display
     lift $ mapM_ (drawMesh (getPerspectiveMatrix display) viewMatrix orthographicMatrix time) (meshes playwit)
     stavewrite news (writings playwit)
-
-instance Show PlayState where
-  show (PlayState _ _ _ f _ _ p c _) = show f ++ show p ++ show c
 
 makePlayState :: RenderView -> Staveware -> [Mesh] -> PlayState
 makePlayState dis ware ms = PlayState {
@@ -95,7 +94,7 @@ updateCamera :: News -> StateT PlayState IO Camera
 updateCamera (keys, (pointer, wheel), _, _) = do
   statewit <- get
   let Vertex3 x _ z = position $ frog statewit
-  let Vertex2 dx dy = given aught pointer (arrow keys)
+      Vertex2 dx dy = given aught pointer (arrow keys)
       Vertex2 pitch yaw = euler statewit
       pitch' = clamp (0, 1) $ pitch + dy / 100.0
       yaw' = yaw + dx / 100.0
@@ -104,26 +103,27 @@ updateCamera (keys, (pointer, wheel), _, _) = do
       fx = r * cos yaw * cos pitch
       fy = r * sin pitch
       fz = r * sin yaw * cos pitch
-  let c = Camera {
-      cTarget = fromList [x, 0, z]
-    , cPosition = fromList [x + fx, 1 + fy, z - fz]
-  }
+      c = Camera {
+        cTarget = fromList [x, 0, z]
+      , cPosition = fromList [x + fx, 1 + fy, z - fz]
+      }
   put statewit { camera = c, euler = Vertex2 pitch' yaw', radius = r }
   return c
 
-updateFrog :: News -> FrogVector -> StateT PlayState IO Mesh
+updateFrog :: News -> FrogVector -> StateT PlayState IO ()
 updateFrog news forward = do
-  statewit <- get
-  ((didMove, didJump), newFrog) <- lift $ runStateT (moveFrog news forward) (frog statewit)
-  put statewit { frog = newFrog }
-  (if didMove then (do
-    moveMesh (position $ frog statewit) forward
-    animateMesh didMove didJump) else animateMesh didMove didJump)
+  playwit <- get
+  ((didMove, didJump), newFrog) <- lift $ runStateT (moveFrog news forward) (frog playwit)
 
-animateMesh :: Bool -> Bool -> StateT PlayState IO Mesh
+  put playwit { frog = newFrog }
+
+  when didMove $ moveMesh (position newFrog) forward
+  animateMesh didMove didJump
+
+animateMesh :: Bool -> Bool -> StateT PlayState IO ()
 animateMesh didMove didJump = do
-  statewit <- get
-  let frogMesh = head $ meshes statewit
+  playwit <- get
+  let frogMesh = head $ meshes playwit
   case meshAnimation frogMesh of
     Just animation -> do
       newAnimation <- lift $ play ((if didJump then once else evermore) animation)
@@ -134,23 +134,24 @@ animateMesh didMove didJump = do
             else 5
         )
       let newFrogMesh = frogMesh { meshAnimation = Just newAnimation }
-      put statewit { meshes = hit 0 (const newFrogMesh) (meshes statewit) }
-      return newFrogMesh
-    Nothing -> return frogMesh
+      put playwit { meshes = hit 0 (const newFrogMesh) (meshes playwit) }
+    Nothing -> return ()
 
 moveMesh :: Point3 -> FrogVector -> StateT PlayState IO ()
 moveMesh (Vertex3 x y z) forward = do
-  statewit <- get
+  playwit <- get
 
   let frogPosition = fromList [x, y, z]
       frogTarget = frogPosition + fromList [forward!0, 0, forward!2]
       transform = frogLookAt frogPosition frogTarget
       columns = toColumns transform
       -- awesome lol
-      c0 = columns !! 0
-      c1 = columns !! 1
-      c2 = columns !! 2
-      transform' = fromColumns [ c0, c1, c2, fromList [x, y, z, 1] ]
+      transform' = fromColumns [
+          columns !! 0
+        , columns !! 1
+        , columns !! 2
+        , fromList [x, y, z, 1]
+        ]
 
-  newFrogMesh <- lift $ setMeshTransform transform' (head $ meshes statewit)
-  put statewit { meshes = hit 0 (const newFrogMesh) (meshes statewit) }
+  newFrogMesh <- lift $ setMeshTransform transform' (head $ meshes playwit)
+  put playwit { meshes = hit 0 (const newFrogMesh) (meshes playwit) }

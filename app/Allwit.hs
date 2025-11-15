@@ -79,7 +79,7 @@ import Happen (Mousewit, Overwindow, unwrapHappenPointer, unwrapHappenWheel, unw
 import Key (Keyset, anyKeysBegun, keyBegun, listen, unkeys)
 
 import MothSpell (mothify)
-import Skeleton (Animation (..), makeAnimation, play, evermore)
+import Skeleton (makeAnimation, play, evermore)
 import Shade (Mesh (meshAnimation), makeAsset, makeAssetMesh, makeSimpleMesh, setMeshTransform)
 import Spell (summon, unwrappingly)
 import Stavemake (Staveware, makeFeather)

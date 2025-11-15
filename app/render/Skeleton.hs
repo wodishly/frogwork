@@ -21,11 +21,8 @@ import Rime (
   )
 
 import MothSpell as MOTH
-import Data.List (findIndex)
-import Rime (clamp, (<->), (<+>), Point4, (^/), Point3)
-import Numeric.LinearAlgebra.HMatrix ( dot, (><) )
-import Data.Fixed (mod')
 import Time (doCurrentTime)
+import Mean (flight)
 
 type Interpolation a = a -> a -> Float -> a
 
@@ -49,6 +46,7 @@ play a clip = do
 
 once :: Animation -> Animation
 once a = a { looped = False }
+
 evermore :: Animation -> Animation
 evermore a = a { looped = True }
 
@@ -104,7 +102,7 @@ slerp q' p' t
     (cosphi, f) = if dqp < 0 then (-dqp, (-1 *^)) else (dqp, id)
     phi = acos cosphi
 
-vlerp :: (Applicative a, Num b) => a b -> a b -> b -> a b
+vlerp :: Applicative a => Interpolation (a Float)
 vlerp x y t = x <+> (t *^ (y <-> x))
 
 local :: FrogVertex v => MothTome -> Float -> Interpolation v -> (MothTale -> ([v], [GLfloat])) -> [v]
@@ -137,6 +135,6 @@ continue animoth now' = do
 
   let be = zipWith3
       bonewards = be collectively confused confounded dazed
-      ma'ammoth = map (worldify Nothing bonewards fossil) [0..(length fossil - 1)]
+      ma'ammoth = map (worldify Nothing bonewards fossil) (flight $ length fossil)
 
   return (concatMap (toList . flatten) ma'ammoth, finished)

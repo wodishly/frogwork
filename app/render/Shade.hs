@@ -32,7 +32,7 @@ import qualified Graphics.GL as GLRaw (glUniformMatrix4fv)
 import FastenMain (assetsBasePath, shaderBasePath)
 import FastenShade
 import FrogSpell
-import Skeleton (Animation (..), play, continue)
+import Skeleton (Animation (..), continue)
 import Matrix (FrogMatrix)
 import Mean (Twain, doBoth, twimap, twin)
 import Spell (summon)

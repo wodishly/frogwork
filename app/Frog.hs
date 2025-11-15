@@ -4,15 +4,16 @@ module Frog (
 , moveFrog
 ) where
 
+import Control.Monad (when)
 import Control.Monad.State (MonadState (get, put), StateT)
-import Numeric.LinearAlgebra ((!))
 
+import Numeric.LinearAlgebra ((!))
 import SDL.Input.Keyboard.Codes
 import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2), Vertex3 (Vertex3))
 
 import Key (Keyset, keyBegun, wasd)
-import Mean (doBoth)
-import Rime (Point3, (*^), (<+>), FrogVector, hat)
+import Mean (ssss)
+import Rime (FrogVector, Point3, hat, (*^), (<+>), FrogVertex ((^*^)))
 import State (News)
 import Time (Timewit, throttle)
 
@@ -39,33 +40,41 @@ makeFrog = Frogwit {
 }
 
 hasLeapsLeft :: Frogwit -> Bool
-hasLeapsLeft = uncurry (<) . doBoth leapCount utleaps
+hasLeapsLeft = ssss ((<) . leapCount) utleaps
 
 leap :: Keyset -> StateT Frogwit IO Bool
 leap keys = do
   frogwit <- get
-  if keyBegun keys ScancodeSpace && hasLeapsLeft frogwit
-    then do
-      put frogwit {
-          dy = aLeap frogwit
-        , leapCount = succ $ leapCount frogwit
-      }
-      return True
-    else return False
+  let didLeap = keyBegun keys ScancodeSpace && hasLeapsLeft frogwit
+  when didLeap $ put frogwit {
+      dy = aLeap frogwit
+    , leapCount = succ $ leapCount frogwit
+  }
+  return didLeap
 
 fall :: Timewit -> StateT Frogwit IO Bool
 fall time = do
   frogwit <- get
   let Vertex3 x y z = position frogwit
-      y' = max 0 (y + throttle time (dy frogwit))
-      dy' = dy frogwit + throttle time (weight frogwit)
-  let landed = y' == 0
+      y' = y + throttle time (dy frogwit)
+  if y' <= 0
+    then land
+    else do
+      put frogwit {
+        dy = dy frogwit + throttle time (weight frogwit)
+      , position = Vertex3 x y' z
+      }
+      return True
+
+land :: StateT Frogwit IO Bool
+land = do
+  frogwit <- get
   put frogwit {
-      dy = if landed then 0 else dy'
-    , leapCount = if landed then 0 else leapCount frogwit
-    , position = Vertex3 x y' z
+    dy = 0
+  , leapCount = 0
+  , position = Vertex3 1 0 1 ^*^ position frogwit
   }
-  return (dy frogwit /= 0)
+  return False
 
 walk :: News -> FrogVector -> StateT Frogwit IO Bool
 walk (keys, _, _, time) forward = do
@@ -74,13 +83,13 @@ walk (keys, _, _, time) forward = do
       didWalk = dz < 0 where Vertex2 _ dz = wasd keys
       position' = position frogwit <+> (throttle time (speed frogwit) *^ direction)
 
-  if didWalk
-    then put frogwit { position = position' } >> return True
-    else return False
+  when didWalk $ put frogwit { position = position' }
+  return didWalk
 
 moveFrog :: News -> FrogVector -> StateT Frogwit IO (Bool, Bool)
 moveFrog news@(keys, _, _, time) forward = do
-  didJump <- leap keys
-  didFall <- fall time
-  didMove <- or <$> sequence [walk news forward, return didJump, return didFall]
-  return (didMove, didJump || didFall)
+  didWalk <- walk news forward
+  didLeapOrFall <- or <$> sequence [leap keys, fall time]
+
+  let didMove = didWalk || didLeapOrFall in
+    return (didMove, didLeapOrFall)
