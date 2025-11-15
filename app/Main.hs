@@ -11,6 +11,7 @@ import qualified SDL (
   , glDeleteContext
   , initializeAll
   , quit
+  , ticks
   )
 
 import Allwit (
@@ -28,8 +29,6 @@ import Allwit (
   )
 import FastenMain (openGLWindow)
 import Matrix (RenderView)
-import Shade (Mesh)
-import Stavemake (Staveware)
 
 
 main :: IO ()
@@ -40,16 +39,15 @@ main = do
   context <- SDL.glCreateContext window
   display <- waxwane window
 
-  begetMeshes
-    >>= birth (window, context) display
+  SDL.ticks
+    >>= birth (window, context) display . fromIntegral
     >>= execStateT live
     >> die (window, context)
 
-birth :: Overwindow -> RenderView -> (Staveware, [Mesh]) -> IO Allwit
-birth overwindow display (staveware, meshes) = do
-
-  let allwit = makeAllwit overwindow staveware display meshes
-
+birth :: Overwindow -> RenderView -> Float -> IO Allwit
+birth overwindow display ticks = do
+  (staveware, meshes) <- begetMeshes ticks
+  let allwit = makeAllwit ticks overwindow staveware display meshes
   fand allwit
   return allwit
 

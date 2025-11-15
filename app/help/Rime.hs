@@ -156,3 +156,11 @@ instance (RealFrac a, GL.VertexComponent a) => FrogVertex (GL.Vertex4 a) where
 {-# INLINE (^/) #-}
 (^/) :: (Functor f, Fractional a) => f a -> a -> f a
 (^/) = (. flip (/)) . (<&>)
+
+{-# INLINE swizzle #-}
+swizzle :: GL.Vertex4 a -> GL.Vertex4 a
+swizzle (GL.Vertex4 y z real x) = GL.Vertex4 x y z real
+
+{-# INLINE unswizzle #-}
+unswizzle :: GL.Vertex4 a -> GL.Vertex4 a
+unswizzle (GL.Vertex4 x y z real) = GL.Vertex4 y z real x

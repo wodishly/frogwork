@@ -5,7 +5,7 @@ import Data.List (findIndex)
 import Data.Maybe (fromMaybe)
 
 import Numeric.LinearAlgebra (dot, flatten, toList, (><))
-import Graphics.Rendering.OpenGL as GL
+import Graphics.Rendering.OpenGL (GLfloat, Vertex4 (Vertex4))
 
 import Matrix (FrogMatrix, fromAffine)
 import Rime (
@@ -17,12 +17,12 @@ import Rime (
   , (<+>)
   , (<->)
   , (*^)
-  , (^/)
+  , (^/), swizzle, unswizzle
   )
 
 import MothSpell as MOTH
-import Time (doCurrentTime)
 import Mean (flight)
+import Data.Function (applyWhen)
 
 type Interpolation a = a -> a -> Float -> a
 
@@ -34,15 +34,15 @@ data Animation = Animation {
 , looped :: Bool
 } deriving (Show)
 
-makeAnimation :: MothFile -> IO Animation
-makeAnimation mothFile = do
-  now <- doCurrentTime
-  return Animation { aMoth = mothFile, aTime = now, tomeIndex = -1, playing = False, looped = False }
+makeAnimation :: MothFile -> Animation
+makeAnimation mothFile = Animation mothFile 0 -1 False False
 
-play :: Animation -> Int -> IO Animation
-play a clip = do
-  t <- if not (playing a) || clip /= tomeIndex a then doCurrentTime else return $ aTime a
-  return a { playing = True, tomeIndex = clip, aTime = t }
+play :: Float -> Animation -> Int -> Animation
+play now a clip = a {
+    playing = True
+  , tomeIndex = clip
+  , aTime = applyWhen (not (playing a) || clip /= tomeIndex a) (const now) (aTime a)
+  }
 
 once :: Animation -> Animation
 once a = a { looped = False }
@@ -83,14 +83,6 @@ frame values times now =
       t = clamp (0, 1) $ (now - currentT) / (nextT - currentT)
   in (currentV, nextV, t)
 
-{-# INLINE swizzle #-}
-swizzle :: Vertex4 a -> Vertex4 a
-swizzle (Vertex4 y z real x) = Vertex4 x y z real
-
-{-# INLINE unswizzle #-}
-unswizzle :: Vertex4 a -> Vertex4 a
-unswizzle (Vertex4 x y z real) = Vertex4 y z real x
-
 slerp :: Point4 -> Point4 -> Float -> Point4
 slerp q' p' t
   | 1.0 - cosphi < 1e-8 = swizzle q
@@ -113,13 +105,13 @@ local mammoth now interpolate prop = map (\mothtale ->
        ) $ chronicles mammoth
 
 m3 :: (MothTale -> Mothly3) -> MothTale -> ([Point3], [GLfloat])
-m3 prop t = let Mothly3 values times = prop t in (values, times)
+m3 prop t = (values, times) where Mothly3 values times = prop t
 
 m4 :: (MothTale -> Mothly4) -> MothTale -> ([Point4], [GLfloat])
-m4 prop t = let Mothly4 values times = prop t in (values, times)
+m4 prop t = (values, times) where Mothly4 values times = prop t
 
-continue :: Animation -> Float -> IO ([GLfloat], Bool)
-continue animoth now' = do
+continue :: Animation -> Float -> ([GLfloat], Bool)
+continue animoth now' =
   let moth = aMoth animoth
       mammoth = library moth !! tomeIndex animoth
       fossil = skeleton moth
@@ -132,9 +124,8 @@ continue animoth now' = do
       confused = local mammoth now vlerp $ m3 MOTH.position
       confounded = local mammoth now slerp $ m4 MOTH.quaternion
       dazed = local mammoth now vlerp $ m3 MOTH.scale
-
-  let be = zipWith3
+      be = zipWith3
       bonewards = be collectively confused confounded dazed
       ma'ammoth = map (worldify Nothing bonewards fossil) (flight $ length fossil)
 
-  return (concatMap (toList . flatten) ma'ammoth, finished)
+  in (concatMap (toList . flatten) ma'ammoth, finished)

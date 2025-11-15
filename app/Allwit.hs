@@ -108,8 +108,8 @@ makeLenses ''Allwit
 window :: Allwit -> SDL.Window
 window = fst . overwindow
 
-makeAllwit :: Overwindow -> Staveware -> RenderView -> [Mesh] -> Allwit
-makeAllwit overwind ware dis meshes = let sets = makeSettings in
+makeAllwit :: Float -> Overwindow -> Staveware -> RenderView -> [Mesh] -> Allwit
+makeAllwit ticks overwind ware dis meshes = let sets = makeSettings in
   Allwit
     overwind
     sets
@@ -118,7 +118,7 @@ makeAllwit overwind ware dis meshes = let sets = makeSettings in
     unkeys
     (Vertex2 0 0, Vertex2 0 0)
     dis
-    beginTime
+    (beginTime ticks)
     TitleName
     (makeTitleState dis ware)
     (makeWillState  dis ware sets)
@@ -126,14 +126,13 @@ makeAllwit overwind ware dis meshes = let sets = makeSettings in
     (makePauseState dis ware)
     (makeEndState       ware)
 
-begetMeshes :: IO (Staveware, [Mesh])
-begetMeshes = do
+begetMeshes :: Float -> IO (Staveware, [Mesh])
+begetMeshes now = do
   cocoon <- summon "assets/bunny.moth"
   let mothFile = unwrappingly mothify cocoon
 
   bun <- makeAssetMesh $ makeAsset "bunny"
-  bunAnimation' <- makeAnimation mothFile
-  bunAnimation <- (play . evermore) bunAnimation' 5
+  let bunAnimation = (play now . evermore) (makeAnimation mothFile) 5
   froggy <- setMeshTransform (fromAffine [1.0, 1.0, 1.0] [0, 0, 0]) $
     bun { meshAnimation = Just bunAnimation }
 
@@ -167,7 +166,7 @@ updateEvents = do
 updateTime :: StateT Allwit IO ()
 updateTime = do
   allwit <- get
-  now <- lift SDL.ticks
+  now <- lift $ fromIntegral <$> SDL.ticks
   put allwit { time = keepTime (time allwit) now }
 
 updateKeys :: StateT Allwit IO ()

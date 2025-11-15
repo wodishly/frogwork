@@ -24,6 +24,8 @@ import Shade (Mesh (meshAnimation), drawMesh, setMeshTransform)
 import Stavemake (Staveware)
 import Stavework (stavewrite, Writing, makeWriting)
 import Skeleton (play, evermore, once)
+import Time (Timewit(lifetime))
+import Data.Maybe (fromJust, isJust)
 
 
 data Camera = Camera {
@@ -111,31 +113,26 @@ updateCamera (keys, (pointer, wheel), _, _) = do
   return c
 
 updateFrog :: News -> FrogVector -> StateT PlayState IO ()
-updateFrog news forward = do
+updateFrog news@(_, _, _, time) forward = do
   playwit <- get
   ((didMove, didJump), newFrog) <- lift $ runStateT (moveFrog news forward) (frog playwit)
 
   put playwit { frog = newFrog }
 
   when didMove $ moveMesh (position newFrog) forward
-  animateMesh didMove didJump
+  animateMesh (lifetime time) didMove didJump
 
-animateMesh :: Bool -> Bool -> StateT PlayState IO ()
-animateMesh didMove didJump = do
+animateMesh :: Float -> Bool -> Bool -> StateT PlayState IO ()
+animateMesh now didMove didLeap = do
   playwit <- get
   let frogMesh = head $ meshes playwit
-  case meshAnimation frogMesh of
-    Just animation -> do
-      newAnimation <- lift $ play ((if didJump then once else evermore) animation)
-        (if didJump
-          then 2
-          else if didMove 
-            then 0 
-            else 5
-        )
-      let newFrogMesh = frogMesh { meshAnimation = Just newAnimation }
-      put playwit { meshes = hit 0 (const newFrogMesh) (meshes playwit) }
-    Nothing -> return ()
+      athem = meshAnimation frogMesh
+  when (isJust athem) $
+    let newAnimation = play now
+          ((if didLeap then once else evermore) (fromJust athem))
+          (if didLeap then 2 else if didMove then 0 else 5)
+        newFrogMesh = frogMesh { meshAnimation = Just newAnimation }
+    in put playwit { meshes = hit 0 (const newFrogMesh) (meshes playwit) }
 
 moveMesh :: Point3 -> FrogVector -> StateT PlayState IO ()
 moveMesh (Vertex3 x y z) forward = do

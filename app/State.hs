@@ -22,6 +22,7 @@ import Matrix (RenderView)
 import Mean (between)
 import Stavemake (Staveware)
 import Time (Timewit (..))
+import Graphics.Rendering.OpenGL (GLfloat)
 
 
 type News = (Keyset, Mousewit, RenderView, Timewit)
@@ -63,5 +64,5 @@ class Stately a where
 preent :: Show a => a -> StateT b IO ()
 preent = lift . print
 
-doAt :: (RealFrac a, Stately b) => Timewit -> a -> StateT b IO () -> StateT b IO ()
-doAt time t = when $ between (lifetime time, lifetime time + delta time) (round t)
+doAt :: Stately b => Timewit -> GLfloat -> StateT b IO () -> StateT b IO ()
+doAt time t = when $ between (lifetime time, lifetime time + delta time) t

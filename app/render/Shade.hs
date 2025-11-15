@@ -34,7 +34,7 @@ import FastenShade
 import FrogSpell
 import Skeleton (Animation (..), continue)
 import Matrix (FrogMatrix)
-import Mean (Twain, doBoth, twimap, twin)
+import Mean (Twain, doBoth, twimap, twin, ly)
 import Spell (summon)
 import Time (Timewit (lifetime))
 
@@ -165,11 +165,11 @@ drawMesh projectionMatrix viewMatrix orthographicMatrix time mesh = do
   allocVector mesh (flatten viewMatrix) "u_view_matrix" uniformMatrix
   allocVector mesh (flatten orthographicMatrix) "u_orthographic_matrix" uniformMatrix
 
-  let now = (fromIntegral (lifetime time) / 1000) :: Float
+  let now = ly (lifetime time)
       meshmoth = meshAnimation mesh
   case (meshmoth, maybe False playing meshmoth) of
     (Just animation, True) -> do
-      (skellington, _finished) <- continue animation now
+      let (skellington, _finished) = continue animation now
       case HM.lookup "u_bone_matrices" (uniformMap mesh) of
         Just uLoc -> do
           UniformLocation bonesLocation <- get uLoc
