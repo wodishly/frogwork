@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-type-defaults #-}
 module TitleState (
   TitleState (..)
 , makeTitleState
@@ -8,14 +9,14 @@ import Control.Monad.State (MonadState (get, put), StateT)
 import SDL.Input.Keyboard.Codes
 import Graphics.Rendering.OpenGL (Vertex2(Vertex2))
 
-import State (StateName (TitleName, PlayName, EndName, WillName), Stately (..))
+import State (StateName (EndName, PlayName, TitleName, WillName), Stately (..), doAt, preent)
 
-import Blee (Blee, bg, blue, darkwhelk, lightwhelk, red)
+import Blee (bg, darkwhelk, red, lightwhelk)
 import Key (Keyset, keyBegun)
 import Matrix (RenderView (size))
 import Stavemake (Staveware)
-import Stavework (Stake (..), renderFeather, stavewrite)
-import Mean (ssss)
+import Stavework (Writing (blee), makeWriting, renderFeather, stavewrite)
+import Mean (hit)
 
 
 data TitleState = TitleState {
@@ -23,47 +24,53 @@ data TitleState = TitleState {
 , finger :: Int
 , choosen :: Maybe StateName
 , _staveware :: Staveware
+, writings :: [Writing]
 }
 
 instance Stately TitleState where
   name _ = TitleName
   staveware = _staveware
 
-  update (keyset, _, _, _) = do
+  update (keyset, _, _, time) = do
     _ <- get
+    doAt time 4000 $ preent "hi"
     choosefare keyset
 
-  render (_, _, display, time) = do
-    statewit <- get
+  render news@(_, _, display, time) = do
+    titlewit <- get
     bg darkwhelk
-    renderFeather display time (staveware statewit)
+    renderFeather display time (staveware titlewit)
 
-    let (width, height) = size display
-    stavewrite (Vertex2 (width/2) (height*3/4)) (Middle, Middle) (Vertex2 1 1) lightwhelk "WƐLKƏM TU FRⱰGFƆRD!"
-    stavewrite (Vertex2 (width/2) (height*3/7)) (Middle, Middle) (Vertex2 1 1) (choosewhelk statewit 0) "plej"
-    stavewrite (Vertex2 (width/2) (height*2/7)) (Middle, Middle) (Vertex2 1 1) (choosewhelk statewit 1) "wɪlz"
-    stavewrite (Vertex2 (width/2) (height  /7)) (Middle, Middle) (Vertex2 1 1) (choosewhelk statewit 2) "ɛnd"
+    stavewrite news (writings titlewit)
 
-choosewhelk :: TitleState -> Int -> Blee
-choosewhelk statewit n = if ssss (mod.finger) (length.hand) statewit == n then red else blue
-
-makeTitleState :: Staveware -> TitleState
-makeTitleState ware = TitleState {
+makeTitleState :: RenderView -> Staveware -> TitleState
+makeTitleState dis ware = TitleState {
   hand = [PlayName, WillName, EndName]
 , finger = 0
 , choosen = Nothing
 , _staveware = ware
-}
+, writings = [
+    makeWriting "WƐLKƏM TU FRⱰGFƆRD!" (Vertex2 (width/2) (height*3/4))
+  , makeWriting "plej" (Vertex2 (width/2) (height*3/7))
+  , makeWriting "wɪlz" (Vertex2 (width/2) (height*2/7))
+  , makeWriting "ɛnd" (Vertex2 (width/2) (height  /7))
+  ]
+} where (width, height) = size dis
 
 choosefare :: Keyset -> StateT TitleState IO ()
 choosefare keyset = do
   titlewit <- get
   put $ if keyBegun keyset ScancodeReturn
-  then titlewit { choosen = Just $ ssss ((!!).hand) finger titlewit }
-  else titlewit {
-    finger = if keyBegun keyset ScancodeUp
-        then ssss (mod.pred.finger) (length.hand) titlewit
-      else if keyBegun keyset ScancodeDown
-        then ssss (mod.succ.finger) (length.hand) titlewit
-        else finger titlewit
+  then titlewit { choosen = Just $ hand titlewit!!finger titlewit }
+  else let
+    finger'
+      | keyBegun keyset ScancodeUp = pred $ finger titlewit
+      | keyBegun keyset ScancodeDown = succ $ finger titlewit
+      | otherwise = finger titlewit
+    in titlewit {
+      finger = mod finger' (length $ hand titlewit)
+    , writings =
+        hit (succ $ mod finger' (length $ hand titlewit)) (\w -> w { blee = red })
+        $ map (\w -> w { blee = lightwhelk })
+        $ writings titlewit
     }

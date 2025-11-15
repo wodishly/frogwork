@@ -17,8 +17,7 @@ import SDL.Input.Keyboard.Codes
 import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2))
 
 import Happen (Keywit, unwrapHappenKeys)
-import Rime (Point)
-import Matrix (hat)
+import Rime (Point, hat)
 import Mean (allIn, has, none, doBoth)
 import Data.Function ((&))
 

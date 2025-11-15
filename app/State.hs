@@ -9,19 +9,22 @@ module State (
 , makeSettings
 , toggle
 , preent
+, doAt
 ) where
 
-import Control.Lens (makeLenses, Lens', (.~), (^.))
-import Control.Monad.State (StateT, MonadTrans (lift))
+import Control.Lens (Lens', makeLenses, (.~), (^.))
+import Control.Monad (when)
+import Control.Monad.State (MonadTrans (lift), StateT)
 
 import Happen (Mousewit)
 import Key (Keyset)
 import Matrix (RenderView)
+import Mean (between)
 import Stavemake (Staveware)
-import Time (Time)
+import Time (Timewit (..))
 
 
-type News = (Keyset, Mousewit, RenderView, Time)
+type News = (Keyset, Mousewit, RenderView, Timewit)
 
 data StateName
   = TitleName
@@ -59,3 +62,6 @@ class Stately a where
 -- | Curse this not with `(Stately b) =>`, lest @preent@ no longer become @Allwit@.
 preent :: Show a => a -> StateT b IO ()
 preent = lift . print
+
+doAt :: (RealFrac a, Stately b) => Timewit -> a -> StateT b IO () -> StateT b IO ()
+doAt time t = when $ between (lifetime time, lifetime time + delta time) (round t)

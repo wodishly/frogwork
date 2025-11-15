@@ -26,13 +26,14 @@ import FreeType.Core.Types
 import Graphics.Rendering.OpenGL (
     Clamping (ClampToEdge)
   , GLfloat
+  , HasSetter (($=))
   , PixelFormat (Red)
   , Repetition (Repeated)
   , TextureCoordName (S, T)
   , TextureFilter (Linear')
   , TextureObject
   , TextureTarget2D (Texture2D)
-  , Vertex2 (Vertex2), HasSetter (($=))
+  , Vertex2 (Vertex2)
   )
 import qualified Graphics.Rendering.OpenGL as GL (
     textureFilter
@@ -120,7 +121,6 @@ glyphFormatName = ("ft_GLYPH_FORMAT_" ++) . \case
     FT_GLYPH_FORMAT_PLOTTER -> "PLOTTER"
     _ -> "NONE"
 
--- this function is a huge memory leak. why?
 pad :: Num a => Int -> Int -> [a] -> [a]
 pad _ _ [] = []
 pad gap width bitmap = concatMap (++ replicate gap 0) (chunksOf width bitmap)

@@ -7,26 +7,34 @@ import Graphics.Rendering.OpenGL (Vertex2(Vertex2))
 
 import State (StateName (PauseName), Stately (..))
 
-import Blee (bg, black, white)
+import Blee (bg, black)
 import Matrix (RenderView (size))
-import Stavework (Stake (..), stavewrite, renderFeather)
+import Stavework (stavewrite, renderFeather, Writing, makeWriting)
 import Stavemake (Staveware)
 import Control.Monad.State (MonadState(get))
+import Rime ((*^))
 
 
-newtype PauseState = PauseState Staveware
+data PauseState = PauseState {
+  _staveware :: Staveware
+, writings :: [Writing]
+}
 
 instance Stately PauseState where
   name _ = PauseName
-  staveware (PauseState ware) = ware
+  staveware (PauseState ware _) = ware
 
   update _ = return ()
-  render (_, _, display, time) = do
-    statewit <- get
+  render news@(_, _, display, time) = do
+    pausewit <- get
     bg black
-    renderFeather display time (staveware statewit)
-    let (width, height) = size display
-    stavewrite (Vertex2 (width/2) (height/2)) (Middle, Middle) (Vertex2 1 1) white "pɔz"
+    renderFeather display time (staveware pausewit)
+    stavewrite news (writings pausewit)
 
-makePauseState :: Staveware -> PauseState
-makePauseState = PauseState
+makePauseState :: RenderView -> Staveware -> PauseState
+makePauseState dis ware = PauseState {
+  _staveware = ware
+, writings = [
+    makeWriting "pɔz" ((1/2) *^ Vertex2 width height)
+  ]
+} where (width, height) = size dis

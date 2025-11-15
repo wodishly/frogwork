@@ -256,3 +256,6 @@ sq = toBoth (*)
 
 dimensionError :: HasCallStack => Int -> a
 dimensionError = error . ("need dimension " ++) . show
+
+between :: Ord a => (a, a) -> a -> Bool
+between (low, high) thing = low <= thing && thing < high

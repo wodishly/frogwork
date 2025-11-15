@@ -11,11 +11,10 @@ import SDL.Input.Keyboard.Codes
 import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2), Vertex3 (Vertex3))
 
 import Key (Keyset, keyBegun, wasd)
-import Matrix (FrogVector, hat)
 import Mean (doBoth)
-import Rime (Point3, (*^), (<+>))
+import Rime (Point3, (*^), (<+>), FrogVector, hat)
 import State (News)
-import Time (Time, throttle)
+import Time (Timewit, throttle)
 
 
 data Frogwit = Frogwit {
@@ -54,7 +53,7 @@ leap keys = do
       return True
     else return False
 
-fall :: Time -> StateT Frogwit IO Bool
+fall :: Timewit -> StateT Frogwit IO Bool
 fall time = do
   frogwit <- get
   let Vertex3 x y z = position frogwit

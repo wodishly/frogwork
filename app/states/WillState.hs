@@ -11,13 +11,14 @@ import Graphics.Rendering.OpenGL (Vertex2(Vertex2))
 
 import State (Settings, StateName (WillName, TitleName), Stately (..), isShowingKeys, isShowingTicks, toggle)
 
-import Blee (Blee, bg, blue, darkwhelk, lightwhelk, red)
+import Blee (bg, darkwhelk)
 import Key (Keyset, keyBegun)
 import Matrix (RenderView (size))
 import Mean (ssss)
 import Stavemake (Staveware)
-import Stavework (Stake (..), renderFeather, stavewrite)
+import Stavework (renderFeather, stavewrite, Writing, makeWriting)
 import Data.Maybe (fromMaybe)
+import Control.Monad (when)
 
 
 data WillState = WillState {
@@ -26,10 +27,11 @@ data WillState = WillState {
 , choosen :: Maybe (Either StateName (Settings -> Settings))
 , _staveware :: Staveware
 , settings :: Settings
+, writings :: [Writing]
 }
 
 instance Show WillState where
-  show (WillState _ f _ _ s) = show f ++ show s
+  show (WillState _ f _ _ s _) = show f ++ show s
 
 instance Stately WillState where
   name _ = WillName
@@ -39,22 +41,14 @@ instance Stately WillState where
     _ <- get
     choosefare keyset
 
-  render (_, _, display, time) = do
-    statewit <- get
+  render news@(_, _, display, time) = do
+    willwit <- get
     bg darkwhelk
-    renderFeather display time (staveware statewit)
+    renderFeather display time (staveware willwit)
+    stavewrite news (writings willwit)
 
-    let (width, height) = size display
-    stavewrite (Vertex2 (width/2) (height*3/4)) (Middle, Middle) (Vertex2 1 1) lightwhelk "WꞮLZ"
-    stavewrite (Vertex2 (width/2) (height*3/7)) (Middle, Middle) (Vertex2 1 1) (choosewhelk statewit 0) "tɛl kiz"
-    stavewrite (Vertex2 (width/2) (height*2/7)) (Middle, Middle) (Vertex2 1 1) (choosewhelk statewit 1) "tɛl tɪks"
-    stavewrite (Vertex2 (width/2) (height  /7)) (Middle, Middle) (Vertex2 1 1) (choosewhelk statewit 2) "bæk"
-
-choosewhelk :: WillState -> Int -> Blee
-choosewhelk statewit n = if ssss (mod.finger) (length.hand) statewit == n then red else blue
-
-makeWillState :: Staveware -> Settings -> WillState
-makeWillState ware sets = WillState {
+makeWillState :: RenderView -> Staveware -> Settings -> WillState
+makeWillState dis ware sets = WillState {
   hand = [
     Right $ toggle isShowingKeys
   , Right $ toggle isShowingTicks
@@ -64,7 +58,13 @@ makeWillState ware sets = WillState {
 , choosen = Nothing
 , _staveware = ware
 , settings = sets
-}
+, writings = [
+    makeWriting "WꞮLZ" (Vertex2 (width/2) (height*3/4))
+  , makeWriting "tɛl kiz" (Vertex2 (width/2) (height*3/7))
+  , makeWriting "tɛl tɪks" (Vertex2 (width/2) (height*2/7))
+  , makeWriting "bæk" (Vertex2 (width/2) (height/7))
+  ]
+} where (width, height) = size dis
 
 unchoose :: Maybe Settings -> StateT WillState IO ()
 unchoose sets = do
@@ -77,12 +77,9 @@ unchoose sets = do
 choosefare :: Keyset -> StateT WillState IO ()
 choosefare keyset = do
   willwit <- get
-  put $ if keyBegun keyset ScancodeReturn
-  then willwit { choosen = Just $ ssss ((!!) . hand) finger willwit }
-  else willwit {
-    finger = if keyBegun keyset ScancodeUp
-        then ssss (mod.pred.finger) (length.hand) willwit
-      else if keyBegun keyset ScancodeDown
-        then ssss (mod.succ.finger) (length.hand) willwit
-        else finger willwit
-    }
+  if keyBegun keyset ScancodeUp
+    then put $ willwit { finger = ssss (mod.pred.finger) (length.hand) willwit }
+  else if keyBegun keyset ScancodeDown
+    then put $ willwit { finger = ssss (mod.succ.finger) (length.hand) willwit }
+  else when (keyBegun keyset ScancodeReturn) $
+    put $ willwit { choosen = Just $ ssss ((!!) . hand) finger willwit }

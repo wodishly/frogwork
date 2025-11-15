@@ -14,15 +14,15 @@ import Graphics.Rendering.OpenGL as GL (GLfloat, Program, Vertex2 (Vertex2), Ver
 import Frog (Frogwit (position), makeFrog, moveFrog)
 import State (News, StateName (..), Stately (..))
 
-import Blee (bg, black, lightwhelk)
+import Blee (bg, black)
 import Key (arrow)
-import Matrix (FrogVector, RenderView (size), aught, frogLookAt, frogZero, getOrthographicMatrix, getPerspectiveMatrix)
+import Matrix (RenderView (size), frogLookAt, getOrthographicMatrix, getPerspectiveMatrix)
 import Mean (given, hit)
 import Random (FrogSeed, defaultSeed)
-import Rime (Point, Point3, asPoint, clamp)
+import Rime (Point, Point3, clamp, FrogVector, aught)
 import Shade (Mesh (meshAnimation), drawMesh, setMeshTransform)
 import Stavemake (Staveware)
-import Stavework (Stake (..), stavewrite)
+import Stavework (stavewrite, Writing, makeWriting)
 import Skeleton (play, evermore, once)
 
 
@@ -33,7 +33,7 @@ data Camera = Camera {
 
 makeCamera :: Camera
 makeCamera = Camera {
-  cPosition = frogZero
+  cPosition = fromList [0, 0, 0]
 , cTarget = fromList [0, 0, 1]
 }
 
@@ -46,6 +46,7 @@ data PlayState = PlayState {
 , radius :: GLfloat
 , programs :: [(Program, VertexArrayObject)]
 , camera :: Camera
+, writings :: [Writing]
 }
 
 instance Stately PlayState where
@@ -59,25 +60,24 @@ instance Stately PlayState where
     _ <- updateFrog news forward
     return ()
 
-  render (_, _, display, time) = do
-    statewit <- get
+  render news@(_, _, display, time) = do
+    playwit <- get
     bg black
 
     -- why does this line make the last written stave have a black background?
     -- renderFeather display time (staveware statewit)
 
-    let cam = camera statewit
+    let cam = camera playwit
     let viewMatrix = frogLookAt (cPosition cam) (cTarget cam)
         orthographicMatrix = getOrthographicMatrix display
-        (width, height) = size display
-    lift $ mapM_ (drawMesh (getPerspectiveMatrix display) viewMatrix orthographicMatrix time) (meshes statewit)
-    stavewrite (Vertex2 (width/2) (height/2)) (Middle, Middle) (asPoint 1) lightwhelk "omg frogs!!!!"
+    lift $ mapM_ (drawMesh (getPerspectiveMatrix display) viewMatrix orthographicMatrix time) (meshes playwit)
+    stavewrite news (writings playwit)
 
 instance Show PlayState where
-  show (PlayState _ _ _ f _ _ p c) = show f ++ show p ++ show c
+  show (PlayState _ _ _ f _ _ p c _) = show f ++ show p ++ show c
 
-makePlayState :: Staveware -> [Mesh] -> PlayState
-makePlayState ware ms = PlayState {
+makePlayState :: RenderView -> Staveware -> [Mesh] -> PlayState
+makePlayState dis ware ms = PlayState {
   seed = defaultSeed
 , _staveware = ware
 , meshes = ms
@@ -86,7 +86,10 @@ makePlayState ware ms = PlayState {
 , radius = 5
 , programs = []
 , camera = makeCamera
-}
+, writings = [
+    makeWriting "omg frogs!!!!" (Vertex2 (width/2) (height/2))
+  ]
+} where (width, height) = size dis
 
 updateCamera :: News -> StateT PlayState IO Camera
 updateCamera (keys, (pointer, wheel), _, _) = do

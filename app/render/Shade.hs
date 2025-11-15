@@ -18,10 +18,10 @@ import Data.Bifunctor (Bifunctor (second))
 import Data.Binary.Get (runGet)
 import Data.HashMap.Lazy ((!))
 import Data.Maybe (fromJust)
-import Numeric.LinearAlgebra (flatten)
 import Text.Printf (printf)
 
 import Foreign (Int32, Ptr, Storable, new, nullPtr, plusPtr, sizeOf, withArray, Word8)
+import Numeric.LinearAlgebra (Vector, flatten, ident)
 import Graphics.Rendering.OpenGL as GL
 
 import qualified Data.ByteString as BS (readFile)
@@ -31,15 +31,14 @@ import qualified Graphics.GL as GLRaw (glUniformMatrix4fv)
 
 import FastenMain (assetsBasePath, shaderBasePath)
 import FastenShade
-import Matrix (FrogMatrix)
-import Mean (Twain, twimap, twin, doBoth)
 import FrogSpell
-import MothSpell as MOTH
+import Skeleton (Animation (..), play, continue)
+import Matrix (FrogMatrix)
+import Mean (Twain, doBoth, twimap, twin)
 import Spell (summon)
-import Time
-import Numeric.LinearAlgebra.HMatrix ( ident )
-import Skeleton (Animation (..), continue)
-import Data.Vector.Storable (Vector)
+import Time (Timewit (lifetime))
+
+import MothSpell as MOTH
 
 drawFaces :: Int32 -> IO ()
 drawFaces count = drawElements Triangles count UnsignedInt (bufferOffset 0)
@@ -148,16 +147,15 @@ useMesh mesh = do
 -- idk if i like this, but something like this
 allocVector :: Storable a => Mesh -> Vector a -> String -> (GLint -> (Ptr a -> IO ())) -> IO ()
 allocVector mesh prop uniformKey callback = case HM.lookup uniformKey (uniformMap mesh) of
-    Just uLoc -> do
-      UniformLocation location <- get uLoc
-      _ <- S.unsafeWith prop (callback location)
-      return ()
-    _ -> return ()
+  Just uLoc -> do
+    UniformLocation location <- get uLoc
+    S.unsafeWith prop (callback location)
+  _ -> return ()
 
 uniformMatrix :: GLint -> Ptr GLfloat -> IO ()
 uniformMatrix loc = GLRaw.glUniformMatrix4fv loc 1 1
 
-drawMesh :: FrogMatrix -> FrogMatrix -> FrogMatrix -> Time -> Mesh -> IO ()
+drawMesh :: FrogMatrix -> FrogMatrix -> FrogMatrix -> Timewit -> Mesh -> IO ()
 drawMesh projectionMatrix viewMatrix orthographicMatrix time mesh = do
   useMesh mesh
 
@@ -183,7 +181,7 @@ drawMesh projectionMatrix viewMatrix orthographicMatrix time mesh = do
   case HM.lookup "u_time" (uniformMap mesh) of
     Just _ -> do
       timeLocation <- uniformMap mesh ! "u_time"
-      (uniform timeLocation :: StateVar GLfloat) $= now
+      uniform timeLocation $= now
     _ -> return ()
 
   case HM.lookup "u_texture" (uniformMap mesh) of
@@ -195,7 +193,6 @@ drawMesh projectionMatrix viewMatrix orthographicMatrix time mesh = do
     _ -> return ()
 
   drawFaces (elementCount mesh)
-
 
 makeAssetMesh :: AssetMeshProfile -> IO Mesh
 makeAssetMesh mprofile = do

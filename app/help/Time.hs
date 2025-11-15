@@ -1,5 +1,5 @@
 module Time (
-  Time (..)
+  Timewit (..)
 , beginTime
 , keepTime
 , doCurrentTime
@@ -10,7 +10,7 @@ import Data.Word (Word32)
 import Graphics.Rendering.OpenGL (GLfloat)
 import qualified SDL.Time as SDL
 
-data Time = Time {
+data Timewit = Timewit {
   lifetime :: Word32
 , delta :: Word32
 } deriving (Show, Eq)
@@ -20,14 +20,14 @@ doCurrentTime = do
   t <- SDL.ticks
   return $ fromIntegral t / 1000
 
-beginTime :: Time
-beginTime = Time 0 0
+beginTime :: Timewit
+beginTime = Timewit 0 0
 
-keepTime :: Time -> Word32 -> Time
-keepTime time now = Time {
+keepTime :: Timewit -> Word32 -> Timewit
+keepTime time now = Timewit {
     lifetime = now
   , delta = now - lifetime time
 }
 
-throttle :: Time -> GLfloat -> GLfloat
+throttle :: Timewit -> GLfloat -> GLfloat
 throttle time = (*) (fromIntegral (delta time) / 1000)

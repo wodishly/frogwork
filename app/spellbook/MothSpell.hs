@@ -3,13 +3,14 @@ module MothSpell where
 
 import Data.Binary.Get (Get)
 import Foreign (Word8)
-import Graphics.Rendering.OpenGL (GLfloat, Vertex4 (..))
-import Graphics.Rendering.OpenGL.GL (Vertex3)
 
-import Numeric.LinearAlgebra.HMatrix ((><))
+import Numeric.LinearAlgebra ((><))
+import Graphics.Rendering.OpenGL (GLfloat)
+
 import Matrix (FrogMatrix)
-
 import Spell ((✿), int, u8, s32, f32, f32x3, f32x4)
+import Rime (Point3, Point4)
+
 
 data MothFile = MothFile {
   tomeCount :: Word8,
@@ -35,12 +36,12 @@ data MothTale = MothTale {
 } deriving (Show, Eq)
 
 data Mothly3 = Mothly3 {
-  v3 :: [Vertex3 GLfloat],
+  v3 :: [Point3],
   t3 :: [GLfloat]
 } deriving (Show, Eq)
 
 data Mothly4 = Mothly4 {
-  v4 :: [Vertex4 GLfloat],
+  v4 :: [Point4],
   t4 :: [GLfloat]
 } deriving (Show, Eq)
 
