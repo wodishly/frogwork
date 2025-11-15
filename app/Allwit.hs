@@ -73,7 +73,7 @@ import FastenShade (
 
 import Matrix (RenderView (..), fromAffine, fromTranslation)
 import Mean (twimap, full, weep, ssss, doBoth)
-import Time (Time, beginTime, keepTime)
+import Time (Timewit, beginTime, keepTime)
 
 import Happen (Mousewit, Overwindow, unwrapHappenPointer, unwrapHappenWheel, unwrapHappenWindow)
 import Key (Keyset, anyKeysBegun, keyBegun, listen, unkeys)
@@ -94,7 +94,7 @@ data Allwit = Allwit {
 , keyset :: Keyset
 , mouse :: Mousewit
 , display :: RenderView
-, time :: Time
+, time :: Timewit
 
 , nowState :: StateName
 , _titleState :: TitleState
@@ -120,11 +120,11 @@ makeAllwit overwind ware dis meshes = let sets = makeSettings in
     dis
     beginTime
     TitleName
-    (makeTitleState ware)
-    (makeWillState ware sets)
-    (makePlayState ware meshes)
-    (makePauseState ware)
-    (makeEndState ware)
+    (makeTitleState dis ware)
+    (makeWillState  dis ware sets)
+    (makePlayState  dis ware meshes)
+    (makePauseState dis ware)
+    (makeEndState       ware)
 
 begetMeshes :: IO (Staveware, [Mesh])
 begetMeshes = do

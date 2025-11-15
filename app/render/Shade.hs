@@ -36,7 +36,7 @@ import Matrix (FrogMatrix)
 import Mean (Twain, doBoth, twimap, twin)
 import Skeleton (Animation (..), play)
 import Spell (summon)
-import Time
+import Time (Timewit (lifetime))
 
 import MothSpell as MOTH
 
@@ -155,7 +155,7 @@ allocVector mesh prop uniformKey callback = case HM.lookup uniformKey (uniformMa
 uniformMatrix :: GLint -> Ptr GLfloat -> IO ()
 uniformMatrix loc = GLRaw.glUniformMatrix4fv loc 1 1
 
-drawMesh :: FrogMatrix -> FrogMatrix -> FrogMatrix -> Time -> Mesh -> IO ()
+drawMesh :: FrogMatrix -> FrogMatrix -> FrogMatrix -> Timewit -> Mesh -> IO ()
 drawMesh projectionMatrix viewMatrix orthographicMatrix time mesh = do
   useMesh mesh
 

@@ -11,12 +11,12 @@ import Graphics.Rendering.OpenGL (Vertex2(Vertex2))
 
 import State (Settings, StateName (WillName, TitleName), Stately (..), isShowingKeys, isShowingTicks, toggle)
 
-import Blee (Blee, bg, blue, darkwhelk, lightwhelk, red)
+import Blee (bg, darkwhelk)
 import Key (Keyset, keyBegun)
 import Matrix (RenderView (size))
 import Mean (ssss)
 import Stavemake (Staveware)
-import Stavework (renderFeather, stavewrite)
+import Stavework (renderFeather, stavewrite, Writing, makeWriting)
 import Data.Maybe (fromMaybe)
 import Control.Monad (when)
 
@@ -27,10 +27,11 @@ data WillState = WillState {
 , choosen :: Maybe (Either StateName (Settings -> Settings))
 , _staveware :: Staveware
 , settings :: Settings
+, writings :: [Writing]
 }
 
 instance Show WillState where
-  show (WillState _ f _ _ s) = show f ++ show s
+  show (WillState _ f _ _ s _) = show f ++ show s
 
 instance Stately WillState where
   name _ = WillName
@@ -40,22 +41,14 @@ instance Stately WillState where
     _ <- get
     choosefare keyset
 
-  render (_, _, display, time) = do
-    statewit <- get
+  render news@(_, _, display, time) = do
+    willwit <- get
     bg darkwhelk
-    renderFeather display time (staveware statewit)
+    renderFeather display time (staveware willwit)
+    stavewrite news (writings willwit)
 
-    let (width, height) = size display
-    stavewrite display (Vertex2 (width/2) (height*3/4)) lightwhelk "WꞮLZ"
-    stavewrite display (Vertex2 (width/2) (height*3/7)) (choosewhelk statewit 0) "tɛl kiz"
-    stavewrite display (Vertex2 (width/2) (height*2/7)) (choosewhelk statewit 1) "tɛl tɪks"
-    stavewrite display (Vertex2 (width/2) (height  /7)) (choosewhelk statewit 2) "bæk"
-
-choosewhelk :: WillState -> Int -> Blee
-choosewhelk statewit n = if ssss (mod.finger) (length.hand) statewit == n then red else blue
-
-makeWillState :: Staveware -> Settings -> WillState
-makeWillState ware sets = WillState {
+makeWillState :: RenderView -> Staveware -> Settings -> WillState
+makeWillState dis ware sets = WillState {
   hand = [
     Right $ toggle isShowingKeys
   , Right $ toggle isShowingTicks
@@ -65,7 +58,13 @@ makeWillState ware sets = WillState {
 , choosen = Nothing
 , _staveware = ware
 , settings = sets
-}
+, writings = [
+    makeWriting "WꞮLZ" (Vertex2 (width/2) (height*3/4))
+  , makeWriting "tɛl kiz" (Vertex2 (width/2) (height*3/7))
+  , makeWriting "tɛl tɪks" (Vertex2 (width/2) (height*2/7))
+  , makeWriting "bæk" (Vertex2 (width/2) (height/7))
+  ]
+} where (width, height) = size dis
 
 unchoose :: Maybe Settings -> StateT WillState IO ()
 unchoose sets = do

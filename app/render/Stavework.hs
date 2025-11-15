@@ -3,10 +3,12 @@
 @Stavework@ imports @State@, so @State@ must not import @Stavework@.
 -}
 module Stavework (
-  stavewrite
-, spellgreat
+  Stake (..)
+, Writing (..)
+, makeWriting
 , renderFeather
-, Stake (..)
+, spellgreat
+, stavewrite
 ) where
 
 import Control.Monad (forM_, unless)
@@ -31,51 +33,68 @@ import Graphics.Rendering.OpenGL (
   , textureBinding
   )
 
-import Blee (Blee, bleeToGLVector4)
+import Blee (Blee, bleeToGLVector4, lightwhelk)
 import FastenShade (Programful (uniformMap))
-import Rime (FrogVertex((^*^)), Point, Polyhedron, (<+>), (^*))
-import Shade (Mesh (elementCount, vbo), bufferSize, drawFaces, useMesh, drawMesh)
-import State (Stately (staveware))
-import Stavemake (Stave (Stave, advance, texture), Stavebook, greatness, sharpness, Staveware)
+import Matrix (RenderView (size), getOrthographicMatrix, getPerspectiveMatrix)
 import Mean (Twain)
-import Matrix (RenderView (size), getPerspectiveMatrix, getOrthographicMatrix)
-import Time (Time)
+import Rime (FrogVertex ((^*^)), Point, Polyhedron, (<+>), (^*))
+import Shade (Mesh (elementCount, vbo), bufferSize, drawFaces, drawMesh, useMesh)
+import State (News, Stately (staveware))
+import Stavemake (Stave (Stave, advance, texture), Stavebook, Staveware, greatness, sharpness)
+import Time (Timewit)
 
 
 data Stake = North | South | East | West | Middle deriving (Show, Eq)
 type Stakes = Twain Stake
 
--- | Write at center-aligned scale 1.
-stavewrite :: (Stately b) => RenderView -> Point -> Blee -> String -> StateT b IO ()
-stavewrite = ((($ Vertex2 1 1) . ($ (Middle, Middle))) .) . stavewrite'
+type Stavewone = Timewit -> Point
 
-stavewrite' :: (Stately b) => RenderView -> Point -> Stakes -> Point -> Blee -> String -> StateT b IO ()
-stavewrite' display stead stakes scale' blee spell =
-  get >>= \statewit
-  -> let (book, mesh) = staveware statewit in lift $
-    useMesh mesh
+data Writing = Writing {
+  writ :: String
+, stead :: Point
+, stakes :: Stakes
+, scale :: Point
+, blee :: Blee
+, wone :: Stavewone
+}
 
-    >> let advances = scanl (+) 0 (map (advance . (book!)) spell)
-           (w, h) = size display
-           scale = Vertex2 (1/800) (1/600) ^*^ Vertex2 w h ^*^ scale'
-           offset = reckonStakes book stakes scale spell in
+-- | Twimiddle, truescale, lightwhelk, unwone.
+-- Use the orshapework @Writing@ otherwise.
+makeWriting :: String -> Point -> Writing
+makeWriting w st = Writing w st (Middle, Middle) (Vertex2 1 1) lightwhelk (const $ Vertex2 0 0)
 
-    forM_ (zip [0..] spell) $ \(i, char) ->
+stavewrite :: Stately b => News -> [Writing] -> StateT b IO ()
+stavewrite (_, _, display, _) writings = do
+  statewit <- get
+
+  let (book, mesh) = staveware statewit
+  lift $ useMesh mesh
+
+  lift $ forM_ writings $ \(Writing wr std stk scl' bl _) -> do
+
+    let advances = scanl (+) 0 (map (advance . (book!)) wr)
+        (w, h) = size display
+        scl = Vertex2 (1/800) (1/600) ^*^ Vertex2 w h ^*^ scl'
+        -- offset = Vertex2 ((/(10 :: Float)) . fromIntegral $ lifetime time) 0 <+> reckonStakes book stk scl wr
+        offset = reckonStakes book stk scl wr
+
+    forM_ (zip [0..] wr) $ \(i, char) -> do
       unless (member char book) (error $ "cant write" ++ show char)
 
-      >> let stave = book!char
-             vertices = stavenook (offset <+> stead) scale (advances!!i) stave in
-         activeTexture $= TextureUnit 0
-      >> textureBinding Texture2D $= Just (texture stave)
-      >> bindBuffer ArrayBuffer $= Just (vbo mesh)
-      >> uniformMap mesh ! "u_blee" >>= ($= bleeToGLVector4 blee) . uniform
-      >> withArray vertices (bufferSubData ArrayBuffer WriteToBuffer 0 $ bufferSize vertices)
-      >> bindBuffer ArrayBuffer $= Nothing
-      >> drawFaces (elementCount mesh)
+      let stave = book!char
+          vertices = stavenook (offset <+> std) scl (advances!!i) stave
+
+      activeTexture $= TextureUnit 0
+      textureBinding Texture2D $= Just (texture stave)
+      bindBuffer ArrayBuffer $= Just (vbo mesh)
+      uniformMap mesh ! "u_blee" >>= ($= bleeToGLVector4 bl) . uniform
+      withArray vertices (bufferSubData ArrayBuffer WriteToBuffer 0 $ bufferSize vertices)
+      bindBuffer ArrayBuffer $= Nothing
+      drawFaces (elementCount mesh)
 
 reckonStakes :: Stavebook -> Stakes -> Point -> String -> Point
-reckonStakes book (xstake, ystake) scale spell = Vertex2 ew ns where
-  Vertex2 x y = spellgreat book scale spell
+reckonStakes book (xstake, ystake) scl wr = Vertex2 ew ns where
+  Vertex2 x y = spellgreat book scl wr
   ew = case xstake of
     West -> 0
     Middle -> -(x/4)
@@ -88,25 +107,25 @@ reckonStakes book (xstake, ystake) scale spell = Vertex2 ew ns where
     _ -> error "bad stake"
 
 spellgreat :: Stavebook -> Point -> String -> Vertex2 GLfloat
-spellgreat book scale = (scale ^*^) .
-  foldr ((\(Vertex2 x y) (Vertex2 a b) -> Vertex2 (x+a) (max y b))
+spellgreat book scl = (scl ^*^) . foldr
+  ((\(Vertex2 x y) (Vertex2 a b) -> Vertex2 (x+a) (max y b))
   . (\(Stave (Vertex2 _ by) (Vertex2 _ _) step _) -> Vertex2 step by)
-  . (book!)
-  ) (Vertex2 0 0)
+  . (book!))
+  (Vertex2 0 0)
 
 stavenook :: Point -> Point -> GLfloat -> Stave -> Polyhedron
-stavenook bottomLeft scale step stave = [
+stavenook bottomLeft scl step stave = [
     Vertex3 (x+w) (y+h) 0
   , Vertex3 (x+w)  y    0
   , Vertex3  x     y    0
   , Vertex3  x    (y+h) 0
   ] where
     (Stave (Vertex2 left top) z@(Vertex2 _ height) _ _) = stave
-    scale' = scale ^* (greatness / fromIntegral sharpness)
+    scale' = scl ^* (greatness / fromIntegral sharpness)
     Vertex2 x y = bottomLeft <+> (scale' ^*^ Vertex2 (left + step) (top - height))
     Vertex2 w h = scale' ^*^ z
 
-renderFeather :: RenderView -> Time -> Staveware -> StateT a IO ()
+renderFeather :: RenderView -> Timewit -> Staveware -> StateT a IO ()
 renderFeather dis t ware = lift $ drawMesh
   (getPerspectiveMatrix dis)
   (ident 4)

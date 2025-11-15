@@ -14,7 +14,7 @@ import Key (Keyset, keyBegun, wasd)
 import Mean (doBoth)
 import Rime (Point3, (*^), (<+>), FrogVector, hat)
 import State (News)
-import Time (Time, throttle)
+import Time (Timewit, throttle)
 
 
 data Frogwit = Frogwit {
@@ -53,7 +53,7 @@ leap keys = do
       return True
     else return False
 
-fall :: Time -> StateT Frogwit IO Bool
+fall :: Timewit -> StateT Frogwit IO Bool
 fall time = do
   frogwit <- get
   let Vertex3 x y z = position frogwit
