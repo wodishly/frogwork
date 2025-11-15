@@ -7,25 +7,26 @@ module PlayState (
 
 import Control.Monad (when)
 import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT (runStateT))
-import Numeric.LinearAlgebra (Extractor (..), flatten, fromColumns, fromList, toColumns, (!), (??), (¿))
+import Data.Maybe (fromJust, isJust)
 
+import Numeric.LinearAlgebra (Extractor (..), flatten, fromColumns, fromList, toColumns, (!), (??), (¿))
 import Graphics.Rendering.OpenGL as GL (GLfloat, Program, Vertex2 (Vertex2), Vertex3 (Vertex3), VertexArrayObject)
 
-import Frog (Frogwit (position), makeFrog, moveFrog)
-import State (News, StateName (..), Stately (..))
+import Allwit (Allwit (..))
+import State (StateName (..), Stately (..))
 
 import Blee (bg, black)
+import Frog (Frogwit (position), makeFrog, moveFrog)
+import Happen (Mousewit (..))
 import Key (arrow)
 import Matrix (RenderView (size), frogLookAt, getOrthographicMatrix, getPerspectiveMatrix)
 import Mean (given, hit)
 import Random (FrogSeed, defaultSeed)
-import Rime (Point, Point3, clamp, FrogVector, aught)
+import Rime (FrogVector, Point, Point3, aught, clamp)
 import Shade (Mesh (meshAnimation), drawMesh, setMeshTransform)
-import Stavemake (Staveware)
-import Stavework (stavewrite, Writing, makeWriting)
-import Skeleton (play, evermore, once)
-import Time (Timewit(lifetime))
-import Data.Maybe (fromJust, isJust)
+import Skeleton (evermore, once, play)
+import Stavework (Writing, makeWriting, stavewrite)
+import Time (Timewit (lifetime))
 
 
 data Camera = Camera {
@@ -41,7 +42,6 @@ makeCamera = Camera {
 
 data PlayState = PlayState {
   seed :: FrogSeed
-, _staveware :: Staveware
 , meshes :: [Mesh]
 , frog :: Frogwit
 , euler :: Point
@@ -52,19 +52,19 @@ data PlayState = PlayState {
 }
 
 instance Show PlayState where
-  show (PlayState _ _ _ f _ _ p c _) = show f ++ show p ++ show c
+  show (PlayState _ _ f _ _ p c _) = show f ++ show p ++ show c
 
 instance Stately PlayState where
   name _ = PlayName
-  staveware = _staveware
 
-  update news = do
-    cam <- updateCamera news
+  update allwit = do
+    cam <- updateCamera allwit
     let viewMatrix = frogLookAt (cPosition cam) (cTarget cam)
         forward = flatten $ (viewMatrix ¿ [2]) ?? (Take 3, All)
-    updateFrog news forward
+    updateFrog allwit forward
+    return allwit
 
-  render news@(_, _, display, time) = do
+  render allwit = do
     playwit <- get
     bg black
 
@@ -73,14 +73,13 @@ instance Stately PlayState where
 
     let cam = camera playwit
     let viewMatrix = frogLookAt (cPosition cam) (cTarget cam)
-        orthographicMatrix = getOrthographicMatrix display
-    lift $ mapM_ (drawMesh (getPerspectiveMatrix display) viewMatrix orthographicMatrix time) (meshes playwit)
-    stavewrite news (writings playwit)
+        orthographicMatrix = getOrthographicMatrix $ display allwit
+    lift $ mapM_ (drawMesh (getPerspectiveMatrix $ display allwit) viewMatrix orthographicMatrix $ timewit allwit) (meshes playwit)
+    stavewrite allwit (writings playwit)
 
-makePlayState :: RenderView -> Staveware -> [Mesh] -> PlayState
-makePlayState dis ware ms = PlayState {
+makePlayState :: RenderView -> [Mesh] -> PlayState
+makePlayState dis ms = PlayState {
   seed = defaultSeed
-, _staveware = ware
 , meshes = ms
 , frog = makeFrog
 , euler = Vertex2 0.3 1.57079633
@@ -92,15 +91,15 @@ makePlayState dis ware ms = PlayState {
   ]
 } where (width, height) = size dis
 
-updateCamera :: News -> StateT PlayState IO Camera
-updateCamera (keys, (pointer, wheel), _, _) = do
+updateCamera :: Allwit -> StateT PlayState IO Camera
+updateCamera allwit = do
   statewit <- get
   let Vertex3 x _ z = position $ frog statewit
-      Vertex2 dx dy = given aught pointer (arrow keys)
+      Vertex2 dx dy = given aught (pointer $ mouse allwit) (arrow $ keyset allwit)
       Vertex2 pitch yaw = euler statewit
       pitch' = clamp (0, 1) $ pitch + dy / 100.0
       yaw' = yaw + dx / 100.0
-      Vertex2 _ wy = wheel
+      Vertex2 _ wy = pointer $ mouse allwit
       r = clamp (3, 25) $ radius statewit - wy
       fx = r * cos yaw * cos pitch
       fy = r * sin pitch
@@ -112,15 +111,15 @@ updateCamera (keys, (pointer, wheel), _, _) = do
   put statewit { camera = c, euler = Vertex2 pitch' yaw', radius = r }
   return c
 
-updateFrog :: News -> FrogVector -> StateT PlayState IO ()
-updateFrog news@(_, _, _, time) forward = do
+updateFrog :: Allwit -> FrogVector -> StateT PlayState IO ()
+updateFrog allwit forward = do
   playwit <- get
-  ((didMove, didJump), newFrog) <- lift $ runStateT (moveFrog news forward) (frog playwit)
+  ((didMove, didJump), newFrog) <- lift $ runStateT (moveFrog allwit forward) (frog playwit)
 
   put playwit { frog = newFrog }
 
   when didMove $ moveMesh (position newFrog) forward
-  animateMesh (lifetime time) didMove didJump
+  animateMesh (lifetime $ timewit allwit) didMove didJump
 
 animateMesh :: Float -> Bool -> Bool -> StateT PlayState IO ()
 animateMesh now didMove didLeap = do

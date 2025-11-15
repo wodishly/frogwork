@@ -90,6 +90,7 @@ executable frogwork
     PauseState
     PlayState
     EndState
+    Stateteller
 
     FrogSpell
     MothSpell

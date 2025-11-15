@@ -1,7 +1,6 @@
 module Happen (
     Keywit
-  , Mousewit
-  , Overwindow
+  , Mousewit (..)
   , unwrapHappenKeys
   , unwrapHappenPointer
   , unwrapHappenWheel
@@ -11,8 +10,7 @@ module Happen (
 import Data.Maybe (mapMaybe)
 
 import SDL (
-    GLContext
-  , Event (eventPayload)
+    Event (eventPayload)
   , EventPayload (KeyboardEvent, MouseMotionEvent, MouseWheelEvent, WindowResizedEvent)
   , Scancode
   , InputMotion
@@ -20,7 +18,6 @@ import SDL (
   , KeyboardEventData (keyboardEventKeyMotion, keyboardEventKeysym)
   , MouseWheelEventData (mouseWheelEventPos)
   , MouseMotionEventData (mouseMotionEventRelMotion)
-  , Window
   )
 
 import qualified SDL (Point (P))
@@ -30,8 +27,11 @@ import Rime (Point, fromSDL)
 
 
 type Keywit = (Scancode, InputMotion)
-type Mousewit = (Point, Point) -- pointer, wheel
-type Overwindow = (Window, GLContext)
+
+data Mousewit = Mousewit {
+  pointer :: Point
+, wheel :: Point
+} deriving (Show, Eq)
 
 unwrapHappen :: (EventPayload -> Maybe a) -> [Event] -> [a]
 unwrapHappen f = mapMaybe (f . eventPayload)

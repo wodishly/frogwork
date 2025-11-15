@@ -1,63 +1,55 @@
 module WillState (
   WillState (..)
 , makeWillState
-, unchoose
 ) where
 
-import Control.Monad.State (MonadState (get, put), StateT)
+import Control.Monad.State (MonadState (get, put), StateT, execStateT, MonadTrans (lift))
 
 import SDL.Input.Keyboard.Codes
 import Graphics.Rendering.OpenGL (Vertex2(Vertex2))
 
-import State (Settings, StateName (WillName, TitleName), Stately (..), isShowingKeys, isShowingTicks, toggle)
+import Allwit (Allwit (..), Settings, Setting (..), updateOnlyOneSetting)
+import State (StateName (WillName, TitleName), Stately (..))
 
-import Blee (bg, darkwhelk)
-import Key (Keyset, keyBegun)
+import Blee (bg, darkwhelk, red, lightwhelk)
+import Key (keyBegun)
 import Matrix (RenderView (size))
-import Mean (ssss)
-import Stavemake (Staveware)
-import Stavework (renderFeather, stavewrite, Writing, makeWriting)
-import Data.Maybe (fromMaybe)
-import Control.Monad (when)
+import Stavework (Writing (blee), makeWriting, renderFeather, stavewrite)
+import Mean (hit)
 
 
 data WillState = WillState {
-  hand :: [Either StateName (Settings -> Settings)]
+  hand :: [Either StateName Setting]
 , finger :: Int
-, choosen :: Maybe (Either StateName (Settings -> Settings))
-, _staveware :: Staveware
-, settings :: Settings
+, settingz :: Settings
 , writings :: [Writing]
 }
 
 instance Show WillState where
-  show (WillState _ f _ _ s _) = show f ++ show s
+  show (WillState _ f s _) = show f ++ show s
 
 instance Stately WillState where
   name _ = WillName
-  staveware = _staveware
 
-  update (keyset, _, _, _) = do
+  update allwit = do
     _ <- get
-    choosefare keyset
+    choosefare allwit
 
-  render news@(_, _, display, time) = do
+  render allwit = do
     willwit <- get
     bg darkwhelk
-    renderFeather display time (staveware willwit)
-    stavewrite news (writings willwit)
+    renderFeather allwit
+    stavewrite allwit (writings willwit)
 
-makeWillState :: RenderView -> Staveware -> Settings -> WillState
-makeWillState dis ware sets = WillState {
+makeWillState :: RenderView -> Settings -> WillState
+makeWillState dis sets = WillState {
   hand = [
-    Right $ toggle isShowingKeys
-  , Right $ toggle isShowingTicks
+    Right ShowKeys
+  , Right ShowTicks
   , Left TitleName
   ]
 , finger = 0
-, choosen = Nothing
-, _staveware = ware
-, settings = sets
+, settingz = sets
 , writings = [
     makeWriting "WꞮLZ" (Vertex2 (width/2) (height*3/4))
   , makeWriting "tɛl kiz" (Vertex2 (width/2) (height*3/7))
@@ -66,20 +58,29 @@ makeWillState dis ware sets = WillState {
   ]
 } where (width, height) = size dis
 
-unchoose :: Maybe Settings -> StateT WillState IO ()
-unchoose sets = do
+chosen :: WillState -> Either StateName Setting
+chosen wit = hand wit!!finger wit
+
+choosefare :: Allwit -> StateT WillState IO Allwit
+choosefare allwit = do
   willwit <- get
+
+  let keys = keyset allwit
+      finger'
+        | keyBegun keys ScancodeUp = pred $ finger willwit
+        | keyBegun keys ScancodeDown = succ $ finger willwit
+        | otherwise = finger willwit
   put willwit {
-      settings = fromMaybe (settings willwit) sets
-    , choosen = Nothing
+    finger = mod finger' (length $ hand willwit)
+  , writings =
+      hit (succ $ mod finger' (length $ hand willwit)) (\w -> w { blee = red })
+      $ map (\w -> w { blee = lightwhelk })
+      $ writings willwit
   }
 
-choosefare :: Keyset -> StateT WillState IO ()
-choosefare keyset = do
-  willwit <- get
-  if keyBegun keyset ScancodeUp
-    then put $ willwit { finger = ssss (mod.pred.finger) (length.hand) willwit }
-  else if keyBegun keyset ScancodeDown
-    then put $ willwit { finger = ssss (mod.succ.finger) (length.hand) willwit }
-  else when (keyBegun keyset ScancodeReturn) $
-    put $ willwit { choosen = Just $ ssss ((!!) . hand) finger willwit }
+  if keyBegun keys ScancodeReturn
+    then case chosen willwit of
+      Left state -> return allwit
+      Right setting -> lift $ execStateT (updateOnlyOneSetting setting) allwit
+    else return allwit
+

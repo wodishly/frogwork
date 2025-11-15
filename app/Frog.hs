@@ -14,8 +14,8 @@ import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2), Vertex3 (Vertex3))
 import Key (Keyset, keyBegun, wasd)
 import Mean (ssss)
 import Rime (FrogVector, Point3, hat, (*^), (<+>), FrogVertex ((^*^)))
-import State (News)
 import Time (Timewit, throttle)
+import Allwit (Allwit (..))
 
 
 data Frogwit = Frogwit {
@@ -76,20 +76,20 @@ land = do
   }
   return False
 
-walk :: News -> FrogVector -> StateT Frogwit IO Bool
-walk (keys, _, _, time) forward = do
+walk :: Allwit -> FrogVector -> StateT Frogwit IO Bool
+walk allwit forward = do
   frogwit <- get
   let direction = hat $ Vertex3 (forward!0) 0 -(forward!2)
-      didWalk = dz < 0 where Vertex2 _ dz = wasd keys
-      position' = position frogwit <+> (throttle time (speed frogwit) *^ direction)
+      didWalk = dz < 0 where Vertex2 _ dz = wasd (keyset allwit)
+      position' = position frogwit <+> (throttle (timewit allwit) (speed frogwit) *^ direction)
 
   when didWalk $ put frogwit { position = position' }
   return didWalk
 
-moveFrog :: News -> FrogVector -> StateT Frogwit IO (Bool, Bool)
-moveFrog news@(keys, _, _, time) forward = do
-  didWalk <- walk news forward
-  didLeapOrFall <- or <$> sequence [leap keys, fall time]
+moveFrog :: Allwit -> FrogVector -> StateT Frogwit IO (Bool, Bool)
+moveFrog allwit forward = do
+  didWalk <- walk allwit forward
+  didLeapOrFall <- or <$> sequence [leap $ keyset allwit, fall $ timewit allwit]
 
   let didMove = didWalk || didLeapOrFall in
     return (didMove, didLeapOrFall)

@@ -1,6 +1,7 @@
 module Skeleton where
 
 import Data.Fixed (mod')
+import Data.Function (applyWhen)
 import Data.List (findIndex)
 import Data.Maybe (fromMaybe)
 
@@ -22,7 +23,7 @@ import Rime (
 
 import MothSpell as MOTH
 import Mean (flight)
-import Data.Function (applyWhen)
+
 
 type Interpolation a = a -> a -> Float -> a
 

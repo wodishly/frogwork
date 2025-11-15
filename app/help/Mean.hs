@@ -7,6 +7,7 @@ import Data.Function (applyWhen, (&))
 import Data.List (singleton)
 import Debug.Trace (trace)
 import GHC.Stack (HasCallStack)
+import Control.Monad.State (StateT, MonadTrans (lift))
 
 
 type Shed a = [a] -> a
@@ -32,6 +33,10 @@ sadly = ly' (const ("wah" :: String))
 -- | wah
 weep :: IO ()
 weep = print ("wah" :: String)
+
+-- | Curse this not with `(Stately b) =>`, lest @preent@ no longer become @Allwit@.
+preent :: Show a => a -> StateT b IO ()
+preent = lift . print
 
 -- @endregion
 

@@ -5,17 +5,11 @@ module EndState (
 
 import State (StateName (EndName), Stately (..))
 
-import Stavemake (Staveware)
 
-
-newtype EndState = EndState Staveware
+data EndState = EndState
 
 instance Stately EndState where
   name _ = EndName
-  staveware (EndState ware) = ware
 
-  update _ = return ()
-  render _ = return ()
-
-makeEndState :: Staveware -> EndState
+makeEndState :: EndState
 makeEndState = EndState

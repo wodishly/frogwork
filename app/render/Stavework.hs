@@ -12,7 +12,7 @@ module Stavework (
 ) where
 
 import Control.Monad (forM_, unless)
-import Control.Monad.State (MonadState (get), MonadTrans (lift), StateT)
+import Control.Monad.State (MonadTrans (lift), StateT)
 import Data.HashMap.Lazy (member, (!))
 import Numeric.LinearAlgebra (ident)
 
@@ -39,9 +39,10 @@ import Matrix (RenderView (size), getOrthographicMatrix, getPerspectiveMatrix)
 import Mean (Twain)
 import Rime (FrogVertex ((^*^)), Point, Polyhedron, (<+>), (^*))
 import Shade (Mesh (elementCount, vbo), bufferSize, drawFaces, drawMesh, useMesh)
-import State (News, Stately (staveware))
-import Stavemake (Stave (Stave, advance, texture), Stavebook, Staveware, greatness, sharpness)
+import Stavemake (Stave (Stave, advance, texture), Stavebook, greatness, sharpness)
 import Time (Timewit)
+import Allwit (Allwit (..))
+import State (Stately)
 
 
 data Stake = North | South | East | West | Middle deriving (Show, Eq)
@@ -63,17 +64,15 @@ data Writing = Writing {
 makeWriting :: String -> Point -> Writing
 makeWriting w st = Writing w st (Middle, Middle) (Vertex2 1 1) lightwhelk (const $ Vertex2 0 0)
 
-stavewrite :: Stately b => News -> [Writing] -> StateT b IO ()
-stavewrite (_, _, display, _) writings = do
-  statewit <- get
-
-  let (book, mesh) = staveware statewit
+stavewrite :: Stately a => Allwit -> [Writing] -> StateT a IO ()
+stavewrite allwit writings = do
+  let (book, mesh) = staveware allwit
   lift $ useMesh mesh
 
   lift $ forM_ writings $ \(Writing wr std stk scl' bl _) -> do
 
     let advances = scanl (+) 0 (map (advance . (book!)) wr)
-        (w, h) = size display
+        (w, h) = size $ display allwit
         scl = Vertex2 (1/800) (1/600) ^*^ Vertex2 w h ^*^ scl'
         -- offset = Vertex2 ((/(10 :: Float)) . fromIntegral $ lifetime time) 0 <+> reckonStakes book stk scl wr
         offset = reckonStakes book stk scl wr
@@ -125,10 +124,10 @@ stavenook bottomLeft scl step stave = [
     Vertex2 x y = bottomLeft <+> (scale' ^*^ Vertex2 (left + step) (top - height))
     Vertex2 w h = scale' ^*^ z
 
-renderFeather :: RenderView -> Timewit -> Staveware -> StateT a IO ()
-renderFeather dis t ware = lift $ drawMesh
-  (getPerspectiveMatrix dis)
+renderFeather :: Stately a => Allwit -> StateT a IO ()
+renderFeather allwit = lift $ drawMesh
+  (getPerspectiveMatrix $ display allwit)
   (ident 4)
-  (getOrthographicMatrix dis)
-  t
-  (snd ware)
+  (getOrthographicMatrix $ display allwit)
+  (timewit allwit)
+  (snd $ staveware allwit)

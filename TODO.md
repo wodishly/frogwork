@@ -1,7 +1,7 @@
-- sound
 - loudness
+- yoking of `TitleState` and `WillState`
 - staves
-  - [🌗] missing staves
+  - [⭐️] missing staves
   - [🌑] staves that slant
   - [🌑] staves that stir
   - [🌑] staves that follow
