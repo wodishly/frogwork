@@ -1,7 +1,7 @@
 module Mean where
 
 import Control.Exception (assert)
-import Data.Bifunctor (bimap, first)
+import Data.Bifunctor (bimap)
 import Data.Bits (Bits (shiftL, shiftR))
 import Data.Function (applyWhen, (&))
 import Data.List (singleton)
@@ -19,20 +19,22 @@ type Twain a = (a, a)
 
 -- | generalized loudly
 ly' :: Show b => (a -> b) -> a -> a
--- ly' f x = trace (show (f x)) x
-ly' = (. twin) . (uncurry trace .) . (first . (show .))
+ly' = ($ id) . ssss . ((trace . show) .)
 
 -- | loudly
 ly :: Show a => a -> a
 ly = ly' id
 
+softly :: Show a => (a -> a) -> a -> a
+softly _ = id
+
 -- | generalized loudly on "wah"
 sadly :: a -> a
-sadly = ly' (const ("wah" :: String))
+sadly = ly' (const "wah")
 
 -- | wah
 weep :: IO ()
-weep = print ("wah" :: String)
+weep = print "wah"
 
 -- | Curse this not with `(Stately b) =>`, lest @preent@ no longer become @Allwit@.
 preent :: Show a => a -> StateT b IO ()
@@ -49,7 +51,7 @@ preent = lift . print
 -- >>> samely "frog" "toad"
 -- Assertion failed
 samely :: Eq a => a -> a -> a
-samely l r = assert (l == r) l
+samely = ($ id) .  ssss . (assert .) . (==)
 
 -- @endregion
 
@@ -67,7 +69,7 @@ samely l r = assert (l == r) l
 -- 1
 {-# INLINE given #-}
 given :: (a -> Bool) -> a -> a -> a
-given f thing = applyWhen (f thing) (const thing)
+given = ($ const) . (ssss . (applyWhen .))
 
 -- | Lifts the argument into a twain.
 --
@@ -75,7 +77,7 @@ given f thing = applyWhen (f thing) (const thing)
 -- ("frog","frog")
 {-# INLINE twin #-}
 twin :: a -> (a, a)
-twin x = (x, x)
+twin = wwww (,)
 
 -- | Applies the same thing to both arguments of a binary operation.
 --
@@ -117,7 +119,7 @@ ssss f g x = f x (g x)
 -- (1,-1)
 {-# INLINE doBoth #-}
 doBoth :: (a -> b) -> (a -> c) -> a -> (b, c)
-doBoth f g = bimap f g . twin
+doBoth = ((($ twin) . (.)) .) . bimap
 
 -- | Applies a function to both things of a twain.
 --
@@ -218,23 +220,36 @@ none = (not .) . any
 -- [0,1,2,3,4]
 {-# INLINE leave #-}
 leave :: Int -> Shift [a]
-leave n xs = take (length xs - n) xs
+leave = ($ id) . ssss . (. length) . (take .) . (+) . negate
 
 -- | Returns the last @n@ elements of @xs@.
 -- A better name is wanting.
 --
--- >>> scoop 3 [0,1,2,3,4,5,6,7]
+-- >>> doesRectangleIntersectRotatedRoundedRectangle 3 [0,1,2,3,4,5,6,7]
 -- [5,6,7]
-{-# INLINE scoop #-}
-scoop :: Int -> Shift [a]
-scoop n xs = drop (length xs - n) xs
+{-# INLINE doesRectangleIntersectRotatedRoundedRectangle #-}
+doesRectangleIntersectRotatedRoundedRectangle :: Int -> Shift [a]
+doesRectangleIntersectRotatedRoundedRectangle = ($ id) . ssss . (. length) . (drop .) . (+) . negate
+-- hit n f xs = take n xs ++ [f (xs!!n)] ++ drop (n+1) xs
 
 -- | Hits the @n@th thing in @xs@ with @f@.
 --
 -- >>> hit 2 (*10) [0,1,2,3]
 -- [0,1,20,3]
-hit :: Int -> Shift a -> Shift [a]
-hit n f xs = take n xs ++ [f (xs!!n)] ++ drop (n+1) xs
+hit :: Int -> (a -> a) -> [a] -> [a]
+hit =
+  (. (.) . ((:[]) .))
+  . ssss (
+    (((&) . flip (!!)) &)
+    . (ssss
+      . ((. drop . (+1)) . (. (:[])) . (. flip (:)))
+      . ((.) .)
+      . (.)
+      . (((. (&)) . flip concatMap) .)
+      . (:)
+      . take
+      )
+  ) id
 
 -- | For each @n@ in @ns@, hits the @n@th thing in @xs@ with @f@.
 --
