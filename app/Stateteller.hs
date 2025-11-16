@@ -57,29 +57,29 @@ settleState :: StateT Frogwork IO ()
 settleState = do
   frogwork <- get
   let wit = frogwork^.allwit
-  let keys = keyset wit
+      keys = keyset wit
+      teller = frogwork^.stateteller
       newState
         | keyBegun keys ScancodeR = TitleName
-        | nowState (frogwork^.stateteller) == PlayName && keyBegun keys ScancodeP = PauseName
-        | nowState (frogwork^.stateteller) == PauseName && keyBegun keys ScancodeP = PlayName
-        | nowState (frogwork^.stateteller) == TitleName && keyBegun keys ScancodeReturn = Title.chosen (frogwork^.stateteller.titleState)
-        | nowState (frogwork^.stateteller) == WillName && keyBegun keys ScancodeReturn && isNothing (Will.chosen $ frogwork^.stateteller.willState) = TitleName
+        | nowState teller == PlayName && keyBegun keys ScancodeP = PauseName
+        | nowState teller == PauseName && keyBegun keys ScancodeP = PlayName
+        | nowState teller == TitleName && keyBegun keys ScancodeReturn = Title.chosen (frogwork^.stateteller.titleState)
+        | nowState teller == WillName && keyBegun keys ScancodeReturn && isNothing (Will.chosen $ frogwork^.stateteller.willState) = TitleName
         | otherwise = nowState (frogwork^.stateteller)
   
-  (wit', teller) <- lift (runStateT (case newState of
+  lift (runStateT (case newState of
         TitleName -> goto titleState wit
         WillName -> goto willState wit
         PlayName -> goto playState wit
         PauseName -> goto pauseState wit
         EndName -> goto endState wit
       ) (frogwork^.stateteller)
-    )
-  put $ Frogwork wit' teller
+    ) >>= put . uncurry Frogwork
 
 goto :: Stately a => Lens' Stateteller a -> Allwit -> StateT Stateteller IO Allwit
 goto lens wit = do
   teller <- get
   wit' <- lift $ execStateT (setWindowGrabbed $ name (teller^.lens) == PlayName) wit
-  (wit'', state') <- lift $ runStateT (loop wit') (teller^.lens)
-  put $ (lens.~state') teller { nowState = name state' }
+  (wit'', state) <- lift $ runStateT (loop wit') (teller^.lens)
+  put $ (lens.~state) teller { nowState = name state }
   return wit''

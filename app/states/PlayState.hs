@@ -93,14 +93,14 @@ makePlayState dis ms = PlayState {
 
 updateCamera :: Allwit -> StateT PlayState IO Camera
 updateCamera allwit = do
-  statewit <- get
-  let Vertex3 x _ z = position $ frog statewit
+  playwit <- get
+  let Vertex3 x _ z = position $ frog playwit
       Vertex2 dx dy = given aught (pointer $ mouse allwit) (arrow $ keyset allwit)
-      Vertex2 pitch yaw = euler statewit
+      Vertex2 pitch yaw = euler playwit
       pitch' = clamp (0, 1) $ pitch + dy / 100.0
       yaw' = yaw + dx / 100.0
       Vertex2 _ wy = wheel $ mouse allwit
-      r = clamp (3, 25) $ radius statewit - wy
+      r = clamp (3, 25) $ radius playwit - wy
       fx = r * cos yaw * cos pitch
       fy = r * sin pitch
       fz = r * sin yaw * cos pitch
@@ -108,7 +108,7 @@ updateCamera allwit = do
         cTarget = fromList [x, 0, z]
       , cPosition = fromList [x + fx, 1 + fy, z - fz]
       }
-  put statewit { camera = c, euler = Vertex2 pitch' yaw', radius = r }
+  put playwit { camera = c, euler = Vertex2 pitch' yaw', radius = r }
   return c
 
 updateFrog :: Allwit -> FrogVector -> StateT PlayState IO ()
