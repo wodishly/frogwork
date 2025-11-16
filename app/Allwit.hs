@@ -2,6 +2,7 @@ module Allwit (
   Allwit (..)
 , Setting (..)
 , Settings
+, UnholyMeshMash
 , makeAllwit
 , begetMeshes
 , fand
@@ -18,7 +19,7 @@ import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT)
 import Data.Map (Map, adjust, fromList, lookup)
 import Data.Maybe (fromMaybe)
 
-import SDL (LocationMode (AbsoluteLocation, RelativeLocation), GLContext)
+import SDL (GLContext, LocationMode (AbsoluteLocation, RelativeLocation), glGetDrawableSize)
 import SDL.Input.Keyboard.Codes
 import Graphics.Rendering.OpenGL (
     BlendingFactor (OneMinusSrcAlpha, SrcAlpha)
@@ -28,9 +29,8 @@ import Graphics.Rendering.OpenGL (
   , Position (Position)
   , Size (Size)
   , Vertex2 (Vertex2)
-  , Vertex3 (Vertex3)
   )
-import qualified Graphics.Rendering.OpenGL as GL (get, blend, blendFunc, depthFunc, viewport)
+import qualified Graphics.Rendering.OpenGL as GL (blend, blendFunc, depthFunc, viewport)
 import qualified SDL (
     Event
   , V2 (V2)
@@ -39,12 +39,11 @@ import qualified SDL (
   , setMouseLocationMode
   , ticks
   , windowGrab
-  , windowSize
   )
 
 import FastenShade
 import Matrix (RenderView (..), fromAffine, fromTranslation)
-import Mean (full, weep, doBoth, preent)
+import Mean (doBoth, full, preent, weep)
 import Time (Timewit, beginTime, keepTime)
 
 import Happen (Mousewit (Mousewit), unwrapHappenPointer, unwrapHappenWheel, unwrapHappenWindow)
@@ -58,10 +57,10 @@ import Stavemake (Staveware, makeFeather)
 
 
 type Settings = Map Setting Bool
-data Setting = ShowTicks | ShowKeys | RunTests deriving (Show, Eq, Ord)
+data Setting = ShowTicks | ShowKeys | ShowSpeech | RunTests deriving (Show, Eq, Ord)
 
 makeSettings :: Settings
-makeSettings = fromList $ map (, False) [ShowTicks, ShowKeys, RunTests]
+makeSettings = toggle ShowSpeech . fromList $ map (, False) [ShowTicks, ShowKeys, ShowSpeech, RunTests]
 
 toggle :: Setting -> Settings -> Settings
 toggle = adjust not
@@ -86,7 +85,9 @@ makeAllwit ticks = Allwit
   (Mousewit (Vertex2 0 0) (Vertex2 0 0))
   (beginTime ticks)
 
-begetMeshes :: Float -> IO (Staveware, [Mesh])
+type UnholyMeshMash = (Mesh, Mesh, [Mesh])
+
+begetMeshes :: Float -> IO (Staveware, UnholyMeshMash)
 begetMeshes now = do
   cocoon <- summon "assets/bunny.moth"
   let mothFile = unwrappingly mothify cocoon
@@ -101,18 +102,11 @@ begetMeshes now = do
   farsee <- makeAssetMesh (makeAsset "tv")
     >>= setMeshTransform (fromTranslation [-2, 1, 2])
 
-  hack <- makeSimpleMesh $ SimpleMeshProfile {
-      vbuffer = [Vertex3 1 1 0, Vertex3 1 -1 0, Vertex3 -1 -1 0, Vertex3 -1 1 0]
-    , ibuffer = iBuffer
-    , uvbuffer = Just quadUvBuffer
-    , meshShaderProfile = ShaderProfile
-        ("vertex_stave", "fragment_stave")
-        ["u_texture", "u_time", "u_orthographic_matrix", "u_blee"]
-    , texObject = Nothing
-  }
-
   x <- makeFeather "noto-sans"
-  return ((x, hack), [froggy, earth, farsee, hack])
+  hack <- makeSimpleMesh staveMeshProfile
+  speech <- makeSimpleMesh speechMeshProfile
+
+  return ((x, hack), (froggy, speech, [earth, farsee, hack]))
 
 listenEvents :: StateT Allwit IO ()
 listenEvents = do
@@ -152,6 +146,7 @@ updateAllSettings = do
   allwit <- get
   when (keyBegun (keyset allwit) ScancodeK) (updateOnlyOneSetting ShowKeys)
   when (keyBegun (keyset allwit) ScancodeT) (updateOnlyOneSetting ShowTicks)
+  when (keyBegun (keyset allwit) ScancodeTab) (updateOnlyOneSetting ShowSpeech)
 
 updateOnlyOneSetting :: Setting -> StateT Allwit IO ()
 updateOnlyOneSetting setting = do
@@ -181,7 +176,7 @@ setWindowGrabbed setting = do
 
 waxwane :: SDL.Window -> IO RenderView
 waxwane wind = do
-  SDL.V2 width height <- (fromIntegral <$>) <$> GL.get (SDL.windowSize wind)
+  SDL.V2 width height <- (fromIntegral <$>) <$> SDL.glGetDrawableSize wind
   GL.viewport $= (Position 0 0, Size width height)
   GL.depthFunc $= Just Lequal
   GL.blend $= Enabled

@@ -6,7 +6,7 @@ import Data.Maybe (isNothing)
 
 import SDL.Input.Keyboard.Codes
 
-import Allwit (Allwit (..), Settings, setWindowGrabbed)
+import Allwit (Allwit (..), Settings, setWindowGrabbed, UnholyMeshMash)
 import State (StateName (..), Stately (loop, name))
 import TitleState (TitleState, makeTitleState)
 import WillState (WillState, makeWillState)
@@ -18,8 +18,7 @@ import qualified TitleState as Title (chosen)
 import qualified WillState as Will (chosen)
 
 import Key (anyKeysBegun, keyBegun)
-import Matrix (RenderView)
-import Shade (Mesh)
+import Graphics.Rendering.OpenGL (Vertex2(Vertex2))
 
 
 data Stateteller = Stateteller {
@@ -32,14 +31,15 @@ data Stateteller = Stateteller {
 }
 makeLenses ''Stateteller
 
-makeStateteller :: RenderView -> Settings -> [Mesh] -> Stateteller
-makeStateteller dis sets meshes = Stateteller
-  (makeTitleState dis)
-  (makeWillState dis sets)
-  (makePlayState dis meshes)
-  (makePauseState dis)
+makeStateteller :: (Int, Int) -> Settings -> UnholyMeshMash -> Stateteller
+makeStateteller (w, h) sets meshes = Stateteller
+  (makeTitleState wind)
+  (makeWillState  wind sets)
+  (makePlayState  wind meshes)
+  (makePauseState wind)
   makeEndState
   TitleName
+  where wind = fromIntegral <$> Vertex2 w h
 
 data Frogwork = Frogwork {
   _allwit :: Allwit
@@ -78,7 +78,7 @@ settleState = do
 goto :: Stately a => Lens' Stateteller a -> Allwit -> StateT Stateteller IO Allwit
 goto lens wit = do
   teller <- get
-  wit' <- lift $ execStateT (setWindowGrabbed $ name (teller^.lens) == PlayName) wit
+  wit' <- lift $ execStateT (setWindowGrabbed $ name (teller^.lens) == EndName) wit
   (wit'', state) <- lift $ runStateT (loop wit') (teller^.lens)
   put $ (lens.~state) teller { nowState = name state }
   return wit''

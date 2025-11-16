@@ -5,7 +5,9 @@
 module Stavework (
   Stake (..)
 , Writing (..)
+, Speechframe (..)
 , Say (..)
+, speechwrite
 , makeWriting
 , renderFeather
 , spellgreat
@@ -37,14 +39,15 @@ import Graphics.Rendering.OpenGL (
 import State (Stately)
 import Allwit (Allwit (..))
 
-import Blee (Blee, bleeToGLVector4, lightwhelk)
+import Blee (Blee, bleeToGLVector4, lightwhelk, white)
 import FastenShade (Programful (uniformMap))
 import Matrix (RenderView (size), getOrthographicMatrix, getPerspectiveMatrix)
 import Mean (Twain)
 import Rime (FrogVertex ((^*^)), Point, Polyhedron, (<+>), (^*))
 import Shade (Mesh (elementCount, vbo), bufferSize, drawFaces, drawMesh, useMesh)
 import Stavemake (Stave (Stave, advance, texture), Stavebook, greatness, sharpness)
-import Time (Timewit (Timewit))
+import Time (Timewit)
+import FastenMain (orheight, orwidth)
 
 
 data Stake = North | South | East | West | Middle deriving (Show, Eq)
@@ -64,6 +67,11 @@ data Say = Say {
 , speed :: Float
 }
 
+data Speechframe = Speechframe {
+  meesh :: Mesh
+, speeches :: [String]
+}
+
 unsay :: Say
 unsay = Say 0 0
 
@@ -73,26 +81,31 @@ makeWriting :: String -> Point -> Writing
 makeWriting w st = Writing w st (Middle, Middle) (Vertex2 1 1) lightwhelk unsay
 
 howmany :: Timewit -> Say -> [Int]
-howmany (Timewit now _ ) (Say st sp)
-  | now < st = [] -- too early
-  | sp == 0 = [0..] -- all at once
-  | otherwise = [0..round $ (now-st)/sp]
+howmany _ _ = [0..]
+-- howmany (Timewit now _ ) (Say st sp)
+--   | now < st = [] -- too early
+--   | sp == 0 = [0..] -- all at once
+--   | otherwise = [0..round $ (now-st)/sp]
+
+speechwrite :: Stately a => Allwit -> Speechframe -> StateT a IO ()
+speechwrite allwit speechframe = do
+  stavewrite allwit $ map (\s -> Writing s (Vertex2 (50+10) (300-75-10)) (West, North) (Vertex2 0.25 0.25) white unsay) (speeches speechframe)
 
 stavewrite :: Stately a => Allwit -> [Writing] -> StateT a IO ()
 stavewrite allwit writings = do
-  let (book, mesh) = staveware allwit
-  lift $ useMesh mesh
 
+  let (book, mish) = staveware allwit
+      (w, h) = size $ display allwit
+      scaleyscale = Vertex2 (w/orwidth) (h/orheight)
+
+  lift $ useMesh mish
   lift $ forM_ writings $ \(Writing wr std' stk scl' bl say) -> do
 
     let advances = scanl (+) 0 (map (advance . (book!)) wr)
-        (w, h) = size $ display allwit
-        scaleyscale = Vertex2 (1/800) (1/600) ^*^ Vertex2 w h
         scl = scaleyscale ^*^ scl'
         std = scaleyscale ^*^ std'
-        -- offset = Vertex2 ((/(10 :: Float)) . fromIntegral $ lifetime time) 0 <+> reckonStakes book stk scl wr
         offset = reckonStakes book stk scl wr
-
+    
     forM_ (zip (howmany (timewit allwit) say) wr) $ \(i, char) -> do
       unless (member char book) (error $ "cant write" ++ show char)
 
@@ -101,11 +114,11 @@ stavewrite allwit writings = do
 
       activeTexture $= TextureUnit 0
       textureBinding Texture2D $= Just (texture stave)
-      bindBuffer ArrayBuffer $= Just (vbo mesh)
-      uniformMap mesh ! "u_blee" >>= ($= bleeToGLVector4 bl) . uniform
+      bindBuffer ArrayBuffer $= Just (vbo mish)
+      uniformMap mish ! "u_blee" >>= ($= bleeToGLVector4 bl) . uniform
       withArray vertices (bufferSubData ArrayBuffer WriteToBuffer 0 $ bufferSize vertices)
       bindBuffer ArrayBuffer $= Nothing
-      drawFaces (elementCount mesh)
+      drawFaces (elementCount mish)
 
 reckonStakes :: Stavebook -> Stakes -> Point -> String -> Point
 reckonStakes book (xstake, ystake) scl wr = Vertex2 ew ns where

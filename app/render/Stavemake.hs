@@ -39,7 +39,7 @@ import qualified Graphics.Rendering.OpenGL as GL (
   , textureWrapMode
   )
 
-import FastenMain (wayToFeathers)
+import FastenMain (wayToFeathers, orheight)
 
 import Mean (doBoth, (.>>.))
 import Rime (Point)
@@ -106,10 +106,10 @@ tokenwit =
      ]
 
 sharpness :: Word32
-sharpness = 2^(7 :: Integer)
+sharpness = 2^7
 
 greatness :: GLfloat
-greatness = 2^(6 :: Integer)
+greatness = 2^6
 
 glyphFormatName :: FT_Glyph_Format -> String
 glyphFormatName = ("ft_GLYPH_FORMAT_" ++) . \case
@@ -136,14 +136,14 @@ makeStavebook' = makeStavebook'' True
 
 -- | Based on [this page](https://zyghost.com/articles/Haskell-font-rendering-with-freetype2-and-opengl.html).
 makeStavebook'' :: Bool -> FT_UInt -> FilePath -> IO Stavebook
-makeStavebook'' loud great path = do
+makeStavebook'' loud sharp road = do
 
   stavewit <- ft_Init_FreeType
   when loud $ putStrLn "made stavebook!"
 
-  feather <- ft_New_Face stavewit path 0
+  feather <- ft_New_Face stavewit road 0
 
-  ft_Set_Pixel_Sizes feather 0 (fromIntegral great)
+  ft_Set_Char_Size feather 0 (8 * fromIntegral sharp) 0 orheight
   feather' <- peek feather
   when loud $ putStrLn "made feather!"
 

@@ -82,7 +82,7 @@ betoken' n = betoken' (n-1) . betoken'' n
 betoken'' :: Int -> Shift [String]
 betoken'' _ [] = []
 betoken'' n s = if length s >= n
-  then if elem (concat (scoop n s)) (map fst (shadesOf n))
-    then betoken'' n (leave n s) ++ [concat (scoop n s)]
+  then if elem (concat (doesRectangleIntersectRotatedRoundedRectangle n s)) (map fst (shadesOf n))
+    then betoken'' n (leave n s) ++ [concat (doesRectangleIntersectRotatedRoundedRectangle n s)]
     else betoken'' n (init s) ++ [last s]
   else s

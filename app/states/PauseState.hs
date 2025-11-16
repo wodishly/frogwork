@@ -3,15 +3,13 @@ module PauseState (
 , makePauseState
 ) where
 
-import Graphics.Rendering.OpenGL (Vertex2(Vertex2))
+import Control.Monad.State (MonadState(get))
 
 import State (StateName (PauseName), Stately (..))
 
 import Blee (bg, black)
-import Matrix (RenderView (size))
-import Stavework (stavewrite, renderFeather, Writing, makeWriting)
-import Control.Monad.State (MonadState(get))
-import Rime ((*^))
+import Rime (Point, (*^))
+import Stavework (Writing, makeWriting, renderFeather, stavewrite)
 
 
 newtype PauseState = PauseState {
@@ -27,9 +25,9 @@ instance Stately PauseState where
     renderFeather allwit
     stavewrite allwit (writings pausewit)
 
-makePauseState :: RenderView -> PauseState
-makePauseState dis = PauseState {
+makePauseState :: Point -> PauseState
+makePauseState wind = PauseState {
   writings = [
-    makeWriting "pɔz" ((1/2) *^ Vertex2 width height)
+    makeWriting "pɔz" ((1/2) *^ wind)
   ]
-} where (width, height) = size dis
+}

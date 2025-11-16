@@ -82,6 +82,29 @@ defaultSimpleShaderProfile = ShaderProfile {
   , uniforms = ["u_projection_matrix", "u_model_matrix", "u_view_matrix", "u_time"]
 }
 
+staveMeshProfile :: SimpleMeshProfile
+staveMeshProfile = SimpleMeshProfile {
+  vbuffer = [Vertex3 1 1 0, Vertex3 1 -1 0, Vertex3 -1 -1 0, Vertex3 -1 1 0]
+, ibuffer = iBuffer
+, uvbuffer = Just quadUvBuffer
+, meshShaderProfile = ShaderProfile
+    (shadersOf "stave")
+    ["u_texture", "u_time", "u_orthographic_matrix", "u_blee"]
+, texObject = Nothing
+}
+
+speechMeshProfile :: SimpleMeshProfile
+speechMeshProfile = SimpleMeshProfile {
+    vbuffer = speechVBuffer
+  , ibuffer = iBuffer
+  , uvbuffer = Nothing
+  , meshShaderProfile = ShaderProfile (shadersOf "speech") []
+  , texObject = Nothing
+}
+
+shadersOf :: String -> Twain FilePath
+shadersOf s = ("vertex_" ++ s, "fragment_" ++ s)
+
 floorVBuffer :: Polyhedron
 floorVBuffer = [
     Vertex3  20  0  20.0 --NE
@@ -90,12 +113,12 @@ floorVBuffer = [
   , Vertex3 -20  0  20.0 --NW
   ]
 
-staveVBuffer :: Polyhedron
-staveVBuffer = [
-    Vertex3   1 -(1/4) 0 --NE
-  , Vertex3   1 -(3/4) 0 --SE
-  , Vertex3  -1 -(3/4) 0 --SW
-  , Vertex3  -1 -(1/4) 0 --NW
+speechVBuffer :: Polyhedron
+speechVBuffer = [
+    Vertex3  ( 7/8) (-1/4) 0 --NE
+  , Vertex3  ( 7/8) (-7/8) 0 --SE
+  , Vertex3  (-7/8) (-7/8) 0 --SW
+  , Vertex3  (-7/8) (-1/4) 0 --NW
   ]
 
 iBuffer :: [Word32]

@@ -14,9 +14,9 @@ import State (StateName (EndName, PlayName, TitleName, WillName), Stately (..), 
 
 import Blee (bg, darkwhelk, red, lightwhelk)
 import Key (keyBegun)
-import Matrix (RenderView (size))
 import Stavework (Writing (blee), makeWriting, renderFeather, stavewrite)
 import Mean (hit, preent)
+import Rime (Point)
 
 
 data TitleState = TitleState {
@@ -39,17 +39,17 @@ instance Stately TitleState where
     renderFeather allwit
     stavewrite allwit (writings titlewit)
 
-makeTitleState :: RenderView -> TitleState
-makeTitleState dis = TitleState {
+makeTitleState :: Point -> TitleState
+makeTitleState (Vertex2 w h) = TitleState {
   hand = [PlayName, WillName, EndName]
 , finger = 0
 , writings = [
-    makeWriting "WƐLKƏM TU FRⱰGFƆRD!" (Vertex2 (width/2) (height*3/4))
-  , makeWriting "plej" (Vertex2 (width/2) (height*3/7))
-  , makeWriting "wɪlz" (Vertex2 (width/2) (height*2/7))
-  , makeWriting "ɛnd" (Vertex2 (width/2) (height  /7))
+    makeWriting "WƐLKƏM TU FRⱰGFƆRD!" (Vertex2 (w/2) (h*3/4))
+  , makeWriting "plej" (Vertex2 (w/2) (h*3/7))
+  , makeWriting "wɪlz" (Vertex2 (w/2) (h*2/7))
+  , makeWriting "ɛnd"  (Vertex2 (w/2) (h  /7))
   ]
-} where (width, height) = size dis
+}
 
 chosen :: TitleState -> StateName
 chosen wit = hand wit!!finger wit

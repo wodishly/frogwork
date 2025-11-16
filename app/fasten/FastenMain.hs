@@ -1,6 +1,6 @@
 module FastenMain where
 
-import SDL (Mode (Normal), Profile (Core), V4 (V4))
+import SDL (Mode (Normal), Profile (Core), V2 (V2), V4 (V4))
 import qualified SDL (
     OpenGLConfig (..)
   , WindowConfig (..)
@@ -31,4 +31,12 @@ openGLWindow :: SDL.WindowConfig
 openGLWindow = SDL.defaultWindow {
     SDL.windowGraphicsContext = SDL.OpenGLContext openGLConfig
   , SDL.windowResizable = True
+  , SDL.windowHighDPI = True
+  , SDL.windowInitialSize = SDL.V2 orwidth orheight
 }
+
+orwidth :: Num a => a
+orwidth = 800
+
+orheight :: Num a => a
+orheight = 600

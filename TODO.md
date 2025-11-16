@@ -2,10 +2,13 @@
 - yoking of `TitleState` and `WillState`
 - staves
   - [⭐️] missing staves
+  - [⭐] the staveframe
   - [🌑] staves that slant
   - [🌑] staves that stir
   - [🌑] staves that follow
-  - [🌑] the staveframe
+  - [🌑] stavewise staving
+  - [🌑] all writings are in (800, 600). do we want this?
+  - [🌑] do we want sharpness–greatness?
 - animations (`*.moth` files complete!)
   - [⭐️] parser 
   - [⭐️] serializer

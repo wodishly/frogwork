@@ -9,20 +9,20 @@ import Control.Monad.State (MonadState (get, put), StateT, execStateT, MonadTran
 import SDL.Input.Keyboard.Codes
 import Graphics.Rendering.OpenGL (Vertex2(Vertex2))
 
-import Allwit (Allwit (..), Settings, Setting (..), updateOnlyOneSetting)
+import Allwit (Allwit (keyset), Settings, Setting (..), updateOnlyOneSetting)
 import State (StateName (WillName), Stately (..))
 
 import Blee (bg, darkwhelk, red, lightwhelk)
 import Key (keyBegun)
-import Matrix (RenderView (size))
 import Stavework (Writing (blee), makeWriting, renderFeather, stavewrite)
 import Mean (hit)
+import Rime (Point)
 
 
 data WillState = WillState {
   hand :: [Maybe Setting]
 , finger :: Int
-, settingz :: Settings
+, settings :: Settings
 , writings :: [Writing]
 }
 
@@ -42,22 +42,22 @@ instance Stately WillState where
     renderFeather allwit
     stavewrite allwit (writings willwit)
 
-makeWillState :: RenderView -> Settings -> WillState
-makeWillState dis sets = WillState {
+makeWillState :: Point -> Settings -> WillState
+makeWillState (Vertex2 w h) sets = WillState {
   hand = [
     Just ShowKeys
   , Just ShowTicks
   , Nothing
   ]
 , finger = 0
-, settingz = sets
+, settings = sets
 , writings = [
-    makeWriting "WꞮLZ" (Vertex2 (width/2) (height*3/4))
-  , makeWriting "tɛl kiz" (Vertex2 (width/2) (height*3/7))
-  , makeWriting "tɛl tɪks" (Vertex2 (width/2) (height*2/7))
-  , makeWriting "bæk" (Vertex2 (width/2) (height/7))
+    makeWriting "WꞮLZ"     (Vertex2 (w/2) (h*3/4))
+  , makeWriting "tɛl kiz"  (Vertex2 (w/2) (h*3/7))
+  , makeWriting "tɛl tɪks" (Vertex2 (w/2) (h*2/7))
+  , makeWriting "bæk"      (Vertex2 (w/2) (h  /7))
   ]
-} where (width, height) = size dis
+}
 
 chosen :: WillState -> Maybe Setting
 chosen wit = hand wit!!finger wit

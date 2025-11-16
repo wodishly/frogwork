@@ -9,17 +9,15 @@ module Key (
 , wasd
 ) where
 
-import Control.Arrow ((>>>))
+import Data.Function ((&))
 
 import SDL (InputMotion (Pressed, Released), Event)
 import SDL.Input.Keyboard.Codes
-
 import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2))
 
 import Happen (Keywit, unwrapHappenKeys)
 import Rime (Point, hat)
-import Mean (allIn, has, none, doBoth)
-import Data.Function ((&))
+import Mean (allIn, has, none, ssss)
 
 
 data Keyset = Keyset {
@@ -45,6 +43,7 @@ hearableKeys = [
 
   , ScancodeSpace -- leap
 
+  , ScancodeTab -- show spell
   , ScancodeReturn -- choose
   , ScancodeEscape -- quit
   , ScancodeP -- pause
@@ -60,11 +59,11 @@ unkeys = Keyset [] [] []
 
 -- | Checks @wits@ to see if @code@ is @Pressed@.
 keyDown :: [Keywit] -> Scancode -> Bool
-keyDown = (>>>) (, Pressed) . has
+keyDown = (. (, Pressed)) . has
 
 -- | Checks @wits@ to see if @code@ is @Released@.
 keyUp :: [Keywit] -> Scancode -> Bool
-keyUp = (>>>) (, Released) . has
+keyUp = (. (, Released)) . has
 
 -- | Checks if the given code began being depressed on this frame.
 keyBegun :: Keyset -> Scancode -> Bool
@@ -76,7 +75,7 @@ anyKeysBegun = any . keyBegun
 
 -- | Checks if the given code continues being depressed since an earlier frame.
 keyContinuing :: Keyset -> Scancode -> Bool
-keyContinuing = has . uncurry (++) . doBoth begunKeys continuingKeys
+keyContinuing = has . ssss ((++) . begunKeys) continuingKeys
 
 -- | Checks if the given code ended being depressed on this frame.
 keyEnded :: Keyset -> Scancode -> Bool

@@ -236,6 +236,7 @@ doesRectangleIntersectRotatedRoundedRectangle = ($ id) . ssss . (. length) . (dr
 --
 -- >>> hit 2 (*10) [0,1,2,3]
 -- [0,1,20,3]
+{-# INLINE hit #-}
 hit :: Int -> (a -> a) -> [a] -> [a]
 hit =
   (. (.) . ((:[]) .))

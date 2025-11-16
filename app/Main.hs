@@ -16,7 +16,7 @@ import qualified SDL (
   , glSwapWindow
   , initializeAll
   , quit
-  , ticks
+  , ticks, windowSize, get, V2 (V2)
   )
 
 import Allwit (
@@ -27,7 +27,7 @@ import Allwit (
   , listenAll
   , waxwane
   , window
-  
+
   )
 import Stateteller (Frogwork (..), allwit, didEnd, makeStateteller, settleState)
 
@@ -51,9 +51,10 @@ main = do
 birth :: SDL.Window -> SDL.GLContext -> RenderView -> Float -> IO Frogwork
 birth wind ctx display ticks = do
   (staveware, meshes) <- begetMeshes ticks
+  SDL.V2 x0 y0 <- SDL.get $ SDL.windowSize wind
 
   let wit = makeAllwit ticks wind ctx staveware display
-      tell = makeStateteller display (settings wit) meshes
+      tell = makeStateteller (fromIntegral x0, fromIntegral y0) (settings wit) meshes
 
   fand wit
   return (Frogwork wit tell)
