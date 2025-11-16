@@ -62,17 +62,15 @@ live :: StateT Frogwork IO ()
 live = do
   frogwork <- get
 
-  listenings <- lift $ execStateT listenAll (frogwork^.allwit)
-  put frogwork { _allwit = listenings }
+  allwit' <- lift $ execStateT listenAll (frogwork^.allwit)
+  put frogwork { _allwit = allwit' }
 
   settleState
   blit
   unless (didEnd frogwork) live
 
 blit :: StateT Frogwork IO ()
-blit = do
-  frogwork <- get
-  SDL.glSwapWindow (window $ frogwork^.allwit)
+blit = get >>= SDL.glSwapWindow . window . _allwit
 
 die :: SDL.Window -> SDL.GLContext -> IO ()
 die wind ctx = do

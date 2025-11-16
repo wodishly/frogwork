@@ -1,6 +1,7 @@
 module WillState (
   WillState (..)
 , makeWillState
+, chosen
 ) where
 
 import Control.Monad.State (MonadState (get, put), StateT, execStateT, MonadTrans (lift))
@@ -9,7 +10,7 @@ import SDL.Input.Keyboard.Codes
 import Graphics.Rendering.OpenGL (Vertex2(Vertex2))
 
 import Allwit (Allwit (..), Settings, Setting (..), updateOnlyOneSetting)
-import State (StateName (WillName, TitleName), Stately (..))
+import State (StateName (WillName), Stately (..))
 
 import Blee (bg, darkwhelk, red, lightwhelk)
 import Key (keyBegun)
@@ -19,7 +20,7 @@ import Mean (hit)
 
 
 data WillState = WillState {
-  hand :: [Either StateName Setting]
+  hand :: [Maybe Setting]
 , finger :: Int
 , settingz :: Settings
 , writings :: [Writing]
@@ -44,9 +45,9 @@ instance Stately WillState where
 makeWillState :: RenderView -> Settings -> WillState
 makeWillState dis sets = WillState {
   hand = [
-    Right ShowKeys
-  , Right ShowTicks
-  , Left TitleName
+    Just ShowKeys
+  , Just ShowTicks
+  , Nothing
   ]
 , finger = 0
 , settingz = sets
@@ -58,7 +59,7 @@ makeWillState dis sets = WillState {
   ]
 } where (width, height) = size dis
 
-chosen :: WillState -> Either StateName Setting
+chosen :: WillState -> Maybe Setting
 chosen wit = hand wit!!finger wit
 
 choosefare :: Allwit -> StateT WillState IO Allwit
@@ -79,8 +80,5 @@ choosefare allwit = do
   }
 
   if keyBegun keys ScancodeReturn
-    then case chosen willwit of
-      Left state -> return allwit
-      Right setting -> lift $ execStateT (updateOnlyOneSetting setting) allwit
+    then maybe (return allwit) (\setting -> lift $ execStateT (updateOnlyOneSetting setting) allwit) (chosen willwit)
     else return allwit
-
