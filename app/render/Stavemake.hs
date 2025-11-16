@@ -16,13 +16,12 @@ module Stavemake (
 import Control.Monad (forM, when)
 import Data.Char (chr)
 import Data.HashMap.Lazy (HashMap, fromList)
+import Data.List.Split (chunksOf)
 import Text.Printf (printf)
 
 import Foreign (Word32, peek, peekArray, withArray)
-
 import FreeType.Core.Base
 import FreeType.Core.Types
-
 import Graphics.Rendering.OpenGL (
     Clamping (ClampToEdge)
   , GLfloat
@@ -45,7 +44,6 @@ import FastenMain (wayToFeathers)
 import Mean (doBoth, (.>>.))
 import Rime (Point)
 import Shade (Mesh (..), uploadTexture)
-import Data.List.Split (chunksOf)
 
 
 type Stavebook = HashMap Char Stave
@@ -139,10 +137,12 @@ makeStavebook' = makeStavebook'' True
 -- | Based on [this page](https://zyghost.com/articles/Haskell-font-rendering-with-freetype2-and-opengl.html).
 makeStavebook'' :: Bool -> FT_UInt -> FilePath -> IO Stavebook
 makeStavebook'' loud great path = do
+
   stavewit <- ft_Init_FreeType
   when loud $ putStrLn "made stavebook!"
 
   feather <- ft_New_Face stavewit path 0
+
   ft_Set_Pixel_Sizes feather 0 (fromIntegral great)
   feather' <- peek feather
   when loud $ putStrLn "made feather!"
@@ -173,7 +173,7 @@ makeStavebook'' loud great path = do
     when loud $ putStrLn "here's the stuff we're going to save"
     when loud $ putStrLn $ "  bearing: " ++ show (l, t)
     when loud $ putStrLn $ "  size: " ++ show (w, h)
-    when loud $ putStrLn $ "  advance: " ++ show (x, 0 :: Int)
+    when loud $ putStrLn $ "  advance: " ++ show (x, 0)
 
     when loud $ putStrLn "here's some other stuff:"
     when loud $ putStrLn $ "  pitch: " ++ show (bPitch bitmap)
@@ -193,6 +193,7 @@ makeStavebook'' loud great path = do
 
     -- does this do anything? unsure if safe to destroy
     -- GL.texture Texture2D $= Enabled
+
     GL.textureFilter Texture2D $= ((Linear', Nothing), Linear')
     GL.textureWrapMode Texture2D S $= (Repeated, ClampToEdge)
     GL.textureWrapMode Texture2D T $= (Repeated, ClampToEdge)
@@ -201,7 +202,7 @@ makeStavebook'' loud great path = do
     return (stave, Stave
         (fromIntegral <$> Vertex2 l t)
         (fromIntegral <$> Vertex2 w h)
-        (fromIntegral (x .>>. 6))
+        (fromIntegral $ x .>>. 6)
         tex'
       )
 

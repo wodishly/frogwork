@@ -5,6 +5,7 @@
 module Stavework (
   Stake (..)
 , Writing (..)
+, Say (..)
 , makeWriting
 , renderFeather
 , spellgreat
@@ -43,13 +44,11 @@ import Mean (Twain)
 import Rime (FrogVertex ((^*^)), Point, Polyhedron, (<+>), (^*))
 import Shade (Mesh (elementCount, vbo), bufferSize, drawFaces, drawMesh, useMesh)
 import Stavemake (Stave (Stave, advance, texture), Stavebook, greatness, sharpness)
-import Time (Timewit)
+import Time (Timewit (Timewit))
 
 
 data Stake = North | South | East | West | Middle deriving (Show, Eq)
 type Stakes = Twain Stake
-
-type Stavewone = Timewit -> Point
 
 data Writing = Writing {
   writ :: String
@@ -57,20 +56,34 @@ data Writing = Writing {
 , stakes :: Stakes
 , scale :: Point
 , blee :: Blee
-, wone :: Stavewone
+, wone :: Say
 }
+
+data Say = Say {
+  start :: Float
+, speed :: Float
+}
+
+unsay :: Say
+unsay = Say 0 0
 
 -- | Twimiddle, truescale, lightwhelk, unwone.
 -- Use the orshapework @Writing@ otherwise.
 makeWriting :: String -> Point -> Writing
-makeWriting w st = Writing w st (Middle, Middle) (Vertex2 1 1) lightwhelk (const $ Vertex2 0 0)
+makeWriting w st = Writing w st (Middle, Middle) (Vertex2 1 1) lightwhelk unsay
+
+howmany :: Timewit -> Say -> [Int]
+howmany (Timewit now _ ) (Say st sp)
+  | now < st = [] -- too early
+  | sp == 0 = [0..] -- all at once
+  | otherwise = [0..round $ (now-st)/sp]
 
 stavewrite :: Stately a => Allwit -> [Writing] -> StateT a IO ()
 stavewrite allwit writings = do
   let (book, mesh) = staveware allwit
   lift $ useMesh mesh
 
-  lift $ forM_ writings $ \(Writing wr std' stk scl' bl _) -> do
+  lift $ forM_ writings $ \(Writing wr std' stk scl' bl say) -> do
 
     let advances = scanl (+) 0 (map (advance . (book!)) wr)
         (w, h) = size $ display allwit
@@ -80,7 +93,7 @@ stavewrite allwit writings = do
         -- offset = Vertex2 ((/(10 :: Float)) . fromIntegral $ lifetime time) 0 <+> reckonStakes book stk scl wr
         offset = reckonStakes book stk scl wr
 
-    forM_ (zip [0..] wr) $ \(i, char) -> do
+    forM_ (zip (howmany (timewit allwit) say) wr) $ \(i, char) -> do
       unless (member char book) (error $ "cant write" ++ show char)
 
       let stave = book!char
