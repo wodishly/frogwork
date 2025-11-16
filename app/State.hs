@@ -36,4 +36,4 @@ class Stately a where
     return w'
 
 doAt :: Stately a => Timewit -> Float -> StateT a IO () -> StateT a IO ()
-doAt time t = when $ between (lifetime time, lifetime time + delta time) t
+doAt time = when . between (lifetime time, lifetime time + delta time)

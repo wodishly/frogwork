@@ -26,3 +26,6 @@
 - maps
   - [🌑] map format
   - [🌑] collision polygons
+- warnings
+  - `ld: warning: search path '/opt/local/lib/' not found`
+  - `UNSUPPORTED (log once): POSSIBLE ISSUE: unit 0 GLD_TEXTURE_INDEX_2D is unloadable and bound to sampler type (Float) - using zero texture because texture unloadable`

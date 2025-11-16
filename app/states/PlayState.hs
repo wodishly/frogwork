@@ -1,5 +1,4 @@
 {- HLINT ignore "Use head" -}
-{-# OPTIONS_GHC -Wno-type-defaults #-}
 module PlayState (
   PlayState (..)
 , makePlayState
@@ -25,7 +24,7 @@ import Random (FrogSeed, defaultSeed)
 import Rime (FrogVector, Point, Point3, isAught, clamp)
 import Shade (Mesh (meshAnimation), drawMesh, setMeshTransform)
 import Skeleton (evermore, once, play)
-import Stavework (Writing, makeWriting, stavewrite)
+import Stavework (makeWriting, stavewrite, Writing)
 import Time (Timewit (lifetime))
 import FastenShade
 
@@ -94,6 +93,14 @@ makePlayState dis ms = PlayState {
 , camera = makeCamera
 , writings = [
     makeWriting "omg frogs!!!!" (Vertex2 (width/2) (height/2))
+--  , Writing "Hwæt. We gardena in geardagum, þeodcyninga, þrym gefrunon, hu ða æþelingas ellen fremedon."
+--      (Vertex2 0 600) (West, North) (Vertex2 0.3 0.3) red (Say 1 0.05)
+--  , Writing "Oft Scyld Scefing sceaþena þreatum, monegum mægþum, meodosetla ofteah, egsode eorlas."
+--      (Vertex2 0 576) (West, North) (Vertex2 0.3 0.3) red (Say (1+90*0.05) 0.05)
+--  , Writing "Syððan ærest wearð feasceaft funden, he þæs frofre gebad, weox under wolcnum, weorðmyndum þah,"
+--      (Vertex2 0 552) (West, North) (Vertex2 0.3 0.3) red (Say (1+(90+85)*0.05) 0.05)
+--  , Writing "Oðþæt him æghwylc þara ymbsittendra ofer hronrade hyran scolde, gomban gyldan. þæt wæs god cyning."
+--      (Vertex2 0 528) (West, North) (Vertex2 0.3 0.3) red (Say (1+(90+85+98)*0.05) 0.05)
   ]
 } where (width, height) = size dis
 
