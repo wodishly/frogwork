@@ -27,6 +27,7 @@ import Shade (Mesh (meshAnimation), drawMesh, setMeshTransform)
 import Skeleton (evermore, once, play)
 import Stavework (Writing, makeWriting, stavewrite)
 import Time (Timewit (lifetime))
+import FastenShade
 
 
 data Camera = Camera {
@@ -129,7 +130,7 @@ animateMesh now didMove didLeap = do
   when (isJust athem) $
     let newAnimation = play now
           ((if didLeap then once else evermore) (fromJust athem))
-          (if didLeap then 2 else if didMove then 0 else 5)
+          (if didLeap then BUNNY_JUMP else if didMove then BUNNY_WALK else BUNNY_IDLE)
         newFrogMesh = frogMesh { meshAnimation = Just newAnimation }
     in put playwit { meshes = hit 0 (const newFrogMesh) (meshes playwit) }
 

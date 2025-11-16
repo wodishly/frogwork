@@ -108,6 +108,7 @@ executable frogwork
     RankNTypes
     TemplateHaskell
     TupleSections
+    PatternSynonyms
 
   -- Other library packages from which modules are imported.
   build-depends:

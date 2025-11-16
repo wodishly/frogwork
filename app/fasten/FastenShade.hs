@@ -111,3 +111,11 @@ quadUvBuffer = [
   , Vertex2 0 1
   , Vertex2 0 0
   ]
+
+pattern BUNNY_WALK
+      , BUNNY_JUMP
+      , BUNNY_IDLE
+     :: (Eq a, Num a) => a
+pattern BUNNY_WALK = 0 
+pattern BUNNY_JUMP = 2
+pattern BUNNY_IDLE = 5 

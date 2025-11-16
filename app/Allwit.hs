@@ -42,13 +42,7 @@ import qualified SDL (
   , windowSize
   )
 
-import FastenShade (
-    ShaderProfile (..)
-  , SimpleMeshProfile (..)
-  , defaultSimpleMeshProfile
-  , iBuffer
-  , quadUvBuffer
-  )
+import FastenShade
 import Matrix (RenderView (..), fromAffine, fromTranslation)
 import Mean (full, weep, doBoth, preent)
 import Time (Timewit, beginTime, keepTime)
@@ -98,7 +92,7 @@ begetMeshes now = do
   let mothFile = unwrappingly mothify cocoon
 
   bun <- makeAssetMesh $ makeAsset "bunny"
-  let bunAnimation = (play now . evermore) (makeAnimation mothFile) 5
+  let bunAnimation = (play now . evermore) (makeAnimation mothFile) BUNNY_IDLE
   froggy <- setMeshTransform (fromAffine [1.0, 1.0, 1.0] [0, 0, 0]) $
     bun { meshAnimation = Just bunAnimation }
 
