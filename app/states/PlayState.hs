@@ -73,7 +73,7 @@ makePlayState (Vertex2 w0 h0) (f, sp, rest) = PlayState {
 , frog = makeFrog f
 , speechframe = Speechframe sp ["A frog is a short-bodied, tailless amphibian of order Anura (< AGk ανουρα 'without tail')."]
 , euler = Vertex2 0.3 1.57079633
-, radius = 5
+, radius = 10
 , programs = []
 , camera = makeCamera
 , writings = [
@@ -133,7 +133,7 @@ updateCamera :: Allwit -> StateT PlayState IO ()
 updateCamera allwit = do
   playwit <- get
 
-  let Vertex3 x _ z = position $ frog playwit
+  let Vertex3 x y z = position $ frog playwit
       Vertex2 dx dy = given isAught (pointer $ mouse allwit) (arrow $ keyset allwit)
       Vertex2 pitch yaw = euler playwit
       pitch' = clamp (0, 1) $ pitch + dy / 100.0
@@ -144,8 +144,8 @@ updateCamera allwit = do
       fy = r * sin pitch
       fz = r * sin yaw * cos pitch
       c = Camera {
-        cTarget = fromList [x, 0, z]
-      , cPosition = fromList [x + fx, 1 + fy, z - fz]
+        cTarget = fromList [x, y, z]
+      , cPosition = fromList [x + fx, y + fy + 1, z - fz]
       }
 
   put playwit {
