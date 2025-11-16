@@ -55,8 +55,16 @@ samely l r = assert (l == r) l
 
 -- @region For working with twains.
 
--- | Given that @f thing@ holds, return @thing@.
--- Otherwise, return the argument.
+-- | Given a function and two arguments, return the former argument
+-- if the function holds of it; otherwise, return the latter argument
+-- (even if the function does not hold of it).
+--
+-- >>> given (>2) 3 1
+-- 3
+-- >>> given (>2) 0 4
+-- 4
+-- >>> given (>2) 0 1
+-- 1
 {-# INLINE given #-}
 given :: (a -> Bool) -> a -> a -> a
 given f thing = applyWhen (f thing) (const thing)

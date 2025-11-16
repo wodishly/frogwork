@@ -33,6 +33,9 @@ import Graphics.Rendering.OpenGL (
   , textureBinding
   )
 
+import State (Stately)
+import Allwit (Allwit (..))
+
 import Blee (Blee, bleeToGLVector4, lightwhelk)
 import FastenShade (Programful (uniformMap))
 import Matrix (RenderView (size), getOrthographicMatrix, getPerspectiveMatrix)
@@ -41,8 +44,6 @@ import Rime (FrogVertex ((^*^)), Point, Polyhedron, (<+>), (^*))
 import Shade (Mesh (elementCount, vbo), bufferSize, drawFaces, drawMesh, useMesh)
 import Stavemake (Stave (Stave, advance, texture), Stavebook, greatness, sharpness)
 import Time (Timewit)
-import Allwit (Allwit (..))
-import State (Stately)
 
 
 data Stake = North | South | East | West | Middle deriving (Show, Eq)
@@ -69,11 +70,13 @@ stavewrite allwit writings = do
   let (book, mesh) = staveware allwit
   lift $ useMesh mesh
 
-  lift $ forM_ writings $ \(Writing wr std stk scl' bl _) -> do
+  lift $ forM_ writings $ \(Writing wr std' stk scl' bl _) -> do
 
     let advances = scanl (+) 0 (map (advance . (book!)) wr)
         (w, h) = size $ display allwit
-        scl = Vertex2 (1/800) (1/600) ^*^ Vertex2 w h ^*^ scl'
+        scaleyscale = Vertex2 (1/800) (1/600) ^*^ Vertex2 w h
+        scl = scaleyscale ^*^ scl'
+        std = scaleyscale ^*^ std'
         -- offset = Vertex2 ((/(10 :: Float)) . fromIntegral $ lifetime time) 0 <+> reckonStakes book stk scl wr
         offset = reckonStakes book stk scl wr
 
