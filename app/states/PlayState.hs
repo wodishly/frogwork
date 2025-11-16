@@ -22,7 +22,7 @@ import Key (arrow)
 import Matrix (RenderView (size), frogLookAt, getOrthographicMatrix, getPerspectiveMatrix)
 import Mean (given, hit)
 import Random (FrogSeed, defaultSeed)
-import Rime (FrogVector, Point, Point3, aught, clamp)
+import Rime (FrogVector, Point, Point3, isAught, clamp)
 import Shade (Mesh (meshAnimation), drawMesh, setMeshTransform)
 import Skeleton (evermore, once, play)
 import Stavework (Writing, makeWriting, stavewrite)
@@ -74,8 +74,13 @@ instance Stately PlayState where
 
     let cam = camera playwit
     let viewMatrix = frogLookAt (cPosition cam) (cTarget cam)
-        orthographicMatrix = getOrthographicMatrix $ display allwit
-    lift $ mapM_ (drawMesh (getPerspectiveMatrix $ display allwit) viewMatrix orthographicMatrix $ timewit allwit) (meshes playwit)
+        
+    lift $ mapM_ (drawMesh
+        (getPerspectiveMatrix $ display allwit)
+        viewMatrix
+        (getOrthographicMatrix $ display allwit)
+        (timewit allwit))
+      (meshes playwit)
     stavewrite allwit (writings playwit)
 
 makePlayState :: RenderView -> [Mesh] -> PlayState
@@ -96,7 +101,7 @@ updateCamera :: Allwit -> StateT PlayState IO Camera
 updateCamera allwit = do
   playwit <- get
   let Vertex3 x _ z = position $ frog playwit
-      Vertex2 dx dy = given aught (pointer $ mouse allwit) (arrow $ keyset allwit)
+      Vertex2 dx dy = given isAught (pointer $ mouse allwit) (arrow $ keyset allwit)
       Vertex2 pitch yaw = euler playwit
       pitch' = clamp (0, 1) $ pitch + dy / 100.0
       yaw' = yaw + dx / 100.0
@@ -115,15 +120,15 @@ updateCamera allwit = do
 updateFrog :: Allwit -> FrogVector -> StateT PlayState IO ()
 updateFrog allwit forward = do
   playwit <- get
-  ((didMove, didJump), newFrog) <- lift $ runStateT (moveFrog allwit forward) (frog playwit)
+  ((didMove, didLeap), newFrog) <- lift $ runStateT (moveFrog allwit forward) (frog playwit)
 
   put playwit { frog = newFrog }
 
-  when didMove $ moveMesh (position newFrog) forward
-  animateMesh (lifetime $ timewit allwit) didMove didJump
+  when didMove (moveMesh forward $ position newFrog)
+  animateMesh didMove didLeap (lifetime $ timewit allwit)
 
-animateMesh :: Float -> Bool -> Bool -> StateT PlayState IO ()
-animateMesh now didMove didLeap = do
+animateMesh :: Bool -> Bool -> Float -> StateT PlayState IO ()
+animateMesh didMove didLeap now = do
   playwit <- get
   let frogMesh = head $ meshes playwit
       athem = meshAnimation frogMesh
@@ -134,8 +139,8 @@ animateMesh now didMove didLeap = do
         newFrogMesh = frogMesh { meshAnimation = Just newAnimation }
     in put playwit { meshes = hit 0 (const newFrogMesh) (meshes playwit) }
 
-moveMesh :: Point3 -> FrogVector -> StateT PlayState IO ()
-moveMesh (Vertex3 x y z) forward = do
+moveMesh :: FrogVector -> Point3 -> StateT PlayState IO ()
+moveMesh forward (Vertex3 x y z) = do
   playwit <- get
 
   let frogPosition = fromList [x, y, z]

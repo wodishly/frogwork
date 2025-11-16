@@ -1,8 +1,8 @@
-{-# LANGUAGE ImpredicativeTypes #-}
 module Stateteller where
 
 import Control.Lens (Lens', makeLenses, (.~), (^.))
 import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT (runStateT), execStateT)
+import Data.Maybe (isNothing)
 
 import SDL.Input.Keyboard.Codes
 
@@ -20,7 +20,6 @@ import qualified WillState as Will (chosen)
 import Key (anyKeysBegun, keyBegun)
 import Matrix (RenderView)
 import Shade (Mesh)
-import Data.Maybe (isNothing)
 
 
 data Stateteller = Stateteller {

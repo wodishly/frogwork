@@ -77,13 +77,13 @@ class GL.Vertex v => FrogVertex v where
   norm :: FrogVertex v => v -> GLfloat
   norm = sqrt . sum . map sq . toFrogList
 
-  {-# INLINE nought #-}
-  nought :: FrogVertex v => v -> Bool
-  nought = (== 0) . norm
+  {-# INLINE isNought #-}
+  isNought :: FrogVertex v => v -> Bool
+  isNought = (== 0) . norm
 
-  {-# INLINE aught #-}
-  aught :: FrogVertex v => v -> Bool
-  aught = not.nought
+  {-# INLINE isAught #-}
+  isAught :: FrogVertex v => v -> Bool
+  isAught = not.isNought
 
 instance (RealFrac a, GL.VertexComponent a) => FrogVertex (GL.Vertex2 a) where
   {-# INLINE fromSDL #-}
@@ -98,7 +98,7 @@ instance (RealFrac a, GL.VertexComponent a) => FrogVertex (GL.Vertex2 a) where
   (^*^) (GL.Vertex2 x y) (GL.Vertex2 a b) = GL.Vertex2 (x*a) (y*b)
   {-# INLINE hat #-}
   hat z
-    | nought z = z
+    | isNought z = z
     | otherwise = (/realToFrac (norm z)) <$> z
 
 instance (RealFrac a, GL.VertexComponent a) => FrogVertex (GL.Vertex3 a) where
@@ -114,7 +114,7 @@ instance (RealFrac a, GL.VertexComponent a) => FrogVertex (GL.Vertex3 a) where
   (^*^) (GL.Vertex3 x y z) (GL.Vertex3 a b c) = GL.Vertex3 (x*a) (y*b) (z*c)
   {-# INLINE hat #-}
   hat z
-    | nought z = z
+    | isNought z = z
     | otherwise = (/realToFrac (norm z)) <$> z
 
 instance (RealFrac a, GL.VertexComponent a) => FrogVertex (GL.Vertex4 a) where
@@ -130,7 +130,7 @@ instance (RealFrac a, GL.VertexComponent a) => FrogVertex (GL.Vertex4 a) where
   (^*^) (GL.Vertex4 x y z w) (GL.Vertex4 a b c d) = GL.Vertex4 (x*a) (y*b) (z*c) (w*d)
   {-# INLINE hat #-}
   hat z
-    | nought z = z
+    | isNought z = z
     | otherwise = (/realToFrac (norm z)) <$> z
 
 {-# INLINE (<+>) #-}
