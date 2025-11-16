@@ -5,29 +5,24 @@ module PlayState (
 , makePlayState
 ) where
 
-import Control.Monad (when)
-import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT (runStateT))
-import Data.Maybe (fromJust, isJust)
+import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT, execStateT)
 
-import Numeric.LinearAlgebra (Extractor (..), flatten, fromColumns, fromList, toColumns, (!), (??), (¿))
+import Numeric.LinearAlgebra (Extractor (..), flatten, fromList, (??), (¿))
 import Graphics.Rendering.OpenGL as GL (GLfloat, Program, Vertex2 (Vertex2), Vertex3 (Vertex3), VertexArrayObject)
 
 import Allwit (Allwit (..))
 import State (StateName (..), Stately (..))
 
 import Blee (bg, black)
-import Frog (Frogwit (position), makeFrog, moveFrog)
+import Frog (Frogwit (position, mesh), makeFrog, updateFrog)
 import Happen (Mousewit (..))
 import Key (arrow)
 import Matrix (RenderView (size), frogLookAt, getOrthographicMatrix, getPerspectiveMatrix)
-import Mean (given, hit)
+import Mean (given)
 import Random (FrogSeed, defaultSeed)
-import Rime (FrogVector, Point, Point3, isAught, clamp)
-import Shade (Mesh (meshAnimation), drawMesh, setMeshTransform)
-import Skeleton (evermore, once, play)
+import Rime (FrogVector, Point, isAught, clamp)
+import Shade (Mesh, drawMesh)
 import Stavework (Writing, makeWriting, stavewrite)
-import Time (Timewit (lifetime))
-import FastenShade
 
 
 data Camera = Camera {
@@ -52,42 +47,25 @@ data PlayState = PlayState {
 , writings :: [Writing]
 }
 
-instance Show PlayState where
-  show (PlayState _ _ f _ _ p c _) = show f ++ show p ++ show c
-
 instance Stately PlayState where
   name _ = PlayName
 
   update allwit = do
-    cam <- updateCamera allwit
-    let viewMatrix = frogLookAt (cPosition cam) (cTarget cam)
-        forward = flatten $ (viewMatrix ¿ [2]) ?? (Take 3, All)
-    updateFrog allwit forward
+    updateCamera allwit
+    updateFriends allwit
     return allwit
 
   render allwit = do
     playwit <- get
     bg black
-
-    -- why does this line make the last written stave have a black background?
-    -- renderFeather display time (staveware statewit)
-
-    let cam = camera playwit
-    let viewMatrix = frogLookAt (cPosition cam) (cTarget cam)
-        
-    lift $ mapM_ (drawMesh
-        (getPerspectiveMatrix $ display allwit)
-        viewMatrix
-        (getOrthographicMatrix $ display allwit)
-        (timewit allwit))
-      (meshes playwit)
+    drawFriends allwit
     stavewrite allwit (writings playwit)
 
 makePlayState :: RenderView -> [Mesh] -> PlayState
 makePlayState dis ms = PlayState {
   seed = defaultSeed
-, meshes = ms
-, frog = makeFrog
+, meshes = tail ms
+, frog = makeFrog (head ms)
 , euler = Vertex2 0.3 1.57079633
 , radius = 5
 , programs = []
@@ -97,9 +75,36 @@ makePlayState dis ms = PlayState {
   ]
 } where (width, height) = size dis
 
-updateCamera :: Allwit -> StateT PlayState IO Camera
+updateFriends :: Allwit -> StateT PlayState IO ()
+updateFriends allwit = do
+  playwit <- get
+  let cam = camera playwit
+      viewMatrix = frogLookAt (cPosition cam) (cTarget cam)
+      forward = flatten $ (viewMatrix ¿ [2]) ?? (Take 3, All)
+  newFrog <- lift $ execStateT (updateFrog allwit forward) (frog playwit)
+  put playwit { frog = newFrog }
+
+drawFriends :: Allwit -> StateT PlayState IO ()
+drawFriends allwit = do
+  playwit <- get
+  let cam = camera playwit
+      viewMatrix = frogLookAt (cPosition cam) (cTarget cam)
+
+  gatherMeshes >>= lift . mapM_ (drawMesh
+    (getPerspectiveMatrix $ display allwit)
+    viewMatrix
+    (getOrthographicMatrix $ display allwit)
+    (timewit allwit))
+
+gatherMeshes :: StateT PlayState IO [Mesh]
+gatherMeshes = do
+  playwit <- get
+  return $ meshes playwit ++ [mesh $ frog playwit]
+
+updateCamera :: Allwit -> StateT PlayState IO ()
 updateCamera allwit = do
   playwit <- get
+
   let Vertex3 x _ z = position $ frog playwit
       Vertex2 dx dy = given isAught (pointer $ mouse allwit) (arrow $ keyset allwit)
       Vertex2 pitch yaw = euler playwit
@@ -114,46 +119,9 @@ updateCamera allwit = do
         cTarget = fromList [x, 0, z]
       , cPosition = fromList [x + fx, 1 + fy, z - fz]
       }
-  put playwit { camera = c, euler = Vertex2 pitch' yaw', radius = r }
-  return c
 
-updateFrog :: Allwit -> FrogVector -> StateT PlayState IO ()
-updateFrog allwit forward = do
-  playwit <- get
-  ((didMove, didLeap), newFrog) <- lift $ runStateT (moveFrog allwit forward) (frog playwit)
-
-  put playwit { frog = newFrog }
-
-  when didMove (moveMesh forward $ position newFrog)
-  animateMesh didMove didLeap (lifetime $ timewit allwit)
-
-animateMesh :: Bool -> Bool -> Float -> StateT PlayState IO ()
-animateMesh didMove didLeap now = do
-  playwit <- get
-  let frogMesh = head $ meshes playwit
-      athem = meshAnimation frogMesh
-  when (isJust athem) $
-    let newAnimation = play now
-          ((if didLeap then once else evermore) (fromJust athem))
-          (if didLeap then BUNNY_JUMP else if didMove then BUNNY_WALK else BUNNY_IDLE)
-        newFrogMesh = frogMesh { meshAnimation = Just newAnimation }
-    in put playwit { meshes = hit 0 (const newFrogMesh) (meshes playwit) }
-
-moveMesh :: FrogVector -> Point3 -> StateT PlayState IO ()
-moveMesh forward (Vertex3 x y z) = do
-  playwit <- get
-
-  let frogPosition = fromList [x, y, z]
-      frogTarget = frogPosition + fromList [forward!0, 0, forward!2]
-      transform = frogLookAt frogPosition frogTarget
-      columns = toColumns transform
-      -- awesome lol
-      transform' = fromColumns [
-          columns !! 0
-        , columns !! 1
-        , columns !! 2
-        , fromList [x, y, z, 1]
-        ]
-
-  newFrogMesh <- lift $ setMeshTransform transform' (head $ meshes playwit)
-  put playwit { meshes = hit 0 (const newFrogMesh) (meshes playwit) }
+  put playwit {
+    camera = c
+  , euler = Vertex2 pitch' yaw'
+  , radius = r
+  }
