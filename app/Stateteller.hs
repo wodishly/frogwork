@@ -78,7 +78,7 @@ settleState = do
 goto :: Stately a => Lens' Stateteller a -> Allwit -> StateT Stateteller IO Allwit
 goto lens wit = do
   teller <- get
-  wit' <- lift $ execStateT (setWindowGrabbed $ name (teller^.lens) == EndName) wit
+  wit' <- lift $ execStateT (setWindowGrabbed $ name (teller^.lens) == PlayName) wit
   (wit'', state) <- lift $ runStateT (loop wit') (teller^.lens)
   put $ (lens.~state) teller { nowState = name state }
   return wit''

@@ -9,8 +9,6 @@ module Stavemake (
 , makeFeather
 , makeStavebook
 , makeStavebook'
-, greatness
-, sharpness
 ) where
 
 import Control.Monad (forM, when)
@@ -107,9 +105,6 @@ tokenwit =
 
 sharpness :: Word32
 sharpness = 2^7
-
-greatness :: GLfloat
-greatness = 2^6
 
 glyphFormatName :: FT_Glyph_Format -> String
 glyphFormatName = ("ft_GLYPH_FORMAT_" ++) . \case

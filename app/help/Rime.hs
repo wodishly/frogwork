@@ -164,3 +164,23 @@ swizzle (GL.Vertex4 y z real x) = GL.Vertex4 x y z real
 {-# INLINE unswizzle #-}
 unswizzle :: GL.Vertex4 a -> GL.Vertex4 a
 unswizzle (GL.Vertex4 x y z real) = GL.Vertex4 y z real x
+
+-- | gimme the southeast and the northwest
+--
+-- use @inject@ if u need another dimension
+fournook :: Point -> Point -> Polygon
+fournook se@(GL.Vertex2 x y) nw@(GL.Vertex2 a b) = [
+    se
+  , GL.Vertex2 x b -- NE
+  , nw
+  , GL.Vertex2 a y -- SW
+  ]
+
+data Axle = X | Y | Z deriving (Show, Eq)
+
+-- | gimme an axle and a 2d point and i give u a 3d point with that axle set to 0
+inject :: Axle -> Point2 -> Point3
+inject axle (GL.Vertex2 x y) = case axle of
+  X -> GL.Vertex3 0 x y
+  Y -> GL.Vertex3 x 0 y
+  Z -> GL.Vertex3 x y 0

@@ -11,11 +11,10 @@ import Graphics.Rendering.OpenGL (
   , TextureObject
   , UniformLocation
   , Vertex2 (Vertex2)
-  , Vertex3 (Vertex3)
   )
 
 import Mean (Twain)
-import Rime (Polygon, Polyhedron)
+import Rime (Axle (..), Polyhedron, fournook, inject)
 
 
 type MeshProfile = Either AssetMeshProfile SimpleMeshProfile
@@ -69,7 +68,7 @@ defaultAssetShaderProfile = ShaderProfile {
 
 defaultSimpleMeshProfile :: SimpleMeshProfile
 defaultSimpleMeshProfile = SimpleMeshProfile {
-    vbuffer = floorVBuffer
+    vbuffer = inject Y <$> fournook (Vertex2 20 -20) (Vertex2 -20 20)
   , ibuffer = iBuffer
   , uvbuffer = Nothing
   , meshShaderProfile = defaultSimpleShaderProfile
@@ -84,9 +83,9 @@ defaultSimpleShaderProfile = ShaderProfile {
 
 staveMeshProfile :: SimpleMeshProfile
 staveMeshProfile = SimpleMeshProfile {
-  vbuffer = [Vertex3 1 1 0, Vertex3 1 -1 0, Vertex3 -1 -1 0, Vertex3 -1 1 0]
+  vbuffer = inject Z <$> fournook (Vertex2 1 -1) (Vertex2 -1 1)
 , ibuffer = iBuffer
-, uvbuffer = Just quadUvBuffer
+, uvbuffer = Just $ fournook (Vertex2 1 0) (Vertex2 0 1)
 , meshShaderProfile = ShaderProfile
     (shadersOf "stave")
     ["u_texture", "u_time", "u_orthographic_matrix", "u_blee"]
@@ -95,7 +94,7 @@ staveMeshProfile = SimpleMeshProfile {
 
 speechMeshProfile :: SimpleMeshProfile
 speechMeshProfile = SimpleMeshProfile {
-    vbuffer = speechVBuffer
+    vbuffer = inject Z <$> fournook (Vertex2 (7/8) (-7/8)) (Vertex2 (-7/8) (-1/4))
   , ibuffer = iBuffer
   , uvbuffer = Nothing
   , meshShaderProfile = ShaderProfile (shadersOf "speech") []
@@ -105,34 +104,10 @@ speechMeshProfile = SimpleMeshProfile {
 shadersOf :: String -> Twain FilePath
 shadersOf s = ("vertex_" ++ s, "fragment_" ++ s)
 
-floorVBuffer :: Polyhedron
-floorVBuffer = [
-    Vertex3  20  0  20.0 --NE
-  , Vertex3  20 -0 -20.0 --SE
-  , Vertex3 -20 -0 -20.0 --SW
-  , Vertex3 -20  0  20.0 --NW
-  ]
-
-speechVBuffer :: Polyhedron
-speechVBuffer = [
-    Vertex3  ( 7/8) (-1/4) 0 --NE
-  , Vertex3  ( 7/8) (-7/8) 0 --SE
-  , Vertex3  (-7/8) (-7/8) 0 --SW
-  , Vertex3  (-7/8) (-1/4) 0 --NW
-  ]
-
 iBuffer :: [Word32]
 iBuffer = [
     0, 1, 2
   , 2, 3, 0
-  ]
-
-quadUvBuffer :: Polygon
-quadUvBuffer = [
-    Vertex2 1 0
-  , Vertex2 1 1
-  , Vertex2 0 1
-  , Vertex2 0 0
   ]
 
 pattern BUNNY_WALK

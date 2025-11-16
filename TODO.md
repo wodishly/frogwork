@@ -7,8 +7,8 @@
   - [🌑] staves that stir
   - [🌑] staves that follow
   - [🌑] stavewise staving
-  - [🌑] all writings are in (800, 600). do we want this?
-  - [🌑] do we want sharpness–greatness?
+  - [🌑] mind inwards on all writings being in (800, 600)
+  - [🌑] do away with the dregs of sharpness–greatness
 - animations (`*.moth` files complete!)
   - [⭐️] parser 
   - [⭐️] serializer

@@ -45,7 +45,7 @@ import Matrix (RenderView (size), getOrthographicMatrix, getPerspectiveMatrix)
 import Mean (Twain)
 import Rime (FrogVertex ((^*^)), Point, Polyhedron, (<+>), (^*))
 import Shade (Mesh (elementCount, vbo), bufferSize, drawFaces, drawMesh, useMesh)
-import Stavemake (Stave (Stave, advance, texture), Stavebook, greatness, sharpness)
+import Stavemake (Stave (Stave, advance, texture), Stavebook)
 import Time (Timewit)
 import FastenMain (orheight, orwidth)
 
@@ -89,7 +89,7 @@ howmany _ _ = [0..]
 
 speechwrite :: Stately a => Allwit -> Speechframe -> StateT a IO ()
 speechwrite allwit speechframe = do
-  stavewrite allwit $ map (\s -> Writing s (Vertex2 (50+10) (300-75-10)) (West, North) (Vertex2 0.25 0.25) white unsay) (speeches speechframe)
+  stavewrite allwit $ map (\s -> Writing s (Vertex2 (50+22.5) (300-75-22.5)) (West, North) (Vertex2 (1/3) (1/3)) white unsay) (speeches speechframe)
 
 stavewrite :: Stately a => Allwit -> [Writing] -> StateT a IO ()
 stavewrite allwit writings = do
@@ -149,7 +149,7 @@ stavenook bottomLeft scl step stave = [
   , Vertex3  x    (y+h) 0
   ] where
     (Stave (Vertex2 left top) z@(Vertex2 _ height) _ _) = stave
-    scale' = scl ^* (greatness / fromIntegral sharpness)
+    scale' = scl ^* (1/2)
     Vertex2 x y = bottomLeft <+> (scale' ^*^ Vertex2 (left + step) (top - height))
     Vertex2 w h = scale' ^*^ z
 
