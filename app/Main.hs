@@ -7,16 +7,19 @@ import Control.Monad.State (MonadState (get, put), MonadTrans (lift), execStateT
 import qualified Graphics.Rendering.OpenGL as GL
 import qualified SDL (
     GLContext
+  , V2 (V2)
   , Window
   , createWindow
   , destroyWindow
+  , get
   , getKeyboardState
   , glCreateContext
   , glDeleteContext
   , glSwapWindow
   , initializeAll
   , quit
-  , ticks, windowSize, get, V2 (V2)
+  , ticks
+  , windowSize
   )
 
 import Allwit (
@@ -27,7 +30,6 @@ import Allwit (
   , listenAll
   , waxwane
   , window
-
   )
 import Stateteller (Frogwork (..), allwit, didEnd, makeStateteller, settleState)
 

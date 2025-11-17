@@ -5,8 +5,9 @@ import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT (ru
 import Data.Maybe (isNothing)
 
 import SDL.Input.Keyboard.Codes
+import Graphics.Rendering.OpenGL (Vertex2 (Vertex2))
 
-import Allwit (Allwit (..), Settings, setWindowGrabbed, UnholyMeshMash)
+import Allwit (Allwit (..), Settings, UnholyMeshMash, doStateSwitchStuff)
 import State (StateName (..), Stately (loop, name))
 import TitleState (TitleState, makeTitleState)
 import WillState (WillState, makeWillState)
@@ -18,7 +19,7 @@ import qualified TitleState as Title (chosen)
 import qualified WillState as Will (chosen)
 
 import Key (anyKeysBegun, keyBegun)
-import Graphics.Rendering.OpenGL (Vertex2(Vertex2))
+import Mean (samely)
 
 
 data Stateteller = Stateteller {
@@ -64,7 +65,7 @@ settleState = do
         | nowState teller == PauseName && keyBegun keys ScancodeP = PlayName
         | nowState teller == TitleName && keyBegun keys ScancodeReturn = Title.chosen (frogwork^.stateteller.titleState)
         | nowState teller == WillName && keyBegun keys ScancodeReturn && isNothing (Will.chosen $ frogwork^.stateteller.willState) = TitleName
-        | otherwise = nowState (frogwork^.stateteller)
+        | otherwise = nowState teller
   
   lift (runStateT (case newState of
         TitleName -> goto titleState wit
@@ -78,7 +79,13 @@ settleState = do
 goto :: Stately a => Lens' Stateteller a -> Allwit -> StateT Stateteller IO Allwit
 goto lens wit = do
   teller <- get
-  wit' <- lift $ execStateT (setWindowGrabbed $ name (teller^.lens) == PlayName) wit
+  let oldName = nowState teller
+      newName = name $ teller^.lens
+
+  wit' <- (if newName /= oldName
+    then lift . execStateT (doStateSwitchStuff $ newName == PlayName)
+    else return) wit
   (wit'', state) <- lift $ runStateT (loop wit') (teller^.lens)
-  put $ (lens.~state) teller { nowState = name state }
+
+  put $ (lens.~state) teller { nowState = samely newName (name state) }
   return wit''

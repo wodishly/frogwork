@@ -6,20 +6,22 @@ module Stavework (
   Stake (..)
 , Writing (..)
 , Speechframe (..)
-, Say (..)
+, makeSpeechframe
 , speechwrite
 , makeWriting
 , renderFeather
-, spellgreat
+, spellframe
 , stavewrite
 ) where
 
 import Control.Monad (forM_, unless)
 import Control.Monad.State (MonadTrans (lift), StateT)
 import Data.HashMap.Lazy (member, (!))
-import Numeric.LinearAlgebra (ident)
+import Data.List (find, unfoldr)
+import Data.Maybe (fromMaybe)
 
 import Foreign (withArray)
+import Numeric.LinearAlgebra (ident)
 import Graphics.Rendering.OpenGL (
     BufferTarget (ArrayBuffer)
   , GLfloat
@@ -29,7 +31,6 @@ import Graphics.Rendering.OpenGL (
   , TransferDirection (WriteToBuffer)
   , Uniform (uniform)
   , Vertex2 (Vertex2)
-  , Vertex3 (Vertex3)
   , activeTexture
   , bindBuffer
   , bufferSubData
@@ -40,74 +41,111 @@ import State (Stately)
 import Allwit (Allwit (..))
 
 import Blee (Blee, bleeToGLVector4, lightwhelk, white)
+import FastenMain (orheight, orwidth)
 import FastenShade (Programful (uniformMap))
 import Matrix (RenderView (size), getOrthographicMatrix, getPerspectiveMatrix)
-import Mean (Twain)
-import Rime (FrogVertex ((^*^)), Point, Polyhedron, (<+>), (^*))
+import Mean (Twain, allIn)
+import Rime (Axle (Z), FrogVertex (nonehood, onehood, (^*^)), Point, Polyhedron, fournook, inject, (*^), (<+>), (<->), (^*), Fournook (..))
 import Shade (Mesh (elementCount, vbo), bufferSize, drawFaces, drawMesh, useMesh)
 import Stavemake (Stave (Stave, advance, texture), Stavebook)
-import Time (Timewit)
-import FastenMain (orheight, orwidth)
 
 
 data Stake = North | South | East | West | Middle deriving (Show, Eq)
 type Stakes = Twain Stake
 
 data Writing = Writing {
-  writ :: String
-, stead :: Point
-, stakes :: Stakes
+  stakes :: Stakes
 , scale :: Point
 , blee :: Blee
-, wone :: Say
+, stead :: Point
+, writ :: String
 }
-
-data Say = Say {
-  start :: Float
-, speed :: Float
-}
-
-data Speechframe = Speechframe {
-  meesh :: Mesh
-, speeches :: [String]
-}
-
-unsay :: Say
-unsay = Say 0 0
 
 -- | Twimiddle, truescale, lightwhelk, unwone.
 -- Use the orshapework @Writing@ otherwise.
-makeWriting :: String -> Point -> Writing
-makeWriting w st = Writing w st (Middle, Middle) (Vertex2 1 1) lightwhelk unsay
+makeWriting :: Point -> String -> Writing
+makeWriting = Writing (Middle, Middle) onehood lightwhelk
 
-howmany :: Timewit -> Say -> [Int]
-howmany _ _ = [0..]
--- howmany (Timewit now _ ) (Say st sp)
---   | now < st = [] -- too early
---   | sp == 0 = [0..] -- all at once
---   | otherwise = [0..round $ (now-st)/sp]
+data Speechframe = Speechframe {
+  nooks :: Fournook
+, rim :: GLfloat
+, skale :: Point
+, meesh :: Mesh
+, speech :: String
+}
+
+makeSpeechframe :: Mesh -> String -> Speechframe
+makeSpeechframe = Speechframe
+  (Fournook (Vertex2 50 (orheight/2-75)) (Vertex2 (orwidth-100) (orheight-50)))
+  22.5
+  ((1/3) *^ onehood)
 
 speechwrite :: Stately a => Allwit -> Speechframe -> StateT a IO ()
-speechwrite allwit speechframe = do
-  stavewrite allwit $ map (\s -> Writing s (Vertex2 (50+22.5) (300-75-22.5)) (West, North) (Vertex2 (1/3) (1/3)) white unsay) (speeches speechframe)
+speechwrite allwit speechframe = stavewrite allwit
+  . flayLines
+  . wrapToFrame allwit speechframe (fst $ staveware allwit)
+  $ speech speechframe
 
+wrapToFrame :: Allwit -> Speechframe -> Stavebook -> String -> [Writing]
+wrapToFrame allwit frame book string
+  | isOverflow allwit frame book string
+    = (\(l, r) -> writeSpeechOnFrame frame l : wrapToFrame allwit frame book (tail r))
+      (sunder allwit frame book string)
+  | otherwise = [writeSpeechOnFrame frame string]
+
+sunder :: Allwit -> Speechframe -> Stavebook -> String -> Twain String
+sunder allwit frame book string = splitAt (fromMaybe (length string)
+    (find (allIn [(== ' ') . (string!!), isLastBeforeOverflow allwit frame book string]) [0..])
+  ) string
+
+isLastBeforeOverflow :: Allwit -> Speechframe -> Stavebook -> String -> Int -> Bool
+isLastBeforeOverflow allwit frame book string i = any
+  (isOverflow allwit frame book . (++ take i string))
+  (unfoldr
+    (\s -> if null s then Nothing else Just (init s, init s))
+    (takeWhile (/= ' ') (drop (i+1) string)))
+
+-- | Tells if the string is too long for the speechframe.
+isOverflow :: Allwit -> Speechframe -> Stavebook -> String -> Bool
+isOverflow allwit frame book string = w_spell > w_frame
+  where Vertex2 w_frame _ = scaleToScreen allwit $ greatness (nooks frame) <-> (2 *^ Vertex2 (rim frame) 0)
+        Vertex2 w_spell _ = spellframe book (skale frame) string
+
+-- | Flays each line of writing below the last.
+--
+-- todo: draw out the @32@
+flayLines :: [Writing] -> [Writing]
+flayLines = zipWith (\i wr -> wr { stead = Vertex2 0 (-32*i) <+> stead wr }) [0..]
+
+-- | Fits the speech to the frame.
+writeSpeechOnFrame :: Speechframe -> String -> Writing
+writeSpeechOnFrame frame = Writing
+  (West, North)
+  (skale frame)
+  white
+  (topLeft (nooks frame) <+> Vertex2 (rim frame) -(rim frame))
+
+scaleToScreen :: Allwit -> Point -> Point
+scaleToScreen allwit = (^*^) (Vertex2 (w/orwidth) (h/orheight))
+  where (w, h) = size (display allwit)
+
+-- | The great work.
 stavewrite :: Stately a => Allwit -> [Writing] -> StateT a IO ()
 stavewrite allwit writings = do
 
   let (book, mish) = staveware allwit
-      (w, h) = size $ display allwit
-      scaleyscale = Vertex2 (w/orwidth) (h/orheight)
 
   lift $ useMesh mish
-  lift $ forM_ writings $ \(Writing wr std' stk scl' bl say) -> do
+  lift $ forM_ writings $ \(Writing stk scl' bl std' wr) -> do
 
     let advances = scanl (+) 0 (map (advance . (book!)) wr)
-        scl = scaleyscale ^*^ scl'
-        std = scaleyscale ^*^ std'
+        scl = scaleToScreen allwit scl'
+        std = scaleToScreen allwit std'
         offset = reckonStakes book stk scl wr
-    
-    forM_ (zip (howmany (timewit allwit) say) wr) $ \(i, char) -> do
-      unless (member char book) (error $ "cant write" ++ show char)
+
+    forM_ (zip [0..] wr) $ \(i, char) -> do
+    -- forM_ (zip (howmany (timewit allwit) ww) wr) $ \(i, char) -> do
+      unless (member char book) (error $ "cant write " ++ show char)
 
       let stave = book!char
           vertices = stavenook (offset <+> std) scl (advances!!i) stave
@@ -122,7 +160,7 @@ stavewrite allwit writings = do
 
 reckonStakes :: Stavebook -> Stakes -> Point -> String -> Point
 reckonStakes book (xstake, ystake) scl wr = Vertex2 ew ns where
-  Vertex2 x y = spellgreat book scl wr
+  Vertex2 x y = spellframe book scl wr
   ew = case xstake of
     West -> 0
     Middle -> -(x/4)
@@ -134,23 +172,24 @@ reckonStakes book (xstake, ystake) scl wr = Vertex2 ew ns where
     North -> -(y/2)
     _ -> error "bad stake"
 
-spellgreat :: Stavebook -> Point -> String -> Vertex2 GLfloat
-spellgreat book scl = (scl ^*^) . foldr
-  ((\(Vertex2 x y) (Vertex2 a b) -> Vertex2 (x+a) (max y b))
-  . (\(Stave (Vertex2 _ by) (Vertex2 _ _) step _) -> Vertex2 step by)
-  . (book!))
-  (Vertex2 0 0)
+-- | Reckon the spell's bounding frame.
+spellframe :: Stavebook -> Point -> String -> Point
+spellframe book scl = (scl ^*^) . foldr (frameyoke . staveframe . (book!)) nonehood
 
+-- | Yoke two staves' bounding frames.
+frameyoke :: Point -> Point -> Point
+frameyoke (Vertex2 x y) (Vertex2 a b) = Vertex2 (x+a) (max y b)
+
+-- | Reckon the stave's bounding frame.
+staveframe :: Stave -> Point
+staveframe (Stave (Vertex2 _ by) (Vertex2 _ _) step _) = Vertex2 step by
+
+-- | Reckon the stave's fournook.
 stavenook :: Point -> Point -> GLfloat -> Stave -> Polyhedron
-stavenook bottomLeft scl step stave = [
-    Vertex3 (x+w) (y+h) 0
-  , Vertex3 (x+w)  y    0
-  , Vertex3  x     y    0
-  , Vertex3  x    (y+h) 0
-  ] where
+stavenook bottomLeft scl step stave = inject Z <$> fournook (Vertex2 (x+w) (y+h)) (Vertex2 x y) where
     (Stave (Vertex2 left top) z@(Vertex2 _ height) _ _) = stave
     scale' = scl ^* (1/2)
-    Vertex2 x y = bottomLeft <+> (scale' ^*^ Vertex2 (left + step) (top - height))
+    Vertex2 x y = bottomLeft <+> (scale' ^*^ Vertex2 (left+step) (top-height))
     Vertex2 w h = scale' ^*^ z
 
 renderFeather :: Stately a => Allwit -> StateT a IO ()

@@ -28,6 +28,6 @@ instance Stately PauseState where
 makePauseState :: Point -> PauseState
 makePauseState wind = PauseState {
   writings = [
-    makeWriting "pɔz" ((1/2) *^ wind)
+    makeWriting ((1/2) *^ wind) "pɔz"
   ]
 }

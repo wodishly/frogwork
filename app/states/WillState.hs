@@ -52,10 +52,10 @@ makeWillState (Vertex2 w h) sets = WillState {
 , finger = 0
 , settings = sets
 , writings = [
-    makeWriting "WꞮLZ"     (Vertex2 (w/2) (h*3/4))
-  , makeWriting "tɛl kiz"  (Vertex2 (w/2) (h*3/7))
-  , makeWriting "tɛl tɪks" (Vertex2 (w/2) (h*2/7))
-  , makeWriting "bæk"      (Vertex2 (w/2) (h  /7))
+    makeWriting (Vertex2 (w/2) (h*3/4)) "WꞮLZ"
+  , makeWriting (Vertex2 (w/2) (h*3/7)) "tɛl kiz"
+  , makeWriting (Vertex2 (w/2) (h*2/7)) "tɛl tɪks"
+  , makeWriting (Vertex2 (w/2) (h  /7)) "bæk"
   ]
 }
 

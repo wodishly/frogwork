@@ -7,22 +7,21 @@ module Frog (
 ) where
 
 import Control.Monad (when)
-import Control.Monad.State (MonadState (get, put), StateT, MonadTrans (lift))
-
-import Numeric.LinearAlgebra ((!), fromList, toColumns, fromColumns)
-import SDL.Input.Keyboard.Codes
-import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2), Vertex3 (Vertex3))
-
-import Key (keyBegun, wasd)
-import Mean (ssss)
-import Rime (FrogVector, Point3, hat, (*^), (<+>), FrogVertex ((^*^)))
-import Time (Timewit (lifetime), throttle)
-import Allwit (Allwit (..))
-import Shade (Mesh (meshAnimation), setMeshTransform)
-import Matrix (frogLookAt)
+import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT)
 import Data.Maybe (isJust, fromJust)
-import Skeleton (play, evermore, once)
+
+import Numeric.LinearAlgebra (fromColumns, fromList, toColumns, (!))
+import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2), Vertex3 (Vertex3))
+import SDL.Input.Keyboard.Codes
+
+import Allwit (Allwit (..))
 import FastenShade
+import Key (keyBegun, wasd)
+import Matrix (frogLookAt)
+import Rime (FrogVector, Point3, hat, (*^), (<+>))
+import Shade (Mesh (meshAnimation), setMeshTransform)
+import Skeleton (evermore, once, play)
+import Time (Timewit (lifetime), throttle)
 
 
 data Frogwit = Frogwit {
@@ -53,10 +52,10 @@ makeFrog m = Frogwit {
 }
 
 didMove :: Frogwit -> Bool
-didMove = ssss ((||) . didWalk) didLeap
+didMove frogwit = any ($ frogwit) [didWalk, didLeap]
 
 hasLeapsLeft :: Frogwit -> Bool
-hasLeapsLeft = ssss ((<) . leapCount) utleaps
+hasLeapsLeft frogwit = leapCount frogwit < utleaps frogwit
 
 leap :: Allwit -> StateT Frogwit IO ()
 leap allwit = do
@@ -87,7 +86,7 @@ land = do
   put frogwit {
     dy = 0
   , leapCount = 0
-  , position = Vertex3 1 0 1 ^*^ position frogwit
+  , position = let Vertex3 x _ z = position frogwit in Vertex3 x 0 z
   , didLeap = False
   }
 

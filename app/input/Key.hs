@@ -51,6 +51,7 @@ hearableKeys = [
   , ScancodeR -- restart
 
   , ScancodeK -- show keys
+  , ScancodeM -- grab mouse
   , ScancodeT -- show time
   ]
 

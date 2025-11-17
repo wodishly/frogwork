@@ -41,6 +41,11 @@ type ZPolytope = [LatticePoint4]
 type FrogList = [GLfloat]
 type FrogVector = H.Vector GLfloat
 
+data Fournook = Fournook {
+  topLeft :: Point
+, greatness :: Point
+} deriving (Show, Eq)
+
 {-# INLINE asPoint #-}
 asPoint :: Real a => a -> Point
 asPoint = toBoth GL.Vertex2 . realToFrac
@@ -69,6 +74,8 @@ class GL.Vertex v => FrogVertex v where
   fromFrogVector :: FrogVector -> v
 
   hat :: FrogVertex v => v -> v
+  nonehood :: v
+  onehood :: v
 
   -- | componentwise multiplication
   (^*^) :: v -> v -> v
@@ -96,6 +103,10 @@ instance (RealFrac a, GL.VertexComponent a) => FrogVertex (GL.Vertex2 a) where
     | otherwise = dimensionError 2
   {-# INLINE (^*^) #-}
   (^*^) (GL.Vertex2 x y) (GL.Vertex2 a b) = GL.Vertex2 (x*a) (y*b)
+  {-# INLINE nonehood #-}
+  nonehood = GL.Vertex2 0 0
+  {-# INLINE onehood #-}
+  onehood = GL.Vertex2 1 1
   {-# INLINE hat #-}
   hat z
     | isNought z = z
@@ -112,6 +123,10 @@ instance (RealFrac a, GL.VertexComponent a) => FrogVertex (GL.Vertex3 a) where
     | otherwise = dimensionError 3
   {-# INLINE (^*^) #-}
   (^*^) (GL.Vertex3 x y z) (GL.Vertex3 a b c) = GL.Vertex3 (x*a) (y*b) (z*c)
+  {-# INLINE nonehood #-}
+  nonehood = GL.Vertex3 0 0 0
+  {-# INLINE onehood #-}
+  onehood = GL.Vertex3 1 1 1
   {-# INLINE hat #-}
   hat z
     | isNought z = z
@@ -128,6 +143,10 @@ instance (RealFrac a, GL.VertexComponent a) => FrogVertex (GL.Vertex4 a) where
     | otherwise = dimensionError 3
   {-# INLINE (^*^) #-}
   (^*^) (GL.Vertex4 x y z w) (GL.Vertex4 a b c d) = GL.Vertex4 (x*a) (y*b) (z*c) (w*d)
+  {-# INLINE nonehood #-}
+  nonehood = GL.Vertex4 0 0 0 0
+  {-# INLINE onehood #-}
+  onehood = GL.Vertex4 1 1 1 1
   {-# INLINE hat #-}
   hat z
     | isNought z = z
@@ -184,3 +203,10 @@ inject axle (GL.Vertex2 x y) = case axle of
   X -> GL.Vertex3 0 x y
   Y -> GL.Vertex3 x 0 y
   Z -> GL.Vertex3 x y 0
+
+-- | gimme an axle and a 3d point and i give u a 2d point without that axle
+surject :: Axle -> Point3 -> Point2
+surject axle (GL.Vertex3 x y z) = case axle of
+  X -> GL.Vertex2 x y
+  Y -> GL.Vertex2 x z
+  Z -> GL.Vertex2 y z

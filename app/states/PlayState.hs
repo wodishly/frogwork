@@ -24,7 +24,7 @@ import Mean (given)
 import Random (FrogSeed, defaultSeed)
 import Rime (FrogVector, Point, isAught, clamp)
 import Shade (Mesh, drawMesh)
-import Stavework (makeWriting, stavewrite, Writing, Speechframe (..), speechwrite)
+import Stavework (makeWriting, stavewrite, Speechframe (..), speechwrite, Writing, makeSpeechframe)
 import Control.Monad (when)
 
 
@@ -70,14 +70,15 @@ makePlayState :: Point -> UnholyMeshMash -> PlayState
 makePlayState (Vertex2 w0 h0) (f, sp, rest) = PlayState {
   seed = defaultSeed
 , meshes = rest
-, frog = makeFrog f
-, speechframe = Speechframe sp ["A frog is a short-bodied, tailless amphibian of order Anura (< AGk ανουρα 'without tail')."]
+, frog = ff
+--, speechframe = makeSpeechframe sp "A frog is a short-bodied, tailless amphibian of order Anura (< AGk ανουρα 'without tail')."
+, speechframe = makeSpeechframe sp "A frog is any member of a diverse and largely semiaquatic group of short-bodied, tailless amphibian vertebrates composing the order Anura (coming from the Ancient Greek ανουρα, literally 'without tail')."
 , euler = Vertex2 0.3 1.57079633
 , radius = 10
 , programs = []
 , camera = makeCamera
 , writings = [
-    makeWriting "omg frogs!!!!" (Vertex2 (w0/2) (h0/2))
+    makeWriting (Vertex2 (w0/2) (h0/2)) "omg frogs!!!!"
 --  , Writing "Hwæt. We gardena in geardagum, þeodcyninga, þrym gefrunon, hu ða æþelingas ellen fremedon."
 --      (Vertex2 0 600) (West, North) (Vertex2 0.3 0.3) red (Say 1 0.05)
 --  , Writing "Oft Scyld Scefing sceaþena þreatum, monegum mægþum, meodosetla ofteah, egsode eorlas."
@@ -87,7 +88,7 @@ makePlayState (Vertex2 w0 h0) (f, sp, rest) = PlayState {
 --  , Writing "Oðþæt him æghwylc þara ymbsittendra ofer hronrade hyran scolde, gomban gyldan. þæt wæs god cyning."
 --      (Vertex2 0 528) (West, North) (Vertex2 0.3 0.3) red (Say (1+(90+85+98)*0.05) 0.05)
   ]
-}
+} where ff = makeFrog f
 
 updateFriends :: Allwit -> StateT PlayState IO ()
 updateFriends allwit = do

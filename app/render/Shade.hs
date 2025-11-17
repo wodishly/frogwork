@@ -40,6 +40,7 @@ import Time (Timewit (lifetime))
 
 import MothSpell as MOTH
 
+
 drawFaces :: Int32 -> IO ()
 drawFaces count = drawElements Triangles count UnsignedInt (bufferOffset 0)
 

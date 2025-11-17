@@ -3,23 +3,25 @@ module Allwit (
 , Setting (..)
 , Settings
 , UnholyMeshMash
-, makeAllwit
 , begetMeshes
 , fand
 , listenAll
-, waxwane
-, toggle
+, makeAllwit
 , setWindowGrabbed
+, toggle
 , updateOnlyOneSetting
+, waxwane
+, doStateSwitchStuff
 ) where
 
 import Prelude hiding (lookup)
-import Control.Monad (void, when)
+
+import Control.Monad (void, when, forM_)
 import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT)
-import Data.Map (Map, adjust, fromList, lookup)
+import Data.Map (Map, adjust, fromList, lookup, (!))
 import Data.Maybe (fromMaybe)
 
-import SDL (GLContext, LocationMode (AbsoluteLocation, RelativeLocation), glGetDrawableSize)
+import SDL (GLContext, LocationMode (AbsoluteLocation, RelativeLocation))
 import SDL.Input.Keyboard.Codes
 import Graphics.Rendering.OpenGL (
     BlendingFactor (OneMinusSrcAlpha, SrcAlpha)
@@ -35,6 +37,7 @@ import qualified SDL (
     Event
   , V2 (V2)
   , Window
+  , glGetDrawableSize
   , pollEvents
   , setMouseLocationMode
   , ticks
@@ -56,11 +59,12 @@ import Spell (summon, unwrappingly)
 import Stavemake (Staveware, makeFeather)
 
 
+data Setting = ShowTicks | ShowKeys | ShowSpeech | RunTests | GrabMouse deriving (Show, Eq, Ord)
+
 type Settings = Map Setting Bool
-data Setting = ShowTicks | ShowKeys | ShowSpeech | RunTests deriving (Show, Eq, Ord)
 
 makeSettings :: Settings
-makeSettings = toggle ShowSpeech . fromList $ map (, False) [ShowTicks, ShowKeys, ShowSpeech, RunTests]
+makeSettings = toggle GrabMouse . fromList $ map (, False) [ShowTicks, ShowKeys, ShowSpeech, RunTests, GrabMouse]
 
 toggle :: Setting -> Settings -> Settings
 toggle = adjust not
@@ -85,6 +89,7 @@ makeAllwit ticks = Allwit
   (Mousewit (Vertex2 0 0) (Vertex2 0 0))
   (beginTime ticks)
 
+-- | the frog, the speech, and the rest
 type UnholyMeshMash = (Mesh, Mesh, [Mesh])
 
 begetMeshes :: Float -> IO (Staveware, UnholyMeshMash)
@@ -131,7 +136,6 @@ listenMouse = do
   -- todo sum instead of head
   let (p, w) = doBoth unwrapHappenPointer unwrapHappenWheel (events allwit)
   -- todo: this is horrific
-  -- todo: also it doesnt work lol
   put allwit { mouse = let f x = if full x then head x else Vertex2 0 0 in Mousewit (f p) (f w) }
 
 listenWindow :: StateT Allwit IO ()
@@ -144,9 +148,8 @@ listenWindow = do
 updateAllSettings :: StateT Allwit IO ()
 updateAllSettings = do
   allwit <- get
-  when (keyBegun (keyset allwit) ScancodeK) (updateOnlyOneSetting ShowKeys)
-  when (keyBegun (keyset allwit) ScancodeT) (updateOnlyOneSetting ShowTicks)
-  when (keyBegun (keyset allwit) ScancodeTab) (updateOnlyOneSetting ShowSpeech)
+  forM_ [(ScancodeK, ShowKeys), (ScancodeT, ShowTicks), (ScancodeTab, ShowSpeech), (ScancodeM, GrabMouse)]
+    (\(code, setting) -> when (keyBegun (keyset allwit) code) (updateOnlyOneSetting setting))
 
 updateOnlyOneSetting :: Setting -> StateT Allwit IO ()
 updateOnlyOneSetting setting = do
@@ -169,8 +172,10 @@ fand :: Allwit -> IO ()
 fand = ($ weep) . when . fromMaybe False . lookup RunTests . settings
 
 setWindowGrabbed :: Bool -> StateT Allwit IO ()
-setWindowGrabbed setting = do
+setWindowGrabbed setting' = do
   allwit <- get
+  let setting = setting' && settings allwit!GrabMouse
+
   SDL.windowGrab (window allwit) $= setting
   void $ SDL.setMouseLocationMode $ if setting then RelativeLocation else AbsoluteLocation
 
@@ -182,9 +187,20 @@ waxwane wind = do
   GL.blend $= Enabled
   GL.blendFunc $= (SrcAlpha, OneMinusSrcAlpha)
   return RenderView {
-      aspect = fromIntegral width / fromIntegral height
-    , size = (fromIntegral width, fromIntegral height)
-    , fov = pi / 4.0
-    , near = 0.1
-    , far = 100.0
+    aspect = fromIntegral width / fromIntegral height
+  , size = (fromIntegral width, fromIntegral height)
+  , fov = pi / 4.0
+  , near = 0.1
+  , far = 100.0
   }
+
+doStateSwitchStuff :: Bool -> StateT Allwit IO ()
+doStateSwitchStuff grabbed = do
+  setWindowGrabbed grabbed
+  flushKeys
+
+-- reset keyset on state switch
+flushKeys :: StateT Allwit IO ()
+flushKeys = do
+  allwit <- get
+  put allwit { keyset = unkeys }

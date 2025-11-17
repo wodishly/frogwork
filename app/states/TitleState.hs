@@ -44,10 +44,10 @@ makeTitleState (Vertex2 w h) = TitleState {
   hand = [PlayName, WillName, EndName]
 , finger = 0
 , writings = [
-    makeWriting "WƐLKƏM TU FRⱰGFƆRD!" (Vertex2 (w/2) (h*3/4))
-  , makeWriting "plej" (Vertex2 (w/2) (h*3/7))
-  , makeWriting "wɪlz" (Vertex2 (w/2) (h*2/7))
-  , makeWriting "ɛnd"  (Vertex2 (w/2) (h  /7))
+    makeWriting (Vertex2 (w/2) (h*3/4)) "WƐLKƏM TU FRⱰGFƆRD!"
+  , makeWriting (Vertex2 (w/2) (h*3/7)) "plej"
+  , makeWriting (Vertex2 (w/2) (h*2/7)) "wɪlz"
+  , makeWriting (Vertex2 (w/2) (h  /7)) "ɛnd"
   ]
 }
 
