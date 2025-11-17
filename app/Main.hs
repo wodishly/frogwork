@@ -56,7 +56,7 @@ birth wind ctx display ticks = do
   SDL.V2 x y <- (fromIntegral <$>) <$> SDL.get (SDL.windowSize wind)
 
   let wit = makeAllwit ticks wind ctx staveware display
-      tell = makeStateteller (x, y) (settings wit) meshes
+  tell <- makeStateteller (x, y) (settings wit) meshes
 
   fand wit
   return (Frogwork wit tell)

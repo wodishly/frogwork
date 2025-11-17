@@ -1,3 +1,4 @@
+{- HLINT ignore "Use section" -}
 module Stateteller where
 
 import Control.Lens (Lens', makeLenses, (.~), (^.))
@@ -13,12 +14,13 @@ import TitleState (TitleState, makeTitleState)
 import WillState (WillState, makeWillState)
 import PlayState (PlayState, makePlayState)
 import PauseState (PauseState, makePauseState)
+import AboutState (AboutState, makeAboutState)
 import EndState (EndState, makeEndState)
 
 import qualified TitleState as Title (chosen)
 import qualified WillState as Will (chosen)
 
-import Key (anyKeysBegun, keyBegun)
+import Key (anyKeysBegun, keyBegun, hearableKeys)
 import Mean (samely)
 
 
@@ -27,19 +29,21 @@ data Stateteller = Stateteller {
 , _willState :: WillState
 , _playState :: PlayState
 , _pauseState :: PauseState
+, _aboutState :: AboutState
 , _endState :: EndState
 , nowState :: StateName
 }
 makeLenses ''Stateteller
 
-makeStateteller :: (Int, Int) -> Settings -> UnholyMeshMash -> Stateteller
-makeStateteller (w, h) sets meshes = Stateteller
+makeStateteller :: (Int, Int) -> Settings -> UnholyMeshMash -> IO Stateteller
+makeStateteller (w, h) sets meshes = (Stateteller
   (makeTitleState wind)
   (makeWillState  wind sets)
   (makePlayState  wind meshes)
   (makePauseState wind)
-  makeEndState
-  TitleName
+  <$> makeAboutState wind)
+  <*> return makeEndState
+  <*> return TitleName
   where wind = fromIntegral <$> Vertex2 w h
 
 data Frogwork = Frogwork {
@@ -65,13 +69,15 @@ settleState = do
         | nowState teller == PauseName && keyBegun keys ScancodeP = PlayName
         | nowState teller == TitleName && keyBegun keys ScancodeReturn = Title.chosen (frogwork^.stateteller.titleState)
         | nowState teller == WillName && keyBegun keys ScancodeReturn && isNothing (Will.chosen $ frogwork^.stateteller.willState) = TitleName
+        | nowState teller == AboutName && anyKeysBegun keys (filter (flip notElem [ScancodeQ, ScancodeEscape]) hearableKeys) = TitleName
         | otherwise = nowState teller
-  
+
   lift (runStateT (case newState of
         TitleName -> goto titleState wit
         WillName -> goto willState wit
         PlayName -> goto playState wit
         PauseName -> goto pauseState wit
+        AboutName -> goto aboutState wit
         EndName -> goto endState wit
       ) (frogwork^.stateteller)
     ) >>= put . uncurry Frogwork

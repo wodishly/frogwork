@@ -91,6 +91,7 @@ executable frogwork
     WillState
     PauseState
     PlayState
+    AboutState
     EndState
     Stateteller
 

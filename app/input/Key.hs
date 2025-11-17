@@ -2,6 +2,7 @@ module Key (
   Keyset
 , unkeys
 , listen
+, hearableKeys
 , keyBegun
 , anyKeysBegun
 , anyKeysContinuing
