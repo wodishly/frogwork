@@ -3,10 +3,12 @@
 - staves
   - [⭐️] missing staves
   - [⭐] the staveframe
+    - [🌑] staveframe stave wrap on scale
   - [🌑] staves that slant
   - [🌑] staves that stir
   - [🌑] staves that follow
   - [🌑] stavewise staving
+  - [🌑] stave only once for each window resize
   - [🌑] mind inwards on all writings being in (800, 600)
   - [🌑] do away with the dregs of sharpness–greatness
 - animations (`*.moth` files complete!)

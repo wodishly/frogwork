@@ -4,6 +4,7 @@ module Key (
 , listen
 , keyBegun
 , anyKeysBegun
+, anyKeysContinuing
 , keyEnded -- unused
 , arrow
 , wasd
@@ -42,6 +43,8 @@ hearableKeys = [
   , ScancodeD
 
   , ScancodeSpace -- leap
+  , ScancodeLShift -- run
+  , ScancodeRShift -- run
 
   , ScancodeTab -- show spell
   , ScancodeReturn -- choose
@@ -51,7 +54,6 @@ hearableKeys = [
   , ScancodeR -- restart
 
   , ScancodeK -- show keys
-  , ScancodeM -- grab mouse
   , ScancodeT -- show time
   ]
 
@@ -77,6 +79,10 @@ anyKeysBegun = any . keyBegun
 -- | Checks if the given code continues being depressed since an earlier frame.
 keyContinuing :: Keyset -> Scancode -> Bool
 keyContinuing = has . ssss ((++) . begunKeys) continuingKeys
+
+-- | Like @keyContinuing@, but for a set of codes.
+anyKeysContinuing :: Keyset -> [Scancode] -> Bool
+anyKeysContinuing = any . keyContinuing
 
 -- | Checks if the given code ended being depressed on this frame.
 keyEnded :: Keyset -> Scancode -> Bool

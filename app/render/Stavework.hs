@@ -44,7 +44,7 @@ import Blee (Blee, bleeToGLVector4, lightwhelk, white)
 import FastenMain (orheight, orwidth)
 import FastenShade (Programful (uniformMap))
 import Matrix (RenderView (size), getOrthographicMatrix, getPerspectiveMatrix)
-import Mean (Twain, allIn)
+import Mean (Twain, allIn, ly')
 import Rime (Axle (Z), FrogVertex (nonehood, onehood, (^*^)), Point, Polyhedron, fournook, inject, (*^), (<+>), (<->), (^*), Fournook (..))
 import Shade (Mesh (elementCount, vbo), bufferSize, drawFaces, drawMesh, useMesh)
 import Stavemake (Stave (Stave, advance, texture), Stavebook)
@@ -108,8 +108,8 @@ isLastBeforeOverflow allwit frame book string i = any
 -- | Tells if the string is too long for the speechframe.
 isOverflow :: Allwit -> Speechframe -> Stavebook -> String -> Bool
 isOverflow allwit frame book string = w_spell > w_frame
-  where Vertex2 w_frame _ = scaleToScreen allwit $ greatness (nooks frame) <-> (2 *^ Vertex2 (rim frame) 0)
-        Vertex2 w_spell _ = spellframe book (skale frame) string
+  where Vertex2 w_frame _ = ly' ((++"two") . show) $ scaleToScreen allwit $ ly' ((++"one") . show) $ greatness (nooks frame) <-> (2 *^ Vertex2 (rim frame) 0)
+        Vertex2 w_spell _ = ly' ((++"three") . show) $ spellframe book (skale frame) string
 
 -- | Flays each line of writing below the last.
 --

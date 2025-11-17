@@ -18,7 +18,7 @@ import Prelude hiding (lookup)
 
 import Control.Monad (void, when, forM_)
 import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT)
-import Data.Map (Map, adjust, fromList, lookup, (!))
+import Data.Map (Map, adjust, fromList, lookup)
 import Data.Maybe (fromMaybe)
 
 import SDL (GLContext, LocationMode (AbsoluteLocation, RelativeLocation))
@@ -59,12 +59,12 @@ import Spell (summon, unwrappingly)
 import Stavemake (Staveware, makeFeather)
 
 
-data Setting = ShowTicks | ShowKeys | ShowSpeech | RunTests | GrabMouse deriving (Show, Eq, Ord)
+data Setting = ShowTicks | ShowKeys | ShowSpeech | RunTests deriving (Show, Eq, Ord)
 
 type Settings = Map Setting Bool
 
 makeSettings :: Settings
-makeSettings = toggle GrabMouse . fromList $ map (, False) [ShowTicks, ShowKeys, ShowSpeech, RunTests, GrabMouse]
+makeSettings = fromList $ map (, False) [ShowTicks, ShowKeys, ShowSpeech, RunTests]
 
 toggle :: Setting -> Settings -> Settings
 toggle = adjust not
@@ -148,7 +148,7 @@ listenWindow = do
 updateAllSettings :: StateT Allwit IO ()
 updateAllSettings = do
   allwit <- get
-  forM_ [(ScancodeK, ShowKeys), (ScancodeT, ShowTicks), (ScancodeTab, ShowSpeech), (ScancodeM, GrabMouse)]
+  forM_ [(ScancodeK, ShowKeys), (ScancodeT, ShowTicks), (ScancodeTab, ShowSpeech)]
     (\(code, setting) -> when (keyBegun (keyset allwit) code) (updateOnlyOneSetting setting))
 
 updateOnlyOneSetting :: Setting -> StateT Allwit IO ()
@@ -172,9 +172,8 @@ fand :: Allwit -> IO ()
 fand = ($ weep) . when . fromMaybe False . lookup RunTests . settings
 
 setWindowGrabbed :: Bool -> StateT Allwit IO ()
-setWindowGrabbed setting' = do
+setWindowGrabbed setting = do
   allwit <- get
-  let setting = setting' && settings allwit!GrabMouse
 
   SDL.windowGrab (window allwit) $= setting
   void $ SDL.setMouseLocationMode $ if setting then RelativeLocation else AbsoluteLocation

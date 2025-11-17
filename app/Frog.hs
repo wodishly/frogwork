@@ -16,12 +16,13 @@ import SDL.Input.Keyboard.Codes
 
 import Allwit (Allwit (..))
 import FastenShade
-import Key (keyBegun, wasd)
+import Key (keyBegun, wasd, anyKeysContinuing)
 import Matrix (frogLookAt)
 import Rime (FrogVector, Point3, hat, (*^), (<+>))
 import Shade (Mesh (meshAnimation), setMeshTransform)
 import Skeleton (evermore, once, play)
 import Time (Timewit (lifetime), throttle)
+import Mean (anyIn)
 
 
 data Frogwit = Frogwit {
@@ -35,6 +36,7 @@ data Frogwit = Frogwit {
   , mesh :: Mesh
   , didLeap :: Bool
   , didWalk :: Bool
+  , isRunning :: Bool
 }
 
 makeFrog :: Mesh -> Frogwit
@@ -49,13 +51,27 @@ makeFrog m = Frogwit {
   , mesh = m
   , didLeap = False
   , didWalk = False
+  , isRunning =  False
 }
 
 didMove :: Frogwit -> Bool
-didMove frogwit = any ($ frogwit) [didWalk, didLeap]
+didMove = anyIn [didWalk, didLeap]
 
 hasLeapsLeft :: Frogwit -> Bool
 hasLeapsLeft frogwit = leapCount frogwit < utleaps frogwit
+
+run :: Allwit -> StateT Frogwit IO ()
+run allwit = do
+  frogwit <- get
+  if anyKeysContinuing (keyset allwit) [ScancodeLShift, ScancodeRShift]
+  then put frogwit {
+      speed = 8
+    , isRunning = True
+    }
+  else put frogwit {
+      speed = 2
+    , isRunning = False
+    }
 
 leap :: Allwit -> StateT Frogwit IO ()
 leap allwit = do
@@ -109,6 +125,7 @@ updateFrog allwit forward = do
 
 moveFrog :: Allwit -> FrogVector -> StateT Frogwit IO ()
 moveFrog allwit forward = do
+  run allwit
   walk allwit forward
   leap allwit
   fall allwit
@@ -144,6 +161,12 @@ animateMesh allwit = do
   when (isJust athem) $
     let newAnimation = play now
           ((if didLeap frogwit then once else evermore) (fromJust athem))
-          (if didLeap frogwit then BUNNY_JUMP else if didMove frogwit then BUNNY_WALK else BUNNY_IDLE)
+          (if didLeap frogwit
+            then BUNNY_JUMP
+            else if didMove frogwit
+              then if isRunning frogwit
+                then BUNNY_RUN
+                else BUNNY_WALK
+              else BUNNY_IDLE)
         newFrogMesh = frogMesh { meshAnimation = Just newAnimation }
     in put frogwit { mesh = newFrogMesh }
