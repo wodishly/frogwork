@@ -1,7 +1,12 @@
-{- HLINT ignore "Use section" -}
-module Stateteller where
+module Stateteller (
+  settleState
+, didEnd
+, makeStateteller
+, allwit
+, Frogwork (..)
+) where
 
-import Control.Lens (Lens', makeLenses, (.~), (^.))
+import Control.Lens (Lens', makeLenses, (.~), (^.), (%~))
 import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT (runStateT), execStateT)
 import Data.Maybe (isNothing)
 
@@ -10,7 +15,7 @@ import Graphics.Rendering.OpenGL (Vertex2 (Vertex2))
 
 import Allwit (Allwit (..), Settings, UnholyMeshMash, doStateSwitchStuff)
 import State (StateName (..), Stately (loop, name))
-import TitleState (TitleState, makeTitleState)
+import TitleState (TitleState, makeTitleState, writings)
 import WillState (WillState, makeWillState)
 import PlayState (PlayState, makePlayState)
 import PauseState (PauseState, makePauseState)
@@ -21,7 +26,9 @@ import qualified TitleState as Title (chosen)
 import qualified WillState as Will (chosen)
 
 import Key (anyKeysBegun, keyBegun, hearableKeys)
-import Mean (samely)
+import Mean (samely, preent)
+import Stavework (throoks)
+import Control.Monad (when)
 
 
 data Stateteller = Stateteller {
@@ -35,15 +42,15 @@ data Stateteller = Stateteller {
 }
 makeLenses ''Stateteller
 
-makeStateteller :: (Int, Int) -> Settings -> UnholyMeshMash -> IO Stateteller
-makeStateteller (w, h) sets meshes = (Stateteller
+makeStateteller :: (Int, Int) -> Settings -> UnholyMeshMash -> Stateteller
+makeStateteller (w, h) sets meshes = Stateteller
   (makeTitleState wind)
   (makeWillState  wind sets)
   (makePlayState  wind meshes)
   (makePauseState wind)
-  <$> makeAboutState wind)
-  <*> return makeEndState
-  <*> return TitleName
+  (makeAboutState wind)
+  makeEndState
+  TitleName
   where wind = fromIntegral <$> Vertex2 w h
 
 data Frogwork = Frogwork {
@@ -85,6 +92,10 @@ settleState = do
 goto :: Stately a => Lens' Stateteller a -> Allwit -> StateT Stateteller IO Allwit
 goto lens wit = do
   teller <- get
+  -- let oldName = nowState teller
+  --     newName = name $ teller^.lens
+  -- (wit'', state) <- stuff lens wit
+
   let oldName = nowState teller
       newName = name $ teller^.lens
 
@@ -92,6 +103,28 @@ goto lens wit = do
     then lift . execStateT (doStateSwitchStuff $ newName == PlayName)
     else return) wit
   (wit'', state) <- lift $ runStateT (loop wit') (teller^.lens)
-
-  put $ (lens.~state) teller { nowState = samely newName (name state) }
+  when (oldName /= newName) flushWritings
+  swappy lens state newName
   return wit''
+
+stuff :: Stately a => Lens' Stateteller a -> Allwit -> StateT Stateteller IO (Allwit, a)
+stuff lens wit = do
+  teller <- get
+  let oldName = nowState teller
+      newName = name $ teller^.lens
+
+  wit' <- (if newName /= oldName
+    then lift . execStateT (doStateSwitchStuff $ newName == PlayName)
+    else return) wit
+  lift $ runStateT (loop wit') (teller^.lens)
+
+swappy :: Stately a => Lens' Stateteller a -> a -> StateName -> StateT Stateteller IO ()
+swappy lens state newName = do
+  teller <- get
+  put $ (lens.~state) teller { nowState = samely newName (name state) }
+
+flushWritings :: StateT Stateteller IO ()
+flushWritings = do
+  teller <- get
+  put teller { _titleState = (writings %~ map (throoks %~ const Nothing)) (teller^.titleState) }
+  preent $ head $ map (^.throoks) $ teller^.titleState.writings

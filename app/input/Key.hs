@@ -6,7 +6,7 @@ module Key (
 , keyBegun
 , anyKeysBegun
 , anyKeysContinuing
-, keyEnded -- unused
+, keyEnded -- uncalled
 , arrow
 , wasd
 ) where

@@ -3,29 +3,30 @@
 @Stavework@ imports @State@, so @State@ must not import @Stavework@.
 -}
 module Stavework (
-  Stake (..)
+  Speechframe (..)
 , Writing (..)
-, Speechframe (..)
+  , blee
+  , throoks
 , makeSpeechframe
 , speechwrite
 , makeWriting
 , renderFeather
-, spellframe
-, stavewrite
+, stringframe
+, stavewriteAll
 ) where
 
-import Control.Monad (forM_, unless)
+import Control.Lens (makeLenses, (^.), (?~))
+import Control.Monad (forM_, forM, void)
 import Control.Monad.State (MonadTrans (lift), StateT)
 import Data.HashMap.Lazy (member, (!))
 import Data.List (find, unfoldr)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromJust, fromMaybe)
 
 import Foreign (withArray)
 import Numeric.LinearAlgebra (ident)
 import Graphics.Rendering.OpenGL (
     BufferTarget (ArrayBuffer)
   , GLfloat
-  , HasSetter (($=))
   , TextureTarget2D (Texture2D)
   , TextureUnit (TextureUnit)
   , TransferDirection (WriteToBuffer)
@@ -35,53 +36,52 @@ import Graphics.Rendering.OpenGL (
   , bindBuffer
   , bufferSubData
   , textureBinding
+  , ($=)
   )
 
-import State (Stately)
 import Allwit (Allwit (..))
+import FastenMain (Stake (..), Stakes, orheight, orwidth, orwindow, orwest)
+import FastenShade (Programful (uniformMap))
+import State (Stately)
 
 import Blee (Blee, bleeToGLVector4, lightwhelk, white)
-import FastenMain (orheight, orwidth)
-import FastenShade (Programful (uniformMap))
 import Matrix (RenderView (size), getOrthographicMatrix, getPerspectiveMatrix)
 import Mean (Twain, allIn, ly')
-import Rime (Axle (Z), FrogVertex (nonehood, onehood, (^*^)), Point, Polyhedron, fournook, inject, (*^), (<+>), (<->), (^*), Fournook (..))
+import Rime
 import Shade (Mesh (elementCount, vbo), bufferSize, drawFaces, drawMesh, useMesh)
 import Stavemake (Stave (Stave, advance, texture), Stavebook)
 
 
-data Stake = North | South | East | West | Middle deriving (Show, Eq)
-type Stakes = Twain Stake
-
 data Writing = Writing {
-  stakes :: Stakes
-, scale :: Point
-, blee :: Blee
-, stead :: Point
-, writ :: String
+  _stakes :: Stakes
+, _scale :: Point
+, _blee :: Blee
+, _throoks :: Maybe [Polyhedron]
+, _stead :: Point
+, _writ :: String
 }
+makeLenses ''Writing
 
 -- | Twimiddle, truescale, lightwhelk, unwone.
 -- Use the orshapework @Writing@ otherwise.
 makeWriting :: Point -> String -> Writing
-makeWriting = Writing (Middle, Middle) onehood lightwhelk
+makeWriting = Writing (Middle, Middle) onehood lightwhelk Nothing
 
 data Speechframe = Speechframe {
-  nooks :: Fournook
-, rim :: GLfloat
+  rim :: GLfloat
 , skale :: Point
+, nooks :: Fournook
 , meesh :: Mesh
 , speech :: String
 }
 
 makeSpeechframe :: Mesh -> String -> Speechframe
-makeSpeechframe = Speechframe
-  (Fournook (Vertex2 50 (orheight/2-75)) (Vertex2 (orwidth-100) (orheight-50)))
-  22.5
-  ((1/3) *^ onehood)
+makeSpeechframe = Speechframe 22.5 ((1/3) *^ onehood) $ Fournook
+  (orwest <+> Vertex2 50 -75)
+  (orwindow <-> Vertex2 -100 -50)
 
 speechwrite :: Stately a => Allwit -> Speechframe -> StateT a IO ()
-speechwrite allwit speechframe = stavewrite allwit
+speechwrite allwit speechframe = void $ stavewriteAll allwit
   . flayLines
   . wrapToFrame allwit speechframe (fst $ staveware allwit)
   $ speech speechframe
@@ -109,13 +109,13 @@ isLastBeforeOverflow allwit frame book string i = any
 isOverflow :: Allwit -> Speechframe -> Stavebook -> String -> Bool
 isOverflow allwit frame book string = w_spell > w_frame
   where Vertex2 w_frame _ = ly' ((++"two") . show) $ scaleToScreen allwit $ ly' ((++"one") . show) $ greatness (nooks frame) <-> (2 *^ Vertex2 (rim frame) 0)
-        Vertex2 w_spell _ = ly' ((++"three") . show) $ spellframe book (skale frame) string
+        Vertex2 w_spell _ = ly' ((++"three") . show) $ stringframe book (skale frame) string
 
 -- | Flays each line of writing below the last.
 --
 -- todo: draw out the @32@
 flayLines :: [Writing] -> [Writing]
-flayLines = zipWith (\i wr -> wr { stead = Vertex2 0 (-32*i) <+> stead wr }) [0..]
+flayLines = zipWith (\i wr -> wr { _stead = Vertex2 0 (-32*i) <+> wr^.stead }) [0..]
 
 -- | Fits the speech to the frame.
 writeSpeechOnFrame :: Speechframe -> String -> Writing
@@ -123,44 +123,67 @@ writeSpeechOnFrame frame = Writing
   (West, North)
   (skale frame)
   white
+  Nothing
   (topLeft (nooks frame) <+> Vertex2 (rim frame) -(rim frame))
 
 scaleToScreen :: Allwit -> Point -> Point
 scaleToScreen allwit = (^*^) (Vertex2 (w/orwidth) (h/orheight))
   where (w, h) = size (display allwit)
 
--- | The great work.
-stavewrite :: Stately a => Allwit -> [Writing] -> StateT a IO ()
-stavewrite allwit writings = do
+allreckon :: Allwit -> Writing -> [Polyhedron]
+allreckon allwit (Writing stk scl' _ _ std' wr) =
+  let book = fst $ staveware allwit
+      advances = scanl (+) 0 (map (advance . (book!)) wr)
+      scl = scaleToScreen allwit scl'
+      std = scaleToScreen allwit std'
+      offset = reckonStakes book stk scl wr
+  in ly' (const "lets do it again") zipWith
+      (\ i char -> stavenook (offset <+> std) scl (advances !! i) (book ! char))
+      [0..] wr
 
-  let (book, mish) = staveware allwit
+-- | The greater work.
+stavewriteAll :: Stately a => Allwit -> [Writing] -> StateT a IO [Writing]
+stavewriteAll allwit writings = do
+  let (_, mish) = staveware allwit
 
   lift $ useMesh mish
-  lift $ forM_ writings $ \(Writing stk scl' bl std' wr) -> do
+  forM writings (stavewrite allwit)
 
-    let advances = scanl (+) 0 (map (advance . (book!)) wr)
-        scl = scaleToScreen allwit scl'
-        std = scaleToScreen allwit std'
-        offset = reckonStakes book stk scl wr
+-- | The great work.
+stavewrite :: Stately a => Allwit -> Writing -> StateT a IO Writing
+stavewrite allwit writing = do
+  let writing' = (throoks ?~ fromMaybe (allreckon allwit writing) (writing^.throoks)) writing
+      (book, mish) = staveware allwit
 
-    forM_ (zip [0..] wr) $ \(i, char) -> do
-    -- forM_ (zip (howmany (timewit allwit) ww) wr) $ \(i, char) -> do
-      unless (member char book) (error $ "cant write " ++ show char)
+  forM_ (zip [0..] (writing^.writ)) $ \(i, char) ->
+    if member char book
+    then lift $ carve (book!char) (fromJust (writing'^.throoks)!!i) mish (writing'^.blee)
+    else error $ show char ++ " is not in the book"
 
-      let stave = book!char
-          vertices = stavenook (offset <+> std) scl (advances!!i) stave
+  return writing'
 
-      activeTexture $= TextureUnit 0
-      textureBinding Texture2D $= Just (texture stave)
-      bindBuffer ArrayBuffer $= Just (vbo mish)
-      uniformMap mish ! "u_blee" >>= ($= bleeToGLVector4 bl) . uniform
-      withArray vertices (bufferSubData ArrayBuffer WriteToBuffer 0 $ bufferSize vertices)
-      bindBuffer ArrayBuffer $= Nothing
-      drawFaces (elementCount mish)
+-- | Carves the staves into being.
+carve :: Stave -> Polyhedron -> Mesh -> Blee -> IO ()
+carve stave vertices mish bl = do
+  activeTexture $= TextureUnit 0
+  textureBinding Texture2D $= Just (texture stave)
+  bindBuffer ArrayBuffer $= Just (vbo mish)
+  uniformMap mish ! "u_blee" >>= ($= bleeToGLVector4 bl) . uniform
+  withArray vertices (bufferSubData ArrayBuffer WriteToBuffer 0 $ bufferSize vertices)
+  bindBuffer ArrayBuffer $= Nothing
+  drawFaces (elementCount mish)
+
+renderFeather :: Stately a => Allwit -> StateT a IO ()
+renderFeather allwit = lift $ drawMesh
+  (getPerspectiveMatrix $ display allwit)
+  (ident 4)
+  (getOrthographicMatrix $ display allwit)
+  (timewit allwit)
+  (snd $ staveware allwit)
 
 reckonStakes :: Stavebook -> Stakes -> Point -> String -> Point
 reckonStakes book (xstake, ystake) scl wr = Vertex2 ew ns where
-  Vertex2 x y = spellframe book scl wr
+  Vertex2 x y = stringframe book scl wr
   ew = case xstake of
     West -> 0
     Middle -> -(x/4)
@@ -172,30 +195,23 @@ reckonStakes book (xstake, ystake) scl wr = Vertex2 ew ns where
     North -> -(y/2)
     _ -> error "bad stake"
 
--- | Reckon the spell's bounding frame.
-spellframe :: Stavebook -> Point -> String -> Point
-spellframe book scl = (scl ^*^) . foldr (frameyoke . staveframe . (book!)) nonehood
+-- | Reckon the bounding frame of a whole string.
+stringframe :: Stavebook -> Point -> String -> Point
+stringframe book scl = (scl ^*^) . foldr (yokeFrames . staveframe . (book!)) nonehood
 
--- | Yoke two staves' bounding frames.
-frameyoke :: Point -> Point -> Point
-frameyoke (Vertex2 x y) (Vertex2 a b) = Vertex2 (x+a) (max y b)
+-- | Yoke a twain of bounding frames.
+yokeFrames :: Point -> Point -> Point
+yokeFrames (Vertex2 x y) (Vertex2 a b) = Vertex2 (x+a) (max y b)
 
--- | Reckon the stave's bounding frame.
+-- | Reckon the bounding frame of a stave.
 staveframe :: Stave -> Point
 staveframe (Stave (Vertex2 _ by) (Vertex2 _ _) step _) = Vertex2 step by
 
--- | Reckon the stave's fournook.
+-- | Reckon the nooks of a stave.
 stavenook :: Point -> Point -> GLfloat -> Stave -> Polyhedron
-stavenook bottomLeft scl step stave = inject Z <$> fournook (Vertex2 (x+w) (y+h)) (Vertex2 x y) where
-    (Stave (Vertex2 left top) z@(Vertex2 _ height) _ _) = stave
-    scale' = scl ^* (1/2)
-    Vertex2 x y = bottomLeft <+> (scale' ^*^ Vertex2 (left+step) (top-height))
-    Vertex2 w h = scale' ^*^ z
-
-renderFeather :: Stately a => Allwit -> StateT a IO ()
-renderFeather allwit = lift $ drawMesh
-  (getPerspectiveMatrix $ display allwit)
-  (ident 4)
-  (getOrthographicMatrix $ display allwit)
-  (timewit allwit)
-  (snd $ staveware allwit)
+stavenook bottomLeft scl step stave = inject Z <$> fournook (z0 <+> z1) z0
+  where
+    (Stave (Vertex2 left top) great@(Vertex2 _ height) _ _) = stave
+    scl' = scl ^* (1/2)
+    z0 = bottomLeft <+> (scl' ^*^ Vertex2 (left+step) (top-height))
+    z1 = scl' ^*^ great

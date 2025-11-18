@@ -7,7 +7,15 @@ import qualified SDL (
   , WindowGraphicsContext (OpenGLContext)
   , defaultWindow
   )
+import Graphics.Rendering.OpenGL (Vertex2 (Vertex2))
 
+import Foreign (Word32)
+import Mean (Twain)
+import Rime (Point)
+
+
+data Stake = North | South | East | West | Middle deriving (Show, Eq)
+type Stakes = Twain Stake
 
 shaderBasePath :: String
 shaderBasePath = "app/render/shaders"
@@ -35,8 +43,17 @@ openGLWindow = SDL.defaultWindow {
   , SDL.windowInitialSize = SDL.V2 orwidth orheight
 }
 
+orwindow :: Point
+orwindow = Vertex2 orwidth orheight
+
+orwest :: Point
+orwest = Vertex2 0 (orheight/2)
+
 orwidth :: Num a => a
 orwidth = 800
 
 orheight :: Num a => a
 orheight = 600
+
+staveSharpness :: Word32
+staveSharpness = 2^7

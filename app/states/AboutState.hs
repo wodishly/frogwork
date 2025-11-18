@@ -3,17 +3,18 @@ module AboutState (
 , makeAboutState
 ) where
 
-import Control.Monad.State (MonadState(get, put), StateT, MonadTrans (lift))
+import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT)
 
-import State (StateName (AboutName), Stately (..), doEvery)
+import Graphics.Rendering.OpenGL (Vertex2 (Vertex2))
 
+import State (StateName (AboutName), Stately (..), doAtEach)
+
+import Allwit (Allwit (timewit))
 import Blee (bg, darkwhelk)
-import Rime (Point, (*^))
-import Stavework (Writing (stead), makeWriting, renderFeather, stavewrite)
-import Random (rand)
 import FastenMain (orheight, orwidth)
-import Graphics.Rendering.OpenGL (Vertex2(Vertex2))
-import Allwit (Allwit(timewit))
+import Random (rand)
+import Rime (Point)
+import Stavework (Writing (_stead), makeWriting, renderFeather, stavewriteAll)
 
 
 newtype AboutState = AboutState {
@@ -24,21 +25,22 @@ instance Stately AboutState where
   name _ = AboutName
 
   update allwit = do
-    doEvery (timewit allwit) 0.5 flutter
+    doAtEach (timewit allwit) 0.5 flutter
     return allwit
 
   render allwit = do
     aboutwit <- get
     bg darkwhelk
     renderFeather allwit
-    stavewrite allwit (writings aboutwit)
+    ws <- stavewriteAll allwit (writings aboutwit)
+    put aboutwit { writings = ws }
 
-makeAboutState :: Point -> IO AboutState
-makeAboutState wind = rand >>= \r -> return $ AboutState [makeWriting (r *^ wind) "rɪbɪt"]
+makeAboutState :: Point -> AboutState
+makeAboutState wind = AboutState [makeWriting wind "rɪbɪt"]
 
 flutter :: StateT AboutState IO ()
 flutter = do
   aboutwit <- get
   rx <- lift rand
   ry <- lift rand
-  put aboutwit { writings = [(head (writings aboutwit)) { stead = Vertex2 (rx*orwidth) (ry*orheight) }] }
+  put aboutwit { writings = [(head (writings aboutwit)) { _stead = Vertex2 (rx*orwidth) (ry*orheight) }] }

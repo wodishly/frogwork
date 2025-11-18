@@ -3,13 +3,13 @@ module PauseState (
 , makePauseState
 ) where
 
-import Control.Monad.State (MonadState(get))
+import Control.Monad.State (MonadState(get, put))
 
 import State (StateName (PauseName), Stately (..))
 
 import Blee (bg, black)
 import Rime (Point, (*^))
-import Stavework (Writing, makeWriting, renderFeather, stavewrite)
+import Stavework (Writing, makeWriting, renderFeather, stavewriteAll)
 
 
 newtype PauseState = PauseState {
@@ -23,11 +23,8 @@ instance Stately PauseState where
     pausewit <- get
     bg black
     renderFeather allwit
-    stavewrite allwit (writings pausewit)
+    ws <- stavewriteAll allwit (writings pausewit)
+    put pausewit { writings = ws }
 
 makePauseState :: Point -> PauseState
-makePauseState wind = PauseState {
-  writings = [
-    makeWriting ((1/2) *^ wind) "pɔz"
-  ]
-}
+makePauseState wind = PauseState { writings = [makeWriting ((1/2) *^ wind) "pɔz"] }

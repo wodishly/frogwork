@@ -4,10 +4,11 @@ module PlayState (
 , makePlayState
 ) where
 
-import Prelude hiding (lookup)
+import Control.Monad (when)
 import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT, execStateT)
 import Data.Map (lookup)
 import Data.Maybe (fromMaybe)
+import Prelude hiding (lookup)
 
 import Numeric.LinearAlgebra (Extractor (..), flatten, fromList, (??), (¿))
 import Graphics.Rendering.OpenGL as GL (GLfloat, Program, Vertex2 (Vertex2), Vertex3 (Vertex3), VertexArrayObject)
@@ -16,16 +17,15 @@ import Allwit (Allwit (..), UnholyMeshMash, Setting (ShowSpeech))
 import State (StateName (..), Stately (..))
 
 import Blee (bg, black)
-import Frog (Frogwit (position, mesh), makeFrog, updateFrog)
+import Frog (Frogwit (mesh, position), makeFrog, updateFrog)
 import Happen (Mousewit (..))
 import Key (arrow)
 import Matrix (frogLookAt, getOrthographicMatrix, getPerspectiveMatrix)
 import Mean (given)
 import Random (FrogSeed, defaultSeed)
-import Rime (FrogVector, Point, isAught, clamp)
+import Rime (FrogVector, Point, clamp, isAught)
 import Shade (Mesh, drawMesh)
-import Stavework (makeWriting, stavewrite, Speechframe (..), speechwrite, Writing, makeSpeechframe)
-import Control.Monad (when)
+import Stavework (Speechframe (..), Writing, makeSpeechframe, makeWriting, speechwrite, stavewriteAll)
 
 
 data Camera = Camera {
@@ -63,15 +63,15 @@ instance Stately PlayState where
     playwit <- get
     bg black
     drawFriends allwit
-    stavewrite allwit (writings playwit)
+    ws <- stavewriteAll allwit (writings playwit)
+    put playwit { writings = ws }
     drawSpeech allwit
 
 makePlayState :: Point -> UnholyMeshMash -> PlayState
 makePlayState (Vertex2 w0 h0) (f, sp, rest) = PlayState {
   seed = defaultSeed
 , meshes = rest
-, frog = ff
---, speechframe = makeSpeechframe sp "A frog is a short-bodied, tailless amphibian of order Anura (< AGk ανουρα 'without tail')."
+, frog = makeFrog f
 , speechframe = makeSpeechframe sp "A frog is any member of a diverse and largely semiaquatic group of short-bodied, tailless amphibian vertebrates composing the order Anura (coming from the Ancient Greek ανουρα, literally 'without tail')."
 , euler = Vertex2 0.3 1.57079633
 , radius = 10
@@ -88,7 +88,7 @@ makePlayState (Vertex2 w0 h0) (f, sp, rest) = PlayState {
 --  , Writing "Oðþæt him æghwylc þara ymbsittendra ofer hronrade hyran scolde, gomban gyldan. þæt wæs god cyning."
 --      (Vertex2 0 528) (West, North) (Vertex2 0.3 0.3) red (Say (1+(90+85+98)*0.05) 0.05)
   ]
-} where ff = makeFrog f
+}
 
 updateFriends :: Allwit -> StateT PlayState IO ()
 updateFriends allwit = do

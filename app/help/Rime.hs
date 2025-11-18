@@ -20,7 +20,7 @@ import qualified Graphics.Rendering.OpenGL as GL (
   , VertexComponent
   )
 
-import Mean (doBoth, toBoth, sq, dimensionError)
+import Mean (toBoth, sq, dimensionError, ssss)
 
 
 infixl 7 *^, ^*, /^, ^/
@@ -52,7 +52,7 @@ asPoint = toBoth GL.Vertex2 . realToFrac
 
 {-# INLINE average #-}
 average :: Real a => [a] -> GLfloat
-average = uncurry (/) . doBoth (realToFrac.sum) (fromIntegral.length)
+average = ssss ((/) . realToFrac . sum) (fromIntegral.length)
 
 {-# INLINE clamp #-}
 clamp :: Ord a => (a, a) -> a -> a

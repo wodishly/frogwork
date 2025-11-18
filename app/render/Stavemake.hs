@@ -8,7 +8,7 @@ module Stavemake (
 , Staveware
 , makeFeather
 , makeStavebook
-, makeStavebook'
+, makeStavebook' -- uncalled
 ) where
 
 import Control.Monad (forM, when)
@@ -17,13 +17,12 @@ import Data.HashMap.Lazy (HashMap, fromList)
 import Data.List.Split (chunksOf)
 import Text.Printf (printf)
 
-import Foreign (Word32, peek, peekArray, withArray)
+import Foreign (peek, peekArray, withArray)
 import FreeType.Core.Base
 import FreeType.Core.Types
 import Graphics.Rendering.OpenGL (
     Clamping (ClampToEdge)
   , GLfloat
-  , HasSetter (($=))
   , PixelFormat (Red)
   , Repetition (Repeated)
   , TextureCoordName (S, T)
@@ -31,21 +30,19 @@ import Graphics.Rendering.OpenGL (
   , TextureObject
   , TextureTarget2D (Texture2D)
   , Vertex2 (Vertex2)
+  , ($=)
   )
 import qualified Graphics.Rendering.OpenGL as GL (
     textureFilter
   , textureWrapMode
   )
 
-import FastenMain (wayToFeathers, orheight)
+import FastenMain (wayToFeathers, orheight, staveSharpness)
 
 import Mean (doBoth, (.>>.))
 import Rime (Point)
 import Shade (Mesh (..), uploadTexture)
 
-
-type Stavebook = HashMap Char Stave
-type Staveware = (Stavebook, Mesh)
 
 data Stave = Stave {
     bearing :: Point -- top left
@@ -53,6 +50,9 @@ data Stave = Stave {
   , advance :: GLfloat -- step
   , texture :: TextureObject
 } deriving (Show, Eq)
+
+type Stavebook = HashMap Char Stave
+type Staveware = (Stavebook, Mesh)
 
 tokenwit :: [Int]
 tokenwit =
@@ -103,9 +103,6 @@ tokenwit =
     , 0x0241 -- Ɂ
      ]
 
-sharpness :: Word32
-sharpness = 2^7
-
 glyphFormatName :: FT_Glyph_Format -> String
 glyphFormatName = ("ft_GLYPH_FORMAT_" ++) . \case
     FT_GLYPH_FORMAT_BITMAP -> "BITMAP"
@@ -119,7 +116,7 @@ pad _ _ [] = []
 pad gap width bitmap = concatMap (++ replicate gap 0) (chunksOf width bitmap)
 
 makeFeather :: FilePath -> IO Stavebook
-makeFeather = makeStavebook sharpness . printf "%s/%s.ttf" wayToFeathers
+makeFeather = makeStavebook staveSharpness . printf "%s/%s.ttf" wayToFeathers
 
 -- | does it softly
 makeStavebook :: FT_UInt -> FilePath -> IO Stavebook
