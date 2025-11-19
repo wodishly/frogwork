@@ -16,7 +16,7 @@ module Stavework (
 ) where
 
 import Control.Lens (makeLenses, (^.), (?~))
-import Control.Monad (forM_, forM, void)
+import Control.Monad (forM_, forM, when)
 import Control.Monad.State (MonadTrans (lift), StateT)
 import Data.HashMap.Lazy (member, (!))
 import Data.List (find, unfoldr)
@@ -46,15 +46,16 @@ import State (Stately)
 
 import Blee (Blee, bleeToGLVector4, lightwhelk, white)
 import Matrix (RenderView (size), getOrthographicMatrix, getPerspectiveMatrix)
-import Mean (Twain, allIn, ly')
+import Mean (Twain, allIn, ly', ly)
 import Rime
 import Shade (Mesh (elementCount, vbo), bufferSize, drawFaces, drawMesh, useMesh)
 import Stavemake (Stave (Stave, advance, texture), Stavebook)
+import Time (Timewit(lifetime))
 
 
 data Writing = Writing {
-  _stakes :: Stakes
-, _scale :: Point
+  stakes :: Stakes
+, scale :: Point
 , _blee :: Blee
 , _throoks :: Maybe [Polyhedron]
 , _stead :: Point
@@ -70,21 +71,23 @@ makeWriting = Writing (Middle, Middle) onehood lightwhelk Nothing
 data Speechframe = Speechframe {
   rim :: GLfloat
 , skale :: Point
+, writings :: Maybe [Writing]
 , nooks :: Fournook
 , meesh :: Mesh
 , speech :: String
 }
 
 makeSpeechframe :: Mesh -> String -> Speechframe
-makeSpeechframe = Speechframe 22.5 ((1/3) *^ onehood) $ Fournook
+makeSpeechframe = Speechframe 22.5 ((1/3) *^ onehood) Nothing $ Fournook
   (orwest <+> Vertex2 50 -75)
   (orwindow <-> Vertex2 -100 -50)
 
-speechwrite :: Stately a => Allwit -> Speechframe -> StateT a IO ()
-speechwrite allwit speechframe = void $ stavewriteAll allwit
-  . flayLines
-  . wrapToFrame allwit speechframe (fst $ staveware allwit)
-  $ speech speechframe
+speechwrite :: Stately a => Allwit -> Speechframe -> StateT a IO Speechframe
+speechwrite allwit speechframe = do
+  ws <- stavewriteAll allwit (fromMaybe
+    (flayLines . wrapToFrame allwit speechframe (fst $ staveware allwit) $ speech speechframe)
+    (writings speechframe))
+  return $ speechframe { writings = Just ws }
 
 wrapToFrame :: Allwit -> Speechframe -> Stavebook -> String -> [Writing]
 wrapToFrame allwit frame book string

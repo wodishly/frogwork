@@ -2,13 +2,16 @@
 module PlayState (
   PlayState (..)
 , makePlayState
+, writings
 ) where
 
+import Prelude hiding (lookup)
+
+import Control.Lens (makeLenses)
 import Control.Monad (when)
 import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT, execStateT)
 import Data.Map (lookup)
 import Data.Maybe (fromMaybe)
-import Prelude hiding (lookup)
 
 import Numeric.LinearAlgebra (Extractor (..), flatten, fromList, (??), (¿))
 import Graphics.Rendering.OpenGL as GL (GLfloat, Program, Vertex2 (Vertex2), Vertex3 (Vertex3), VertexArrayObject)
@@ -25,7 +28,7 @@ import Mean (given)
 import Random (FrogSeed, defaultSeed)
 import Rime (FrogVector, Point, clamp, isAught)
 import Shade (Mesh, drawMesh)
-import Stavework (Speechframe (..), Writing, makeSpeechframe, makeWriting, speechwrite, stavewriteAll)
+import Stavework (Speechframe (meesh), Writing, makeSpeechframe, makeWriting, speechwrite, stavewriteAll)
 
 
 data Camera = Camera {
@@ -48,8 +51,9 @@ data PlayState = PlayState {
 , radius :: GLfloat
 , programs :: [(Program, VertexArrayObject)]
 , camera :: Camera
-, writings :: [Writing]
+, _writings :: [Writing]
 }
+makeLenses ''PlayState
 
 instance Stately PlayState where
   name _ = PlayName
@@ -63,8 +67,8 @@ instance Stately PlayState where
     playwit <- get
     bg black
     drawFriends allwit
-    ws <- stavewriteAll allwit (writings playwit)
-    put playwit { writings = ws }
+    ws <- stavewriteAll allwit (_writings playwit)
+    put playwit { _writings = ws }
     drawSpeech allwit
 
 makePlayState :: Point -> UnholyMeshMash -> PlayState
@@ -77,7 +81,7 @@ makePlayState (Vertex2 w0 h0) (f, sp, rest) = PlayState {
 , radius = 10
 , programs = []
 , camera = makeCamera
-, writings = [
+, _writings = [
     makeWriting (Vertex2 (w0/2) (h0/2)) "omg frogs!!!!"
 --  , Writing "Hwæt. We gardena in geardagum, þeodcyninga, þrym gefrunon, hu ða æþelingas ellen fremedon."
 --      (Vertex2 0 600) (West, North) (Vertex2 0.3 0.3) red (Say 1 0.05)
@@ -128,7 +132,8 @@ drawSpeech allwit = do
       (getOrthographicMatrix $ display allwit)
       (timewit allwit)
       (meesh $ speechframe playwit)
-    speechwrite allwit (speechframe playwit)
+    x <- speechwrite allwit (speechframe playwit)
+    put playwit { speechframe = x }
 
 updateCamera :: Allwit -> StateT PlayState IO ()
 updateCamera allwit = do

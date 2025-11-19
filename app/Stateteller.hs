@@ -1,3 +1,4 @@
+{- HLINT ignore "Use section" -}
 module Stateteller (
   settleState
 , didEnd
@@ -13,22 +14,21 @@ import Data.Maybe (isNothing)
 import SDL.Input.Keyboard.Codes
 import Graphics.Rendering.OpenGL (Vertex2 (Vertex2))
 
-import Allwit (Allwit (..), Settings, UnholyMeshMash, doStateSwitchStuff)
+import Allwit (Allwit (..), Settings, UnholyMeshMash, wakeState)
 import State (StateName (..), Stately (loop, name))
-import TitleState (TitleState, makeTitleState, writings)
-import WillState (WillState, makeWillState)
-import PlayState (PlayState, makePlayState)
-import PauseState (PauseState, makePauseState)
-import AboutState (AboutState, makeAboutState)
-import EndState (EndState, makeEndState)
+import TitleState as Title (TitleState, makeTitleState, writings)
+import WillState  as Will (WillState, makeWillState, writings)
+import PlayState  as Play (PlayState, makePlayState, writings)
+import PauseState as Pause (PauseState, makePauseState, writings)
+import AboutState as About (AboutState, makeAboutState, writings)
+import EndState as End (EndState, makeEndState)
 
 import qualified TitleState as Title (chosen)
 import qualified WillState as Will (chosen)
 
 import Key (anyKeysBegun, keyBegun, hearableKeys)
-import Mean (samely, preent)
+import Mean (samely)
 import Stavework (throoks)
-import Control.Monad (when)
 
 
 data Stateteller = Stateteller {
@@ -92,39 +92,30 @@ settleState = do
 goto :: Stately a => Lens' Stateteller a -> Allwit -> StateT Stateteller IO Allwit
 goto lens wit = do
   teller <- get
-  -- let oldName = nowState teller
-  --     newName = name $ teller^.lens
-  -- (wit'', state) <- stuff lens wit
-
   let oldName = nowState teller
       newName = name $ teller^.lens
 
-  wit' <- (if newName /= oldName
-    then lift . execStateT (doStateSwitchStuff $ newName == PlayName)
-    else return) wit
+  wit' <- if newName /= oldName
+    then do
+      flushWritings
+      lift $ execStateT (wakeState $ newName == PlayName) wit
+    else return wit
   (wit'', state) <- lift $ runStateT (loop wit') (teller^.lens)
-  when (oldName /= newName) flushWritings
-  swappy lens state newName
+  updateState lens state newName
   return wit''
 
-stuff :: Stately a => Lens' Stateteller a -> Allwit -> StateT Stateteller IO (Allwit, a)
-stuff lens wit = do
-  teller <- get
-  let oldName = nowState teller
-      newName = name $ teller^.lens
-
-  wit' <- (if newName /= oldName
-    then lift . execStateT (doStateSwitchStuff $ newName == PlayName)
-    else return) wit
-  lift $ runStateT (loop wit') (teller^.lens)
-
-swappy :: Stately a => Lens' Stateteller a -> a -> StateName -> StateT Stateteller IO ()
-swappy lens state newName = do
+updateState :: Stately a => Lens' Stateteller a -> a -> StateName -> StateT Stateteller IO ()
+updateState lens state newName = do
   teller <- get
   put $ (lens.~state) teller { nowState = samely newName (name state) }
 
 flushWritings :: StateT Stateteller IO ()
 flushWritings = do
   teller <- get
-  put teller { _titleState = (writings %~ map (throoks %~ const Nothing)) (teller^.titleState) }
-  preent $ head $ map (^.throoks) $ teller^.titleState.writings
+  put teller {
+    _titleState = flush Title.writings (teller^.titleState)
+  , _willState = flush Will.writings (teller^.willState)
+  , _playState = flush Play.writings (teller^.playState)
+  , _pauseState = flush Pause.writings (teller^.pauseState)
+  , _aboutState = flush About.writings (teller^.aboutState)
+  } where flush = (%~ map (throoks %~ const Nothing))

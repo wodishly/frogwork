@@ -11,7 +11,7 @@ module Allwit (
 , toggle
 , updateOnlyOneSetting
 , waxwane
-, doStateSwitchStuff
+, wakeState
 ) where
 
 import Prelude hiding (lookup)
@@ -193,8 +193,8 @@ waxwane wind = do
   , far = 100.0
   }
 
-doStateSwitchStuff :: Bool -> StateT Allwit IO ()
-doStateSwitchStuff grabbed = do
+wakeState :: Bool -> StateT Allwit IO ()
+wakeState grabbed = do
   setWindowGrabbed grabbed
   flushKeys
 

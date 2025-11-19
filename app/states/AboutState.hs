@@ -1,15 +1,17 @@
 module AboutState (
   AboutState (..)
 , makeAboutState
+, writings
 ) where
 
+import Control.Lens (makeLenses)
 import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT)
 
 import Graphics.Rendering.OpenGL (Vertex2 (Vertex2))
 
+import Allwit (Allwit (timewit))
 import State (StateName (AboutName), Stately (..), doAtEach)
 
-import Allwit (Allwit (timewit))
 import Blee (bg, darkwhelk)
 import FastenMain (orheight, orwidth)
 import Random (rand)
@@ -18,8 +20,9 @@ import Stavework (Writing (_stead), makeWriting, renderFeather, stavewriteAll)
 
 
 newtype AboutState = AboutState {
-  writings :: [Writing]
+  _writings :: [Writing]
 }
+makeLenses ''AboutState
 
 instance Stately AboutState where
   name _ = AboutName
@@ -32,8 +35,8 @@ instance Stately AboutState where
     aboutwit <- get
     bg darkwhelk
     renderFeather allwit
-    ws <- stavewriteAll allwit (writings aboutwit)
-    put aboutwit { writings = ws }
+    ws <- stavewriteAll allwit (_writings aboutwit)
+    put aboutwit { _writings = ws }
 
 makeAboutState :: Point -> AboutState
 makeAboutState wind = AboutState [makeWriting wind "rɪbɪt"]
@@ -43,4 +46,4 @@ flutter = do
   aboutwit <- get
   rx <- lift rand
   ry <- lift rand
-  put aboutwit { writings = [(head (writings aboutwit)) { _stead = Vertex2 (rx*orwidth) (ry*orheight) }] }
+  put aboutwit { _writings = [(head (_writings aboutwit)) { _stead = Vertex2 (rx*orwidth) (ry*orheight) }] }

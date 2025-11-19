@@ -2,9 +2,10 @@ module WillState (
   WillState (..)
 , makeWillState
 , chosen
+, writings
 ) where
 
-import Control.Lens ((.~))
+import Control.Lens (makeLenses, (.~))
 import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT, execStateT)
 import Data.Maybe (fromJust, isJust)
 
@@ -25,8 +26,9 @@ data WillState = WillState {
   hand :: [Maybe Setting]
 , finger :: Int
 , settings :: Settings
-, writings :: [Writing]
+, _writings :: [Writing]
 }
+makeLenses ''WillState
 
 instance Show WillState where
   show (WillState _ f s _) = show f ++ show s
@@ -42,8 +44,8 @@ instance Stately WillState where
     willwit <- get
     bg darkwhelk
     renderFeather allwit
-    ws <- stavewriteAll allwit (writings willwit)
-    put willwit { writings = ws }
+    ws <- stavewriteAll allwit (_writings willwit)
+    put willwit { _writings = ws }
 
 makeWillState :: Point -> Settings -> WillState
 makeWillState (Vertex2 w h) sets = WillState {
@@ -54,7 +56,7 @@ makeWillState (Vertex2 w h) sets = WillState {
   ]
 , finger = 0
 , settings = sets
-, writings = [
+, _writings = [
     makeWriting (Vertex2 (w/2) (h*3/4)) "WꞮLZ"
   , makeWriting (Vertex2 (w/2) (h*3/7)) "tɛl kiz"
   , makeWriting (Vertex2 (w/2) (h*2/7)) "tɛl tɪks"
@@ -89,6 +91,6 @@ showFinger :: StateT WillState IO ()
 showFinger = do
   titlewit <- get
   put titlewit {
-    writings = hit (succ $ finger titlewit) (blee.~red)
-      $ map (blee.~lightwhelk) (writings titlewit)
+    _writings = hit (succ $ finger titlewit) (blee.~red)
+      $ map (blee.~lightwhelk) (_writings titlewit)
   }

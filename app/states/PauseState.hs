@@ -1,9 +1,11 @@
 module PauseState (
   PauseState (..)
 , makePauseState
+, writings
 ) where
 
-import Control.Monad.State (MonadState(get, put))
+import Control.Lens (makeLenses)
+import Control.Monad.State (MonadState (get, put))
 
 import State (StateName (PauseName), Stately (..))
 
@@ -13,8 +15,9 @@ import Stavework (Writing, makeWriting, renderFeather, stavewriteAll)
 
 
 newtype PauseState = PauseState {
-  writings :: [Writing]
+  _writings :: [Writing]
 }
+makeLenses ''PauseState
 
 instance Stately PauseState where
   name _ = PauseName
@@ -23,8 +26,8 @@ instance Stately PauseState where
     pausewit <- get
     bg black
     renderFeather allwit
-    ws <- stavewriteAll allwit (writings pausewit)
-    put pausewit { writings = ws }
+    ws <- stavewriteAll allwit (_writings pausewit)
+    put pausewit { _writings = ws }
 
 makePauseState :: Point -> PauseState
-makePauseState wind = PauseState { writings = [makeWriting ((1/2) *^ wind) "pɔz"] }
+makePauseState wind = PauseState { _writings = [makeWriting ((1/2) *^ wind) "pɔz"] }
