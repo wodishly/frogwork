@@ -1,8 +1,9 @@
 {- HLINT ignore "Use head" -}
 module PlayState (
-  PlayState (..)
-, makePlayState
-, writings
+  PlayState (..),
+    speechframe,
+  makePlayState,
+  writings
 ) where
 
 import Prelude hiding (lookup)
@@ -46,7 +47,7 @@ data PlayState = PlayState {
   seed :: FrogSeed
 , meshes :: [Mesh]
 , frog :: Frogwit
-, speechframe :: Speechframe
+, _speechframe :: Speechframe
 , euler :: Point
 , radius :: GLfloat
 , programs :: [(Program, VertexArrayObject)]
@@ -76,7 +77,7 @@ makePlayState (Vertex2 w0 h0) (f, sp, rest) = PlayState {
   seed = defaultSeed
 , meshes = rest
 , frog = makeFrog f
-, speechframe = makeSpeechframe sp "A frog is any member of a diverse and largely semiaquatic group of short-bodied, tailless amphibian vertebrates composing the order Anura (coming from the Ancient Greek ανουρα, literally 'without tail')."
+, _speechframe = makeSpeechframe sp "rɪbɪt"--A frog is any member of a diverse and largely semiaquatic group of short-bodied, tailless amphibian vertebrates composing the order Anura (coming from the Ancient Greek ανουρα, literally 'without tail')."
 , euler = Vertex2 0.3 1.57079633
 , radius = 10
 , programs = []
@@ -131,9 +132,9 @@ drawSpeech allwit = do
       viewMatrix
       (getOrthographicMatrix $ display allwit)
       (timewit allwit)
-      (meesh $ speechframe playwit)
-    x <- speechwrite allwit (speechframe playwit)
-    put playwit { speechframe = x }
+      (meesh $ _speechframe playwit)
+    x <- speechwrite allwit (_speechframe playwit)
+    put playwit { _speechframe = x }
 
 updateCamera :: Allwit -> StateT PlayState IO ()
 updateCamera allwit = do

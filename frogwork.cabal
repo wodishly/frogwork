@@ -93,14 +93,16 @@ executable frogwork
     PlayState
     AboutState
     EndState
-    Stateteller
 
     FrogSpell
     MothSpell
     Spell
 
     Frog
+
     Allwit
+    Stateteller
+    Frogwork
 
   -- LANGUAGE extensions used by modules in this package.
   default-extensions:

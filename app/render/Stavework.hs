@@ -3,20 +3,21 @@
 @Stavework@ imports @State@, so @State@ must not import @Stavework@.
 -}
 module Stavework (
-  Speechframe (..)
-, Writing (..)
-  , blee
-  , throoks
-, makeSpeechframe
-, speechwrite
-, makeWriting
-, renderFeather
-, stringframe
-, stavewriteAll
+  Speechframe (..),
+    writings,
+  Writing (..),
+    blee,
+    throoks,
+  makeSpeechframe,
+  speechwrite,
+  makeWriting,
+  renderFeather,
+  stringframe,
+  stavewriteAll,
 ) where
 
 import Control.Lens (makeLenses, (^.), (?~))
-import Control.Monad (forM_, forM, when)
+import Control.Monad (forM_, forM)
 import Control.Monad.State (MonadTrans (lift), StateT)
 import Data.HashMap.Lazy (member, (!))
 import Data.List (find, unfoldr)
@@ -46,11 +47,10 @@ import State (Stately)
 
 import Blee (Blee, bleeToGLVector4, lightwhelk, white)
 import Matrix (RenderView (size), getOrthographicMatrix, getPerspectiveMatrix)
-import Mean (Twain, allIn, ly', ly)
+import Mean (Twain, allIn, ly')
 import Rime
 import Shade (Mesh (elementCount, vbo), bufferSize, drawFaces, drawMesh, useMesh)
 import Stavemake (Stave (Stave, advance, texture), Stavebook)
-import Time (Timewit(lifetime))
 
 
 data Writing = Writing {
@@ -71,11 +71,12 @@ makeWriting = Writing (Middle, Middle) onehood lightwhelk Nothing
 data Speechframe = Speechframe {
   rim :: GLfloat
 , skale :: Point
-, writings :: Maybe [Writing]
+, _writings :: Maybe [Writing]
 , nooks :: Fournook
 , meesh :: Mesh
 , speech :: String
 }
+makeLenses ''Speechframe
 
 makeSpeechframe :: Mesh -> String -> Speechframe
 makeSpeechframe = Speechframe 22.5 ((1/3) *^ onehood) Nothing $ Fournook
@@ -86,8 +87,8 @@ speechwrite :: Stately a => Allwit -> Speechframe -> StateT a IO Speechframe
 speechwrite allwit speechframe = do
   ws <- stavewriteAll allwit (fromMaybe
     (flayLines . wrapToFrame allwit speechframe (fst $ staveware allwit) $ speech speechframe)
-    (writings speechframe))
-  return $ speechframe { writings = Just ws }
+    (_writings speechframe))
+  return $ speechframe { _writings = Just ws }
 
 wrapToFrame :: Allwit -> Speechframe -> Stavebook -> String -> [Writing]
 wrapToFrame allwit frame book string
@@ -146,11 +147,11 @@ allreckon allwit (Writing stk scl' _ _ std' wr) =
 
 -- | The greater work.
 stavewriteAll :: Stately a => Allwit -> [Writing] -> StateT a IO [Writing]
-stavewriteAll allwit writings = do
+stavewriteAll allwit wrs = do
   let (_, mish) = staveware allwit
 
   lift $ useMesh mish
-  forM writings (stavewrite allwit)
+  forM wrs (stavewrite allwit)
 
 -- | The great work.
 stavewrite :: Stately a => Allwit -> Writing -> StateT a IO Writing

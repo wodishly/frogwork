@@ -1,14 +1,14 @@
 module Key (
-  Keyset
-, unkeys
-, listen
-, hearableKeys
-, keyBegun
-, anyKeysBegun
-, anyKeysContinuing
-, keyEnded -- uncalled
-, arrow
-, wasd
+  Keyset,
+  unkeys,
+  bethinkKeys,
+  hearableKeys,
+  keyBegun,
+  anyKeysBegun,
+  anyKeysContinuing,
+  keyEnded, -- uncalled
+  arrow,
+  wasd
 ) where
 
 import Data.Function ((&))
@@ -89,8 +89,8 @@ anyKeysContinuing = any . keyContinuing
 keyEnded :: Keyset -> Scancode -> Bool
 keyEnded = has . endedKeys
 
-listen :: [Event] -> Keyset -> Keyset
-listen events keyset = let news = unwrapHappenKeys events in Keyset
+bethinkKeys :: [Event] -> Keyset -> Keyset
+bethinkKeys events keyset = let news = unwrapHappenKeys events in Keyset
   (filter (allIn [keyDown news, not.keyContinuing keyset]) hearableKeys)
   (filter (allIn [not.keyUp news, keyContinuing keyset]) hearableKeys)
   (filter (allIn [keyUp news, keyContinuing keyset]) hearableKeys)
