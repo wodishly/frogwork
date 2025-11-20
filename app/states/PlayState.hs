@@ -21,7 +21,7 @@ import Allwit (Allwit (..), UnholyMeshMash, Setting (ShowSpeech))
 import State (StateName (..), Stately (..))
 
 import Blee (bg, black)
-import Frog (Frogwit (mesh, position), makeFrog, updateFrog)
+import Frog (Frogwit (mesh, position, Frogwit), makeFrog, updateFrog)
 import Happen (Mousewit (..))
 import Key (arrow)
 import Matrix (frogLookAt, getOrthographicMatrix, getPerspectiveMatrix)
@@ -33,26 +33,25 @@ import Stavework (Speechframe (meesh), Writing, makeSpeechframe, makeWriting, sp
 
 
 data Camera = Camera {
-  cPosition :: FrogVector
-, cTarget :: FrogVector
+  cPosition :: FrogVector,
+  cTarget :: FrogVector
 } deriving (Show, Eq)
 
 makeCamera :: Camera
-makeCamera = Camera {
-  cPosition = fromList [0, 0, 0]
-, cTarget = fromList [0, 0, 1]
-}
+makeCamera = Camera
+  (fromList [0, 0, 0])
+  (fromList [0, 0, 1])
 
 data PlayState = PlayState {
-  seed :: FrogSeed
-, meshes :: [Mesh]
-, frog :: Frogwit
-, _speechframe :: Speechframe
-, euler :: Point
-, radius :: GLfloat
-, programs :: [(Program, VertexArrayObject)]
-, camera :: Camera
-, _writings :: [Writing]
+  seed :: FrogSeed,
+  meshes :: [Mesh],
+  frog :: Frogwit,
+  _speechframe :: Speechframe,
+  euler :: Point,
+  radius :: GLfloat,
+  programs :: [(Program, VertexArrayObject)],
+  camera :: Camera,
+  _writings :: [Writing]
 }
 makeLenses ''PlayState
 
@@ -74,15 +73,17 @@ instance Stately PlayState where
 
 makePlayState :: Point -> UnholyMeshMash -> PlayState
 makePlayState (Vertex2 w0 h0) (f, sp, rest) = PlayState {
-  seed = defaultSeed
-, meshes = rest
-, frog = makeFrog f
-, _speechframe = makeSpeechframe sp "rɪbɪt"--A frog is any member of a diverse and largely semiaquatic group of short-bodied, tailless amphibian vertebrates composing the order Anura (coming from the Ancient Greek ανουρα, literally 'without tail')."
-, euler = Vertex2 0.3 1.57079633
-, radius = 10
-, programs = []
-, camera = makeCamera
-, _writings = [
+  seed = defaultSeed,
+  meshes = rest,
+  frog = makeFrog f,
+  -- _speechframe = makeSpeechframe sp "rɪbɪt rɪbɪt rɪbɪt rɪbɪt rɪbɪt rɪbɪt rɪbɪt rɪbɪt rɪbɪt rɪbɪt rɪbɪt rɪbɪt rɪbɪt rɪbɪt ",--A frog is any member of a diverse and largely semiaquatic group of short-bodied, tailless amphibian vertebrates composing the order Anura (coming from the Ancient Greek ανουρα, literally 'without tail')."
+  _speechframe = makeSpeechframe sp "A frog is any member of a diverse and largely semiaquatic group of short-bodied, tailless amphibian vertebrates composing the order Anura (coming from the Ancient Greek ανουρα, literally 'without tail').",
+  -- _speechframe = makeSpeechframe sp (concat $ replicate 128 "i "),
+  euler = Vertex2 0.3 1.57079633,
+  radius = 10,
+  programs = [],
+  camera = makeCamera,
+  _writings = [
     makeWriting (Vertex2 (w0/2) (h0/2)) "omg frogs!!!!"
 --  , Writing "Hwæt. We gardena in geardagum, þeodcyninga, þrym gefrunon, hu ða æþelingas ellen fremedon."
 --      (Vertex2 0 600) (West, North) (Vertex2 0.3 0.3) red (Say 1 0.05)
@@ -97,66 +98,67 @@ makePlayState (Vertex2 w0 h0) (f, sp, rest) = PlayState {
 
 updateFriends :: Allwit -> StateT PlayState IO ()
 updateFriends allwit = do
-  playwit <- get
-  let cam = camera playwit
-      viewMatrix = frogLookAt (cPosition cam) (cTarget cam)
+  playwit@PlayState { camera, frog } <- get
+  let viewMatrix = frogLookAt (cPosition camera) (cTarget camera)
       forward = flatten $ (viewMatrix ¿ [2]) ?? (Take 3, All)
-  newFrog <- lift $ execStateT (updateFrog allwit forward) (frog playwit)
+  newFrog <- lift $ execStateT (updateFrog allwit forward) frog
   put playwit { frog = newFrog }
 
 drawFriends :: Allwit -> StateT PlayState IO ()
-drawFriends allwit = do
-  playwit <- get
-  let cam = camera playwit
-      viewMatrix = frogLookAt (cPosition cam) (cTarget cam)
+drawFriends (Allwit { display, timewit }) = do
+  PlayState { camera } <- get
 
   gatherMeshes >>= lift . mapM_ (drawMesh
-    (getPerspectiveMatrix $ display allwit)
-    viewMatrix
-    (getOrthographicMatrix $ display allwit)
-    (timewit allwit))
+    (getPerspectiveMatrix display)
+    (frogLookAt (cPosition camera) (cTarget camera))
+    (getOrthographicMatrix display)
+    timewit)
 
 gatherMeshes :: StateT PlayState IO [Mesh]
 gatherMeshes = do
-  playwit <- get
-  return $ meshes playwit ++ [mesh $ frog playwit]
+  PlayState { meshes, frog } <- get
+  return $ meshes ++ [mesh frog]
 
 drawSpeech :: Allwit -> StateT PlayState IO ()
-drawSpeech allwit = do
-  playwit <- get
-  when (fromMaybe False (lookup ShowSpeech $ settings allwit)) $ do
-    let cam = camera playwit
-        viewMatrix = frogLookAt (cPosition cam) (cTarget cam)
+drawSpeech allwit@(Allwit { settings, display, timewit }) = do
+  playwit@(PlayState { camera, _speechframe }) <- get
+  when (fromMaybe False (lookup ShowSpeech settings)) $ do
     lift $ drawMesh
-      (getPerspectiveMatrix $ display allwit)
-      viewMatrix
-      (getOrthographicMatrix $ display allwit)
-      (timewit allwit)
-      (meesh $ _speechframe playwit)
-    x <- speechwrite allwit (_speechframe playwit)
+      (getPerspectiveMatrix display)
+      (frogLookAt (cPosition camera) (cTarget camera))
+      (getOrthographicMatrix display)
+      timewit
+      (meesh _speechframe)
+    x <- speechwrite allwit _speechframe
     put playwit { _speechframe = x }
 
 updateCamera :: Allwit -> StateT PlayState IO ()
-updateCamera allwit = do
-  playwit <- get
+updateCamera (Allwit {
+  keyset,
+  mouse = Mousewit {
+    pointer,
+    wheel = Vertex2 _ wy
+  }
+}) = do
+  playwit@PlayState {
+    frog = Frogwit { position = Vertex3 x y z },
+    euler = Vertex2 pitch yaw,
+    radius
+  } <- get
 
-  let Vertex3 x y z = position $ frog playwit
-      Vertex2 dx dy = given isAught (pointer $ mouse allwit) (arrow $ keyset allwit)
-      Vertex2 pitch yaw = euler playwit
+  let Vertex2 dx dy = given isAught pointer (arrow keyset)
       pitch' = clamp (0, 1) $ pitch + dy / 100.0
       yaw' = yaw + dx / 100.0
-      Vertex2 _ wy = wheel $ mouse allwit
-      r = clamp (3, 25) $ radius playwit - wy
+      r = clamp (3, 25) $ radius - wy
       fx = r * cos yaw * cos pitch
       fy = r * sin pitch
       fz = r * sin yaw * cos pitch
-      c = Camera {
-        cTarget = fromList [x, y, z]
-      , cPosition = fromList [x + fx, y + fy + 1, z - fz]
-      }
 
   put playwit {
-    camera = c
-  , euler = Vertex2 pitch' yaw'
-  , radius = r
+    camera = Camera {
+      cTarget = fromList [x, y, z],
+      cPosition = fromList [x + fx, y + fy + 1, z - fz]
+    },
+    euler = Vertex2 pitch' yaw',
+    radius = r
   }

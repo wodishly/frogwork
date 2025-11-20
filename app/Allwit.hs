@@ -84,8 +84,8 @@ begetMeshes now = do
 
   earth <- makeSimpleMesh defaultSimpleMeshProfile
 
-  farsee <- makeAssetMesh (makeAsset "tv")
-    >>= setMeshTransform (fromTranslation [-2, 1, 2])
+  farsee <- setMeshTransform (fromTranslation [-2, 1, 2])
+    =<< makeAssetMesh (makeAsset "tv")
 
   x <- makeFeather "noto-sans"
   hack <- makeSimpleMesh staveMeshProfile
@@ -95,30 +95,30 @@ begetMeshes now = do
 
 updateAllSettings :: StateT Allwit IO ()
 updateAllSettings = do
-  allwit <- get
+  Allwit { keyset } <- get
   forM_ [(ScancodeK, ShowKeys), (ScancodeT, ShowTicks), (ScancodeTab, ShowSpeech)]
-    (\(code, setting) -> when (keyBegun (keyset allwit) code) (updateOnlyOneSetting setting))
+    (\(code, setting) -> when (keyBegun keyset code) (updateOnlyOneSetting setting))
 
 updateOnlyOneSetting :: Setting -> StateT Allwit IO ()
 updateOnlyOneSetting setting = do
-  allwit <- get
-  put allwit { settings = toggle setting (settings allwit) }
+  allwit@(Allwit { settings }) <- get
+  put allwit { settings = toggle setting settings }
 
 answer :: StateT Allwit IO ()
 answer = do
-  allwit <- get
+  Allwit { settings, keyset, timewit } <- get
   updateAllSettings
-  when (fromMaybe False $ lookup ShowKeys $ settings allwit) (preent $ keyset allwit)
-  when (fromMaybe False $ lookup ShowTicks $ settings allwit) (preent $ show (1/delta (timewit allwit)) ++ show (timewit allwit))
+  when (fromMaybe False $ lookup ShowKeys settings) (preent keyset)
+  when (fromMaybe False $ lookup ShowTicks settings) (preent $ show (1/delta timewit) ++ show timewit)
 
 fand :: Allwit -> IO ()
 fand = ($ weep) . when . fromMaybe False . lookup RunTests . settings
 
 setWindowGrabbed :: Bool -> StateT Allwit IO ()
 setWindowGrabbed setting = do
-  allwit <- get
+  Allwit { window } <- get
 
-  SDL.windowGrab (window allwit) $= setting
+  SDL.windowGrab window $= setting
   void $ SDL.setMouseLocationMode $ if setting then RelativeLocation else AbsoluteLocation
 
 wakeState :: Bool -> StateT Allwit IO ()

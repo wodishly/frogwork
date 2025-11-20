@@ -1,6 +1,6 @@
 {- HLINT ignore "Use section" -}
 module Stateteller (
-  Stateteller (nowState),
+  Stateteller (Stateteller, nowState),
     titleState,
     willState,
     playState,
@@ -32,13 +32,13 @@ import Stavework (throoks, writings)
 
 
 data Stateteller = Stateteller {
-  _titleState :: TitleState
-, _willState :: WillState
-, _playState :: PlayState
-, _pauseState :: PauseState
-, _aboutState :: AboutState
-, _endState :: EndState
-, nowState :: StateName
+  _titleState :: TitleState,
+  _willState :: WillState,
+  _playState :: PlayState,
+  _pauseState :: PauseState,
+  _aboutState :: AboutState,
+  _endState :: EndState,
+  nowState :: StateName
 }
 makeLenses ''Stateteller
 

@@ -1,9 +1,9 @@
 {- HLINT ignore "Use head" -}
 module Frog (
-  Frogwit (..)
-, makeFrog
-, moveFrog
-, updateFrog
+  Frogwit (..),
+  makeFrog,
+  moveFrog,
+  updateFrog,
 ) where
 
 import Control.Monad (when)
@@ -21,98 +21,94 @@ import Matrix (frogLookAt)
 import Rime (FrogVector, Point3, hat, (*^), (<+>))
 import Shade (Mesh (meshAnimation), setMeshTransform)
 import Skeleton (evermore, once, play)
-import Time (Timewit (lifetime), throttle)
+import Time (Timewit (lifetime, Timewit), throttle)
 import Mean (anyIn)
 
 
 data Frogwit = Frogwit {
-    position :: Point3
-  , dy :: GLfloat
-  , speed :: GLfloat
-  , aLeap :: GLfloat
-  , weight :: GLfloat
-  , leapCount :: Int
-  , utleaps :: Int
-  , mesh :: Mesh
-  , didLeap :: Bool
-  , didWalk :: Bool
-  , isRunning :: Bool
+  position :: Point3,
+  dy :: GLfloat,
+  speed :: GLfloat,
+  aLeap :: GLfloat,
+  weight :: GLfloat,
+  leapCount :: Int,
+  utleaps :: Int,
+  mesh :: Mesh,
+  didLeap :: Bool,
+  didWalk :: Bool,
+  isRunning :: Bool
 }
 
 makeFrog :: Mesh -> Frogwit
 makeFrog m = Frogwit {
-    position = Vertex3 0 0 0
-  , dy = 0
-  , speed = 2
-  , aLeap = 5
-  , weight = -8
-  , leapCount = 0
-  , utleaps = 2
-  , mesh = m
-  , didLeap = False
-  , didWalk = False
-  , isRunning =  False
+  position = Vertex3 0 0 0,
+  dy = 0,
+  speed = 2,
+  aLeap = 5,
+  weight = -8,
+  leapCount = 0,
+  utleaps = 2,
+  mesh = m,
+  didLeap = False,
+  didWalk = False,
+  isRunning =  False
 }
 
 didMove :: Frogwit -> Bool
 didMove = anyIn [didWalk, didLeap]
 
 hasLeapsLeft :: Frogwit -> Bool
-hasLeapsLeft frogwit = leapCount frogwit < utleaps frogwit
+hasLeapsLeft (Frogwit { leapCount, utleaps }) = leapCount < utleaps
 
 run :: Allwit -> StateT Frogwit IO ()
-run allwit = do
+run (Allwit { keyset }) = do
   frogwit <- get
-  if anyKeysContinuing (keyset allwit) [ScancodeLShift, ScancodeRShift]
-  then put frogwit {
-      speed = 8
-    , isRunning = True
-    }
-  else put frogwit {
-      speed = 2
-    , isRunning = False
-    }
+  let isRunning = anyKeysContinuing keyset [ScancodeLShift, ScancodeRShift]
+  put frogwit {
+    speed = if isRunning then 8 else 2,
+    isRunning 
+  }
 
 leap :: Allwit -> StateT Frogwit IO ()
-leap allwit = do
-  frogwit <- get
-  when (keyBegun (keyset allwit) ScancodeSpace && hasLeapsLeft frogwit) $
+leap (Allwit { keyset }) = do
+  frogwit@Frogwit { aLeap, leapCount } <- get
+  when (keyBegun keyset ScancodeSpace && hasLeapsLeft frogwit) $
     put frogwit {
-      dy = aLeap frogwit
-    , leapCount = succ $ leapCount frogwit
-    , didLeap = True
+      dy = aLeap,
+      leapCount = succ leapCount,
+      didLeap = True
     }
 
 fall :: Allwit -> StateT Frogwit IO ()
-fall allwit = do
-  frogwit <- get
-  let Vertex3 x y z = position frogwit
-      y' = y + throttle (timewit allwit) (dy frogwit)
+fall (Allwit { timewit }) = do
+  frogwit@Frogwit { position = Vertex3 x y z, dy, weight } <- get
+  let y' = y + throttle timewit dy
   if y' <= 0
     then land
     else do
       put frogwit {
-        dy = dy frogwit + throttle (timewit allwit) (weight frogwit)
+        dy = dy + throttle timewit weight
       , position = Vertex3 x y' z
       }
 
 land :: StateT Frogwit IO ()
 land = do
-  frogwit <- get
+  frogwit@Frogwit { position = Vertex3 x _ z } <- get
   put frogwit {
     dy = 0
   , leapCount = 0
-  , position = let Vertex3 x _ z = position frogwit in Vertex3 x 0 z
+  , position = Vertex3 x 0 z
   , didLeap = False
   }
 
 walk :: Allwit -> FrogVector -> StateT Frogwit IO ()
-walk allwit forward = do
-  frogwit <- get
+walk (Allwit { keyset, timewit }) forward = do
+  frogwit@Frogwit { position, speed } <- get
   let direction = hat $ Vertex3 (forward!0) 0 -(forward!2)
-      position' = position frogwit <+> (throttle (timewit allwit) (speed frogwit) *^ direction)
+      position' = position <+> (throttle timewit speed *^ direction)
+      Vertex2 _ dz = wasd keyset
 
-  if let Vertex2 _ dz = wasd (keyset allwit) in dz < 0
+  if dz < 0
     then put frogwit { position = position', didWalk = True }
     else put frogwit { didWalk = False }
 
@@ -132,10 +128,9 @@ moveFrog allwit forward = do
 
 moveMesh :: FrogVector -> StateT Frogwit IO ()
 moveMesh forward = do
-  frogwit <- get
+  frogwit@Frogwit { position = Vertex3 x y z, mesh } <- get
 
-  let (Vertex3 x y z) = position frogwit
-      frogPosition = fromList [x, y, z]
+  let frogPosition = fromList [x, y, z]
       frogTarget = frogPosition + fromList [forward!0, 0, forward!2]
       transform = frogLookAt frogPosition frogTarget
       columns = toColumns transform
@@ -147,26 +142,23 @@ moveMesh forward = do
         , fromList [x, y, z, 1]
         ]
 
-  newFrogMesh <- lift $ setMeshTransform transform' (mesh frogwit)
+  newFrogMesh <- lift $ setMeshTransform transform' mesh
   put frogwit { mesh = newFrogMesh }
 
 animateMesh :: Allwit -> StateT Frogwit IO ()
-animateMesh allwit = do
-  frogwit <- get
+animateMesh (Allwit { timewit = Timewit { lifetime } }) = do
+  frogwit@Frogwit { mesh, didLeap, isRunning } <- get
 
-  let frogMesh = mesh frogwit
-      athem = meshAnimation frogMesh
-      now = lifetime $ timewit allwit
+  let athem = meshAnimation mesh
 
   when (isJust athem) $
-    let newAnimation = play now
-          ((if didLeap frogwit then once else evermore) (fromJust athem))
-          (if didLeap frogwit
+    let newAnimation = play lifetime
+          ((if didLeap then once else evermore) (fromJust athem))
+          (if didLeap
             then BUNNY_JUMP
             else if didMove frogwit
-              then if isRunning frogwit
+              then if isRunning
                 then BUNNY_RUN
                 else BUNNY_WALK
               else BUNNY_IDLE)
-        newFrogMesh = frogMesh { meshAnimation = Just newAnimation }
-    in put frogwit { mesh = newFrogMesh }
+    in put frogwit { mesh = mesh { meshAnimation = Just newAnimation } }

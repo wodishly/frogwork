@@ -30,7 +30,17 @@ import qualified SDL.Time as SDL
 
 import Allwit (Allwit (..), answer)
 import State (StateName (..))
-import Stateteller (Stateteller (nowState), aboutState, endState, flushWritings, goto, pauseState, playState, titleState, willState)
+import Stateteller (
+  Stateteller (Stateteller, nowState),
+  aboutState,
+  endState,
+  flushWritings,
+  goto,
+  pauseState,
+  playState,
+  titleState,
+  willState,
+  )
 
 import qualified TitleState as Title (chosen)
 import qualified WillState as Will (chosen)
@@ -48,32 +58,32 @@ data Frogwork = Frogwork {
 }
 
 didEnd :: Frogwork -> Bool
-didEnd frogwork =
-    nowState (stateteller frogwork) == EndName
- || anyKeysBegun (keyset $ allwit frogwork) [ScancodeQ, ScancodeEscape]
+didEnd (Frogwork { allwit = Allwit { keyset }, stateteller = Stateteller { nowState }}) =
+    nowState == EndName
+ || anyKeysBegun keyset [ScancodeQ, ScancodeEscape]
 
 settleState :: StateT Frogwork IO ()
 settleState = do
-  frogwork <- get
-  let wit = allwit frogwork
-      keys = keyset wit
-      teller = stateteller frogwork
-      newState
-        | keyBegun keys ScancodeR = TitleName
-        | nowState teller == PlayName && keyBegun keys ScancodeP = PauseName
-        | nowState teller == PauseName && keyBegun keys ScancodeP = PlayName
-        | nowState teller == TitleName && keyBegun keys ScancodeReturn = Title.chosen (stateteller frogwork^.titleState)
-        | nowState teller == WillName && keyBegun keys ScancodeReturn && isNothing (Will.chosen $ stateteller frogwork^.willState) = TitleName
-        | nowState teller == AboutName && anyKeysBegun keys (filter (flip notElem [ScancodeQ, ScancodeEscape]) hearableKeys) = TitleName
-        | otherwise = nowState teller
+  Frogwork {
+    allwit = allwit@Allwit { keyset },
+    stateteller = stateteller@Stateteller { nowState }
+  } <- get
+  let newState
+        | keyBegun keyset ScancodeR = TitleName
+        | nowState == PlayName && keyBegun keyset ScancodeP = PauseName
+        | nowState == PauseName && keyBegun keyset ScancodeP = PlayName
+        | nowState == TitleName && keyBegun keyset ScancodeReturn = Title.chosen (stateteller^.titleState)
+        | nowState == WillName && keyBegun keyset ScancodeReturn && isNothing (Will.chosen $ stateteller^.willState) = TitleName
+        | nowState == AboutName && anyKeysBegun keyset (filter (flip notElem [ScancodeQ, ScancodeEscape]) hearableKeys) = TitleName
+        | otherwise = nowState
     in lift (runStateT (case newState of
-          TitleName -> goto titleState wit
-          WillName -> goto willState wit
-          PlayName -> goto playState wit
-          PauseName -> goto pauseState wit
-          AboutName -> goto aboutState wit
-          EndName -> goto endState wit
-        ) (stateteller frogwork)
+          TitleName -> goto titleState allwit
+          WillName -> goto willState allwit
+          PlayName -> goto playState allwit
+          PauseName -> goto pauseState allwit
+          AboutName -> goto aboutState allwit
+          EndName -> goto endState allwit
+        ) stateteller
       ) >>= put . uncurry Frogwork
 
 listen :: StateT Frogwork IO ()
@@ -87,50 +97,45 @@ listen = do
 
 listenAnswer :: StateT Frogwork IO ()
 listenAnswer = do
-  frogwork <- get
-  wit <- lift $ execStateT answer (allwit frogwork)
+  frogwork@Frogwork { allwit } <- get
+  wit <- lift $ execStateT answer allwit
   put frogwork { allwit = wit }
 
 listenEvents :: StateT Frogwork IO ()
 listenEvents = do
-  frogwork <- get
+  frogwork@Frogwork { allwit } <- get
   es <- lift SDL.pollEvents
-  let wit = allwit frogwork
-    in put frogwork { allwit = wit { events = es } }
+  put frogwork { allwit = allwit { events = es } }
 
 listenTime :: StateT Frogwork IO ()
 listenTime = do
-  frogwork <- get
+  frogwork@Frogwork { allwit = allwit@Allwit { timewit } } <- get
   now <- lift $ fromIntegral <$> SDL.ticks
-  let wit = allwit frogwork
-    in put frogwork { allwit = wit { timewit = keepTime (timewit wit) now } }
+  put frogwork { allwit = allwit { timewit = keepTime timewit now } }
 
 listenKeys :: StateT Frogwork IO ()
 listenKeys = do
-  frogwork <- get
-  let wit = allwit frogwork
-    in put frogwork { allwit = wit { keyset = bethinkKeys (events wit) (keyset wit) } }
+  frogwork@Frogwork { allwit = allwit@Allwit { events, keyset } } <- get
+  put frogwork { allwit = allwit { keyset = bethinkKeys events keyset } }
 
 listenMouse :: StateT Frogwork IO ()
 listenMouse = do
-  frogwork <- get
+  frogwork@Frogwork { allwit = allwit@Allwit { events } } <- get
   -- todo sum instead of head
-  let wit = allwit frogwork
-      f x = if full x then head x else GL.Vertex2 0 0
-      mouse = twimap f (doBoth unwrapHappenPointer unwrapHappenWheel $ events wit)
-    in put frogwork { allwit = wit { mouse = uncurry Mousewit mouse } }
+  let f x = if full x then head x else GL.Vertex2 0 0
+      mouse = twimap f (doBoth unwrapHappenPointer unwrapHappenWheel events)
+    in put frogwork { allwit = allwit { mouse = uncurry Mousewit mouse } }
 
 listenWindow :: StateT Frogwork IO ()
 listenWindow = do
-  frogwork <- get
-  let wit = allwit frogwork
-    in when (or . unwrapHappenWindow $ events wit) $ do
-      dis <- lift (waxwane $ window wit)
-      teller' <- lift $ execStateT flushWritings (stateteller frogwork)
-      put frogwork {
-        allwit = wit { display = dis },
-        stateteller = teller'
-      }
+  frogwork@Frogwork { allwit = allwit@Allwit { events, window }, stateteller } <- get
+  when (or $ unwrapHappenWindow events) $ do
+    dis <- lift $ waxwane window
+    teller' <- lift $ execStateT flushWritings stateteller
+    put frogwork {
+      allwit = allwit { display = dis },
+      stateteller = teller'
+    }
 
 waxwane :: SDL.Window -> IO RenderView
 waxwane wind = do

@@ -1,8 +1,8 @@
 module State (
-  StateName (..)
-, Stately (..)
-, doOnceAt
-, doAtEach
+  StateName (..),
+  Stately (..),
+  doOnceAt,
+  doAtEach,
 ) where
 
 import Control.Monad (when)
@@ -39,7 +39,7 @@ class Stately a where
     return w'
 
 doOnceAt :: Stately a => Timewit -> Float -> StateT a IO () -> StateT a IO ()
-doOnceAt time = when . between (lifetime time, lifetime time + delta time)
+doOnceAt (Timewit { lifetime, delta }) = when . between (lifetime, lifetime + delta)
 
 doAtEach :: Stately a => Timewit -> Float -> StateT a IO () -> StateT a IO ()
-doAtEach time t = when (mod' (lifetime time) t > mod' (lifetime time + delta time) t)
+doAtEach (Timewit { lifetime, delta }) t = when (mod' lifetime t > mod' (lifetime + delta) t)

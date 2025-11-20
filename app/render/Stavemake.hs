@@ -3,12 +3,12 @@
 @State@ imports @Stavemake@, so @Stavemake@ must not import @State@.
 -}
 module Stavemake (
-  Stave (..)
-, Stavebook
-, Staveware
-, makeFeather
-, makeStavebook
-, makeStavebook' -- uncalled
+  Stave (..),
+  Stavebook,
+  Staveware,
+  makeFeather,
+  makeStavebook,
+  makeStavebook', -- uncalled
 ) where
 
 import Control.Monad (forM, when)
@@ -21,20 +21,20 @@ import Foreign (peek, peekArray, withArray)
 import FreeType.Core.Base
 import FreeType.Core.Types
 import Graphics.Rendering.OpenGL (
-    Clamping (ClampToEdge)
-  , GLfloat
-  , PixelFormat (Red)
-  , Repetition (Repeated)
-  , TextureCoordName (S, T)
-  , TextureFilter (Linear')
-  , TextureObject
-  , TextureTarget2D (Texture2D)
-  , Vertex2 (Vertex2)
-  , ($=)
+  Clamping (ClampToEdge),
+  GLfloat,
+  PixelFormat (Red),
+  Repetition (Repeated),
+  TextureCoordName (S, T),
+  TextureFilter (Linear'),
+  TextureObject,
+  TextureTarget2D (Texture2D),
+  Vertex2 (Vertex2),
+  ($=),
   )
 import qualified Graphics.Rendering.OpenGL as GL (
-    textureFilter
-  , textureWrapMode
+  textureFilter,
+  textureWrapMode
   )
 
 import FastenMain (wayToFeathers, orheight, staveSharpness)
@@ -45,10 +45,10 @@ import Shade (Mesh (..), uploadTexture)
 
 
 data Stave = Stave {
-    bearing :: Point -- top left
-  , size :: Point
-  , advance :: GLfloat -- step
-  , texture :: TextureObject
+  bearing :: Point, -- top left
+  size :: Point,
+  advance :: GLfloat, -- step
+  texture :: TextureObject
 } deriving (Show, Eq)
 
 type Stavebook = HashMap Char Stave
@@ -65,42 +65,42 @@ tokenwit =
   ++ [0x0370..0x03ff] -- ellen, head
 
   -- greater loudtokens
-  ++ [0x2c6d -- Ɑ
-    , 0x2c70 -- Ɒ
-    , 0x2c6f -- Ɐ
-    , 0x0181 -- Ɓ
-    , 0xa7b4 -- Ꞵ
-    , 0x00d0 -- Ð
-    , 0x018a -- Ɗ
-    , 0x018f -- Ə
-    , 0x0190 -- Ɛ
-    , 0xa7ab -- Ɜ
-    , 0x0193 -- Ɠ
-    , 0x0194 -- Ɣ
-    , 0x0126 -- Ħ
-    , 0xa7aa -- Ɦ
-    , 0xa78d -- Ɥ
-    , 0x0197 -- Ɨ
-    , 0xa7ae -- Ɪ
-    , 0xa7b2 -- Ʝ
-    , 0x2c62 -- Ɫ
-    , 0xa7ad -- Ɬ
-    , 0x2c6e -- Ɱ
-    , 0x014a -- Ŋ
-    , 0x019d -- Ɲ
-    , 0x0186 -- Ɔ
-    , 0x019f -- Ɵ
-    , 0x2c64 -- Ɽ
-    , 0xa7c5 -- Ʂ
-    , 0x01a9 -- Ʃ
-    , 0x01ae -- Ʈ
-    , 0x0244 -- Ʉ
-    , 0x01b1 -- Ʊ
-    , 0x01b2 -- Ʋ
-    , 0x0245 -- Ʌ
-    , 0x019c -- Ɯ
-    , 0x01b7 -- Ʒ
-    , 0x0241 -- Ɂ
+  ++ [0x2c6d, -- Ɑ
+      0x2c70, -- Ɒ
+      0x2c6f, -- Ɐ
+      0x0181, -- Ɓ
+      0xa7b4, -- Ꞵ
+      0x00d0, -- Ð
+      0x018a, -- Ɗ
+      0x018f, -- Ə
+      0x0190, -- Ɛ
+      0xa7ab, -- Ɜ
+      0x0193, -- Ɠ
+      0x0194, -- Ɣ
+      0x0126, -- Ħ
+      0xa7aa, -- Ɦ
+      0xa78d, -- Ɥ
+      0x0197, -- Ɨ
+      0xa7ae, -- Ɪ
+      0xa7b2, -- Ʝ
+      0x2c62, -- Ɫ
+      0xa7ad, -- Ɬ
+      0x2c6e, -- Ɱ
+      0x014a, -- Ŋ
+      0x019d, -- Ɲ
+      0x0186, -- Ɔ
+      0x019f, -- Ɵ
+      0x2c64, -- Ɽ
+      0xa7c5, -- Ʂ
+      0x01a9, -- Ʃ
+      0x01ae, -- Ʈ
+      0x0244, -- Ʉ
+      0x01b1, -- Ʊ
+      0x01b2, -- Ʋ
+      0x0245, -- Ʌ
+      0x019c, -- Ɯ
+      0x01b7, -- Ʒ
+      0x0241  -- Ɂ
      ]
 
 glyphFormatName :: FT_Glyph_Format -> String
