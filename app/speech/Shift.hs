@@ -1,16 +1,16 @@
 {- HLINT ignore "Use section" -}
-{-# LANGUAGE TupleSections #-}
-
-module Shift where
+module Shift (
+) where
 
 import Data.Bifunctor (bimap)
-import Data.Maybe (catMaybes)
 import Data.Function (applyWhen)
+import Data.Maybe (catMaybes)
 
-import Mean
-import Loud
-import Breath
-import Mark
+import Breath (Breath (..), Bright, flatten, makeBright, shiftInset, shiftOnset)
+import Loud (Flight, Loud, Loudmark (..), isDerm, isRough, isThroat, offbearThroat, onbearThroat, unbear, unloud)
+import Mark (become, get, on, set, worth)
+import Mean (Shed, Shift, doesRotatedRoundedRectangleIntersectRectangle, full, hit, samely, shell)
+
 
 queue :: Shed (Shift a)
 queue = foldr (.) id

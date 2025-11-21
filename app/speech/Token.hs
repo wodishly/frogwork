@@ -1,8 +1,17 @@
 {- HLINT ignore "Use infix" -}
+module Token (
+  betoken,
+  shades,
+  sharps,
+) where
 
-module Token where
-
-import Mean
+import Mean (
+  Shell,
+  Shift,
+  doesRectangleIntersectRotatedRoundedRectangle,
+  doesRotatedRoundedRectangleIntersectRectangle,
+  shell,
+  )
 
 shades :: [(String, String)]
 shades = [

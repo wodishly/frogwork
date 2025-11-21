@@ -1,45 +1,50 @@
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-{-# HLINT ignore "Use infix" #-}
+{- HLINT ignore "Use infix" -}
+module Breath (
+  Bright,
+  Breath (..),
+  Rime (..),
+  makeBright,
+  shiftOnset,
+  shiftInset,
+  flatten,
+) where
 
-module Breath where
-
-import Data.List (findIndex)
-import Data.Maybe (maybeToList, fromJust)
 import Data.Bifunctor (first)
+import Data.List (findIndex)
+import Data.Maybe (fromJust, maybeToList)
 
-import Mark
-import Token
-import Loud
-import Mean
+import Loud (Flight, Loudmark (Bear), clean, cleans, dirtys)
+import Mark (worth)
+import Mean (Shift, full, lif, multipleton, split)
+import Token (sharps)
+
 
 type Onset = Flight
 type Inset = Flight
 type Offset = Flight
+type Bright = [Breath]
 
 data Rime = Rime {
   inset :: Inset,
   offset :: Offset
-} deriving (Eq)
+} deriving Eq
 
 instance Show Rime where
-  show (Rime i o) = "(" ++ concatMap cleans [i,o] ++ ")"
+  show (Rime i o) = "(" ++ concatMap cleans [i, o] ++ ")"
 
 data Breath = Breath {
   onset :: Onset,
   rime :: Rime,
   sharp :: Bool
-} deriving (Eq)
+} deriving Eq
 
 instance Show Breath where
   show (Breath o r s) = "(" ++ cleans o ++ stuff ++ ")"
-    where stuff = if s
-                  then "(" ++ fromJust (lookup (clean $ head (inset r)) sharps)
-                           ++ concatMap cleans [tail (inset r), offset r] ++ ")"
-                  else show r
-
--- breath + flight
--- todo: a better name
-type Bright = [Breath]
+    where
+    stuff = if s
+      then "(" ++ fromJust (lookup (clean $ head (inset r)) sharps)
+               ++ concatMap cleans [tail (inset r), offset r] ++ ")"
+      else show r
 
 unrime :: Rime
 unrime = Rime [] []
@@ -56,8 +61,8 @@ shiftInset = flip shiftRime id
 shiftOffset :: Shift Flight -> Shift Breath
 shiftOffset = shiftRime id
 
-hasOnset :: Breath -> Bool
-hasOnset = full.onset
+-- hasOnset :: Breath -> Bool
+-- hasOnset = full.onset
 
 hasInset :: Breath -> Bool
 hasInset = full.inset.rime
@@ -68,11 +73,11 @@ hasOffset = full.offset.rime
 hasRime :: Breath -> Bool
 hasRime b = hasInset b || hasOffset b
 
-isHeavy :: Breath -> Bool
-isHeavy = hasOffset
+-- isHeavy :: Breath -> Bool
+-- isHeavy = hasOffset
 
-isLight :: Breath -> Bool
-isLight = not.isHeavy
+-- isLight :: Breath -> Bool
+-- isLight = not.isHeavy
 
 makeRime :: Flight -> Rime
 makeRime ls = case findIndex (not.worth Bear) ls of
@@ -117,13 +122,13 @@ makeBright :: Flight -> Bright
 makeBright = nudge . map makeBreath . split (worth Bear)
 
 -- in loudness
-lengthL :: Bright -> Int
-lengthL = length' id
+-- lengthL :: Bright -> Int
+-- lengthL = length' id
 
 -- in tokens
-lengthT :: Bright -> Int
-lengthT = length' cleans
+-- lengthT :: Bright -> Int
+-- lengthT = length' cleans
 
-length' :: Foldable f => (Flight -> f a) -> Bright -> Int
-length' f bs
-  = sum (map (\b -> (sum . map (length . (\g -> (f.g) b))) thrifork') bs)
+-- length' :: Foldable f => (Flight -> f a) -> Bright -> Int
+-- length' f bs
+--  = sum (map (\b -> (sum . map (length . (\g -> (f.g) b))) thrifork') bs)

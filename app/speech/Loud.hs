@@ -1,26 +1,42 @@
 {- HLINT ignore "Use section" -}
-module Loud where
+module Loud (
+  Loud,
+  Flight,
+  Loudmark (..),
+  clean,
+  cleans,
+  dirty,
+  dirtys,
+  isDerm,
+  isRough,
+  isThroat,
+  onbearThroat,
+  offbearThroat,
+  unbear,
+  unloud,
+) where
 
-import Data.Maybe (fromMaybe)
-import Data.Function (applyWhen)
 import Data.Char (toUpper)
+import Data.Function (applyWhen)
+import Data.Maybe (fromMaybe)
 import Data.Tuple (swap)
 
-import Mark
-import Mean
-import Token
+import Mark (Branch, Mark (..), off, offs, ons, worth, worths)
+import Mean (Shift, allIn)
+import Token (betoken, shades)
+
 
 type Loud = Branch Loudmark
 type Flight = [Loud]
 
 data Loudmark = Tung
-          | Bear
-            | Smooth | Nose
-            | Throat | Stave | Spread | Clench
-            | Long
-          | Choke
-            | Thru | Side | Step | Strong
-            | Mouth | Lip | Ring | Blade | Far | Wide | Body | High | Fore | Back | Root | Low | Tight
+  | Bear
+    | Smooth | Nose
+    | Throat | Stave | Spread | Clench
+    | Long
+  | Choke
+    | Thru | Side | Step | Strong
+    | Mouth | Lip | Ring | Blade | Far | Wide | Body | High | Fore | Back | Root | Low | Tight
   deriving (Eq)
 
 instance Mark Loudmark where
@@ -39,11 +55,11 @@ instance Mark Loudmark where
   below' Root = [Low, Tight]
   below' _ = []
 
-stillness :: String
-stillness = "∅"
+-- stillness :: String
+-- stillness = "∅"
 
-unstill :: Flight -> String
-unstill ls = given full (cleans ls) stillness
+-- unstill :: Flight -> String
+-- unstill = ($ stillness) . given full . cleans
 
 meanBear :: Loud
 meanBear = ons [Bear, Smooth, Stave, Thru, Body, Low] (def Tung)
@@ -54,8 +70,8 @@ meanChoke = ons [Choke] (def Tung)
 unloud :: Loud
 unloud = off Tung (def Tung)
 
-isGlide :: Loud -> Bool
-isGlide x = none (flip worth x) [Bear, Choke]
+-- isGlide :: Loud -> Bool
+-- isGlide x = none (flip worth x) [Bear, Choke]
 
 isDerm :: Loud -> Bool
 isDerm = worths [Bear, Choke]
@@ -64,7 +80,7 @@ isRough :: Loud -> Bool
 isRough = not.worth Smooth
 
 isThroat :: Loud -> Bool
-isThroat l = all ($ l) [not.worth Root, worths [Thru, Body]]
+isThroat = allIn [not.worth Root, worths [Thru, Body]]
 
 unbear :: Shift Loud
 unbear = offs [Bear, Long]
@@ -122,69 +138,69 @@ instance Show Loudmark where
 -- reach with `clean` and `dirty`
 bundles :: [(String, Loud)]
 bundles = [
-   ("ʔ", meanChoke)
+  ("ʔ", meanChoke),
 
- , ("p", ons [Lip] $ dirty "ʔ")
- , ("t", ons [Blade] $ dirty "ʔ")
- , ("k", ons [High] $ dirty "ʔ")
- , ("kʸ", ons [Fore] $ dirty "k")
- , ("kʷ", ons [Ring] $ dirty "k")
+  ("p", ons [Lip] $ dirty "ʔ"),
+  ("t", ons [Blade] $ dirty "ʔ"),
+  ("k", ons [High] $ dirty "ʔ"),
+  ("kʸ", ons [Fore] $ dirty "k"),
+  ("kʷ", ons [Ring] $ dirty "k"),
 
- , ("b", ons [Stave] $ dirty "p")
- , ("d", ons [Stave] $ dirty "t")
- , ("g", ons [Stave] $ dirty "k")
- , ("gʸ", ons [Fore] $ dirty "g")
- , ("gʷ", ons [Ring] $ dirty "g")
+  ("b", ons [Stave] $ dirty "p"),
+  ("d", ons [Stave] $ dirty "t"),
+  ("g", ons [Stave] $ dirty "k"),
+  ("gʸ", ons [Fore] $ dirty "g"),
+  ("gʷ", ons [Ring] $ dirty "g"),
 
- , ("bʰ", ons [Spread] $ dirty "b")
- , ("dʰ", ons [Spread] $ dirty "d")
- , ("gʰ", ons [Spread] $ dirty "g")
- , ("gʸʰ", ons [Spread, Fore] $ dirty "g")
- , ("gʷʰ", ons [Spread, Ring] $ dirty "g")
+  ("bʰ", ons [Spread] $ dirty "b"),
+  ("dʰ", ons [Spread] $ dirty "d"),
+  ("gʰ", ons [Spread] $ dirty "g"),
+  ("gʸʰ", ons [Spread, Fore] $ dirty "g"),
+  ("gʷʰ", ons [Spread, Ring] $ dirty "g"),
 
- , ("f", ons [Thru, Step] $ dirty "p")
- , ("θ", ons [Thru, Step] $ dirty "t")
- , ("ð", ons [Stave] $ dirty "θ")
+  ("f", ons [Thru, Step] $ dirty "p"),
+  ("θ", ons [Thru, Step] $ dirty "t"),
+  ("ð", ons [Stave] $ dirty "θ"),
 
- , ("s", ons [Thru, Step, Strong] $ dirty "t")
- , ("z", ons [Stave] $ dirty "s")
- , ("ɬ", ons [Thru, Step, Side] $ dirty "t")
- , ("ɮ", ons [Stave] $ dirty "ɬ")
- , ("h₂", ons [Body] $ offs [Blade] $ dirty "s")
- , ("h₁", ons [Fore] $ dirty "h₂")
- , ("h₃", ons [Ring] $ dirty "h₂")
- , ("h", ons [Thru, Step] $ dirty "ʔ")
+  ("s", ons [Thru, Step, Strong] $ dirty "t"),
+  ("z", ons [Stave] $ dirty "s"),
+  ("ɬ", ons [Thru, Step, Side] $ dirty "t"),
+  ("ɮ", ons [Stave] $ dirty "ɬ"),
+  ("h₂", ons [Body] $ offs [Blade] $ dirty "s"),
+  ("h₁", ons [Fore] $ dirty "h₂"),
+  ("h₃", ons [Ring] $ dirty "h₂"),
+  ("h", ons [Thru, Step] $ dirty "ʔ"),
 
- , ("m", ons [Nose] $ dirty "b")
- , ("n", ons [Nose] $ dirty "d")
- , ("ŋ", ons [Nose] $ dirty "g")
- , ("ŋʷ", ons [Nose] $ dirty "gʷ")
- , ("l", ons [Side] $ dirty "r")
- , ("r", ons [Thru] $ offs [Nose] $ dirty "n")
- , ("y", offs [Bear] $ dirty "i")
- , ("w", offs [Bear] $ dirty "u")
+  ("m", ons [Nose] $ dirty "b"),
+  ("n", ons [Nose] $ dirty "d"),
+  ("ŋ", ons [Nose] $ dirty "g"),
+  ("ŋʷ", ons [Nose] $ dirty "gʷ"),
+  ("l", ons [Side] $ dirty "r"),
+  ("r", ons [Thru] $ offs [Nose] $ dirty "n"),
+  ("y", offs [Bear] $ dirty "i"),
+  ("w", offs [Bear] $ dirty "u"),
 
- , ("ə₂", onbearThroat $ dirty "h₂")
- , ("ə₁", onbearThroat $ dirty "h₁")
- , ("ə₃", onbearThroat $ dirty "h₃")
- , ("m̩", ons [Bear] $ dirty "m")
- , ("n̩", ons [Bear] $ dirty "n")
- , ("l̩", ons [Bear] $ dirty "l")
- , ("r̩", ons [Bear] $ dirty "r")
- , ("i", ons [High] $ offs [Low] $ dirty "e")
- , ("u", ons [High] $ offs [Low] $ dirty "o")
+  ("ə₂", onbearThroat $ dirty "h₂"),
+  ("ə₁", onbearThroat $ dirty "h₁"),
+  ("ə₃", onbearThroat $ dirty "h₃"),
+  ("m̩", ons [Bear] $ dirty "m"),
+  ("n̩", ons [Bear] $ dirty "n"),
+  ("l̩", ons [Bear] $ dirty "l"),
+  ("r̩", ons [Bear] $ dirty "r"),
+  ("i", ons [High] $ offs [Low] $ dirty "e"),
+  ("u", ons [High] $ offs [Low] $ dirty "o"),
 
- , ("e", ons [      Fore, Tight] $ offs [Low] $ dirty "a")
- , ("o", ons [Ring, Back, Tight] $ offs [Low] $ dirty "a")
- , ("a", meanBear)
+  ("e", ons [      Fore, Tight] $ offs [Low] $ dirty "a"),
+  ("o", ons [Ring, Back, Tight] $ offs [Low] $ dirty "a"),
+  ("a", meanBear),
 
- , ("m̩̄", ons [Long] $ dirty "m̩")
- , ("n̩̄", ons [Long] $ dirty "n̩")
- , ("l̩̄", ons [Long] $ dirty "l̩")
- , ("r̩̄", ons [Long] $ dirty "r̩")
- , ("ī", ons [Long] $ dirty "i")
- , ("ū", ons [Long] $ dirty "u")
- , ("ē", ons [Long] $ dirty "e")
- , ("ō", ons [Long] $ dirty "o")
- , ("ā", ons [Long] $ dirty "a")
- ]
+  ("m̩̄", ons [Long] $ dirty "m̩"),
+  ("n̩̄", ons [Long] $ dirty "n̩"),
+  ("l̩̄", ons [Long] $ dirty "l̩"),
+  ("r̩̄", ons [Long] $ dirty "r̩"),
+  ("ī", ons [Long] $ dirty "i"),
+  ("ū", ons [Long] $ dirty "u"),
+  ("ē", ons [Long] $ dirty "e"),
+  ("ō", ons [Long] $ dirty "o"),
+  ("ā", ons [Long] $ dirty "a")
+  ]

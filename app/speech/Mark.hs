@@ -1,12 +1,25 @@
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-{-# HLINT ignore "Use section" #-}
+{- HLINT ignore "Use section" -}
+module Mark (
+  Branch,
+  Mark (..),
+  on,
+  ons,
+  off,
+  offs,
+  worth,
+  worths,
+  become,
+  get,
+  set,
+) where
 
-module Mark where
-import Mean
-import Data.Maybe (isJust, fromJust)
 import Control.Monad (join)
-import Data.Function (applyWhen)
 import Data.Foldable (find)
+import Data.Function (applyWhen)
+import Data.Maybe (fromJust, isJust)
+
+import Mean (Shift)
+
 
 class (Show a, Eq a) => Mark a where
   isAxled, isSteadfast :: a -> Bool
@@ -14,6 +27,7 @@ class (Show a, Eq a) => Mark a where
   below, above :: a -> a -> Bool
   below m m' = or $ sequence [elem m', any (flip below m')] (below' m)
   above = flip below
+
   def :: a -> Branch a
   def m = Branch m True (map (off'.def) (below' m))
 
@@ -23,11 +37,13 @@ data Branch a = Branch {
   _children :: [Branch a]
 } deriving (Eq)
 
--- todo
--- instance Functor Branch where
-
 instance Mark a => Show (Branch a) where
   show = init . showMark 0
+
+newtype Withmete a = Withmete (Bool, Bool, a)
+
+instance Mark a => Show (Withmete a) where
+  show (Withmete (l, r, m)) = "[" ++ showWorth m l ++ "/" ++ showWorth m r ++ show m ++ "]"
 
 showWorth :: Mark a => a -> Bool -> String
 showWorth m b
@@ -40,8 +56,8 @@ showMark n (Branch m w cs)
   = concat (replicate n " ") ++ "[" ++ showWorth m w ++ show m ++ "]"
  ++ "\n" ++ (\x -> if not $ null x then x else "") (concatMap (showMark $ n+1) cs)
 
-leaf :: Branch a -> Bool
-leaf = null._children
+-- leaf :: Branch a -> Bool
+-- leaf = null._children
 
 worth :: Mark a => a -> Branch a -> Bool
 worth m' (Branch m w cs) = m==m' && w || any (worth m') cs
@@ -52,14 +68,14 @@ worths ms l = all (flip worth l) ms
 become :: Mark a => Branch a -> Shift (Branch a)
 become = const
 
-on' :: Mark a => Shift (Branch a)
-on' l = on (_mark l) l
+-- on' :: Mark a => Shift (Branch a)
+-- on' l = on (_mark l) l
 
 off' :: Mark a => Shift (Branch a)
 off' l = off (_mark l) l
 
-un' :: Mark a => Shift (Branch a)
-un' l = un (_mark l) l
+-- un' :: Mark a => Shift (Branch a)
+-- un' l = un (_mark l) l
 
 ons :: Mark a => [a] -> Shift (Branch a)
 ons = (flip.foldr) on
@@ -89,23 +105,18 @@ off n (Branch m w cs) = if m==n
   then Branch m False (applyWhen (not (isSteadfast m)) (map off') cs)
   else Branch m w (map (off n) cs)
 
-un :: Mark a => a -> Shift (Branch a)
-un n (Branch m w cs) = if m==n
-  then (if w then off' else on') (Branch m w cs)
-  else Branch m w (map (un n) cs)
+-- un :: Mark a => a -> Shift (Branch a)
+-- un n (Branch m w cs) = if m==n
+--   then (if w then off' else on') (Branch m w cs)
+--   else Branch m w (map (un n) cs)
 
 get' :: Mark a => a -> Branch a -> Maybe (Branch a)
 get' m l = if m == _mark l
   then Just l
   else join $ find isJust $ map (get' m) (_children l)
 
-newtype Withmete a = Withmete (Bool, Bool, a)
-
-instance Mark a => Show (Withmete a) where
-  show (Withmete (l, r, m)) = "[" ++ showWorth m l ++ "/" ++ showWorth m r ++ show m ++ "]"
-
-withmete :: Mark a => Branch a -> Branch a -> [Withmete a]
-withmete left right = [
-    Withmete (_worth (get (_mark right) left), _worth right, _mark right)
-    | _worth right /= _worth (get (_mark right) left)
-  ] ++ concatMap (withmete left) (_children right)
+-- withmete :: Mark a => Branch a -> Branch a -> [Withmete a]
+-- withmete left right = [
+--     Withmete (_worth (get (_mark right) left), _worth right, _mark right)
+--     | _worth right /= _worth (get (_mark right) left)
+--   ] ++ concatMap (withmete left) (_children right)
