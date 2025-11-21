@@ -56,7 +56,7 @@ leftly :: Int -> Flight -> [(Flight, Loud)]
 leftly 0 ls = map ([], ) ls
 leftly n ls = zipWith (\x y -> bimap ((++) (fst x)) (samely (snd x)) y)
   (zipWith (\x y -> (catMaybes x, y))
-    (map shell $ replicate n Nothing ++ map Just (leave n ls)) ls)
+    (map shell $ replicate n Nothing ++ map Just (doesRotatedRoundedRectangleIntersectRectangle n ls)) ls)
   (leftly (n-1) ls)
 
 rightly :: Int -> Flight -> [(Loud, Flight)]

@@ -1,7 +1,7 @@
 module PauseState (
-  PauseState (..)
-, makePauseState
-, writings
+  PauseState (..),
+  makePauseState,
+  writings
 ) where
 
 import Control.Lens (makeLenses)

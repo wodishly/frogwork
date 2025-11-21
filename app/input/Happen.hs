@@ -1,23 +1,23 @@
 module Happen (
-    Keywit
-  , Mousewit (..)
-  , unwrapHappenKeys
-  , unwrapHappenPointer
-  , unwrapHappenWheel
-  , unwrapHappenWindow
+  Keywit,
+  Mousewit (..),
+  unwrapHappenKeys,
+  unwrapHappenPointer,
+  unwrapHappenWheel,
+  unwrapHappenWindow,
 ) where
 
 import Data.Maybe (mapMaybe)
 
 import SDL (
-    Event (eventPayload)
-  , EventPayload (KeyboardEvent, MouseMotionEvent, MouseWheelEvent, WindowResizedEvent)
-  , Scancode
-  , InputMotion
-  , Keysym (keysymScancode)
-  , KeyboardEventData (keyboardEventKeyMotion, keyboardEventKeysym)
-  , MouseWheelEventData (mouseWheelEventPos)
-  , MouseMotionEventData (mouseMotionEventRelMotion)
+  Event (eventPayload),
+  EventPayload (KeyboardEvent, MouseMotionEvent, MouseWheelEvent, WindowResizedEvent),
+  InputMotion,
+  KeyboardEventData (keyboardEventKeyMotion, keyboardEventKeysym),
+  Keysym (keysymScancode),
+  MouseMotionEventData (mouseMotionEventRelMotion),
+  MouseWheelEventData (mouseWheelEventPos),
+  Scancode,
   )
 
 import qualified SDL (Point (P))
@@ -29,8 +29,8 @@ import Rime (Point, fromSDL)
 type Keywit = (Scancode, InputMotion)
 
 data Mousewit = Mousewit {
-  pointer :: Point
-, wheel :: Point
+  pointer :: Point,
+  wheel :: Point
 } deriving (Show, Eq)
 
 unwrapHappen :: (EventPayload -> Maybe a) -> [Event] -> [a]

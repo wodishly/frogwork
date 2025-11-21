@@ -8,10 +8,11 @@ module State (
 import Control.Monad (when)
 import Control.Monad.State (StateT)
 
-import Mean (between)
+import Mean (between, twin)
 import Time (Timewit (..))
 import Allwit (Allwit)
 import Data.Fixed (mod')
+import Data.Bifunctor (Bifunctor(second))
 
 
 data StateName
@@ -39,7 +40,7 @@ class Stately a where
     return w'
 
 doOnceAt :: Stately a => Timewit -> Float -> StateT a IO () -> StateT a IO ()
-doOnceAt (Timewit { lifetime, delta }) = when . between (lifetime, lifetime + delta)
+doOnceAt (Timewit { lifetime, delta }) = when . between (second (+delta) (twin lifetime))
 
 doAtEach :: Stately a => Timewit -> Float -> StateT a IO () -> StateT a IO ()
 doAtEach (Timewit { lifetime, delta }) t = when (mod' lifetime t > mod' (lifetime + delta) t)

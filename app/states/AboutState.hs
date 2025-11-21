@@ -1,7 +1,7 @@
 module AboutState (
-  AboutState (..)
-, makeAboutState
-, writings
+  AboutState (..),
+  makeAboutState,
+  writings
 ) where
 
 import Control.Lens (makeLenses)
@@ -43,7 +43,7 @@ makeAboutState wind = AboutState [makeWriting wind "rɪbɪt"]
 
 flutter :: StateT AboutState IO ()
 flutter = do
-  aboutwit <- get
+  aboutwit@AboutState { _writings } <- get
   rx <- lift rand
   ry <- lift rand
-  put aboutwit { _writings = [(head (_writings aboutwit)) { _stead = Vertex2 (rx*orwidth) (ry*orheight) }] }
+  put aboutwit { _writings = [(head _writings) { _stead = Vertex2 (rx*orwidth) (ry*orheight) }] }

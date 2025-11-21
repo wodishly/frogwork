@@ -23,9 +23,9 @@ import Mean (allIn, has, none, ssss)
 
 
 data Keyset = Keyset {
-  begunKeys :: [Scancode]
-, continuingKeys :: [Scancode]
-, endedKeys :: [Scancode]
+  begunKeys :: [Scancode],
+  continuingKeys :: [Scancode],
+  endedKeys :: [Scancode]
 } deriving (Eq)
 
 instance Show Keyset where
@@ -97,9 +97,9 @@ bethinkKeys events keyset = let news = unwrapHappenKeys events in Keyset
 
 -- | Uses a 2-tuple of antipodal keycodes to compute a unit direction vector.
 way' :: ([Scancode], [Scancode]) -> Keyset -> (Keyset -> Scancode -> Bool) -> GLfloat
-way' (wanes, waxes) keySet keyListener
-  | any (keyListener keySet) wanes && none (keyListener keySet) waxes = -1
-  | any (keyListener keySet) waxes && none (keyListener keySet) wanes = 1
+way' (wanes, waxes) keyset keyListener
+  | any (keyListener keyset) wanes && none (keyListener keyset) waxes = -1
+  | any (keyListener keyset) waxes && none (keyListener keyset) wanes = 1
   | otherwise = 0
 
 arrow :: Keyset -> Point

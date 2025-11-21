@@ -49,7 +49,7 @@ import FastenShade (Programful (uniformMap))
 import Matrix (RenderView (size, RenderView), getOrthographicMatrix, getPerspectiveMatrix)
 import Mean (twin, twimap)
 import Rime
-import Shade (Mesh (elementCount, vbo), bufferSize, drawFaces, drawMesh, useMesh)
+import Shade (Mesh (elementCount, vbo, Mesh), bufferSize, drawFaces, drawMesh, useMesh)
 import Stavemake (Stave (Stave, advance, texture), Stavebook)
 
 
@@ -128,22 +128,20 @@ scaleToScreen :: Allwit -> Point -> Point
 scaleToScreen (Allwit { display = RenderView { size = (w, h) } }) = (^*^) (Vertex2 (w/orwidth) (h/orheight))
 
 allreckon :: Allwit -> Writing -> [Polyhedron]
-allreckon allwit@(Allwit { staveware }) (Writing stk scl' _ _ std' wr) =
-  let book = fst staveware
-      advances = scanl (+) 0 (map (advance . (book!)) wr)
+allreckon allwit@(Allwit { staveware = (book, _) }) (Writing stk scl' _ _ std' wr) =
+  let advances = scanl (+) 0 (map (advance . (book!)) wr)
       (scl, std) = twimap (scaleToScreen allwit) (scl', std')
       offset = reckonStakes book stk scl wr
   in zipWith (\i char -> stavenook (offset <+> std) scl (advances!!i) (book!char)) [0..] wr
 
 -- | The greater work.
 stavewriteAll :: Stately a => Allwit -> [Writing] -> StateT a IO [Writing]
-stavewriteAll allwit = (lift (useMesh (snd $ staveware allwit)) >>) . mapM (stavewrite allwit)
+stavewriteAll allwit@Allwit { staveware = (_, m) } = (lift (useMesh m) >>) . mapM (stavewrite allwit)
 
 -- | The great work.
 stavewrite :: Stately a => Allwit -> Writing -> StateT a IO Writing
-stavewrite allwit writing = do
+stavewrite allwit@(Allwit { staveware = (book, mish) }) writing = do
   let writing' = (throoks ?~ fromMaybe (allreckon allwit writing) (writing^.throoks)) writing
-      (book, mish) = staveware allwit
 
   forM_ (zip [0..] (writing^.writ)) $ \(i, char) ->
     if member char book
@@ -154,22 +152,22 @@ stavewrite allwit writing = do
 
 -- | Carves the staves into being.
 carve :: Stave -> Polyhedron -> Mesh -> Blee -> IO ()
-carve stave vertices mish bl = do
+carve (Stave { texture }) vertices mish@(Mesh { vbo, elementCount }) bl = do
   activeTexture $= TextureUnit 0
-  textureBinding Texture2D $= Just (texture stave)
-  bindBuffer ArrayBuffer $= Just (vbo mish)
+  textureBinding Texture2D $= Just texture
+  bindBuffer ArrayBuffer $= Just vbo
   uniformMap mish ! "u_blee" >>= ($= bleeToGLVector4 bl) . uniform
   withArray vertices (bufferSubData ArrayBuffer WriteToBuffer 0 $ bufferSize vertices)
   bindBuffer ArrayBuffer $= Nothing
-  drawFaces (elementCount mish)
+  drawFaces elementCount
 
 renderFeather :: Stately a => Allwit -> StateT a IO ()
-renderFeather allwit = lift $ drawMesh
-  (getPerspectiveMatrix $ display allwit)
+renderFeather (Allwit { display, timewit, staveware }) = lift $ drawMesh
+  (getPerspectiveMatrix display)
   (ident 4)
-  (getOrthographicMatrix $ display allwit)
-  (timewit allwit)
-  (snd $ staveware allwit)
+  (getOrthographicMatrix display)
+  timewit
+  (snd staveware)
 
 reckonStakes :: Stavebook -> Stakes -> Scale -> String -> Point
 reckonStakes book (xstake, ystake) scl wr = Vertex2 ew ns where

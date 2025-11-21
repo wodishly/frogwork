@@ -6,18 +6,18 @@ import Numeric.LinearAlgebra (fromList, toList)
 
 import Foreign (Int32)
 import Graphics.Rendering.OpenGL (
-    GLfloat
-  , GLint
+  GLfloat,
+  GLint
   )
 
 import qualified SDL (Point (P), V2 (V2))
 import qualified Numeric.LinearAlgebra as H (Vector, size)
 import qualified Graphics.Rendering.OpenGL as GL (
-    Vertex
-  , Vertex2 (Vertex2)
-  , Vertex3 (Vertex3)
-  , Vertex4 (Vertex4)
-  , VertexComponent
+  Vertex,
+  Vertex2 (Vertex2),
+  Vertex3 (Vertex3),
+  Vertex4 (Vertex4),
+  VertexComponent
   )
 
 import Mean (toBoth, sq, dimensionError, ssss)
@@ -42,8 +42,8 @@ type FrogList = [GLfloat]
 type FrogVector = H.Vector GLfloat
 
 data Fournook = Fournook {
-  topLeft :: Point
-, greatness :: Point
+  topLeft :: Point,
+  greatness :: Point
 } deriving (Show, Eq)
 
 {-# INLINE asPoint #-}

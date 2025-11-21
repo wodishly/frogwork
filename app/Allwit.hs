@@ -36,7 +36,7 @@ import Shade (Mesh (meshAnimation), makeAsset, makeAssetMesh, makeSimpleMesh, se
 import Skeleton (evermore, makeAnimation, play)
 import Spell (summon, unwrappingly)
 import Stavemake (Staveware, makeFeather)
-import Time (Timewit (delta), beginTime)
+import Time (Timewit, beginTime)
 
 
 data Setting = ShowTicks | ShowKeys | ShowSpeech | RunTests deriving (Show, Eq, Ord)
@@ -109,7 +109,7 @@ answer = do
   Allwit { settings, keyset, timewit } <- get
   updateAllSettings
   when (fromMaybe False $ lookup ShowKeys settings) (preent keyset)
-  when (fromMaybe False $ lookup ShowTicks settings) (preent $ show (1/delta timewit) ++ show timewit)
+  when (fromMaybe False $ lookup ShowTicks settings) (preent timewit)
 
 fand :: Allwit -> IO ()
 fand = ($ weep) . when . fromMaybe False . lookup RunTests . settings

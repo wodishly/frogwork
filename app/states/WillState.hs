@@ -1,8 +1,8 @@
 module WillState (
-  WillState (..)
-, makeWillState
-, chosen
-, writings
+  WillState (..),
+  makeWillState,
+  chosen,
+  writings
 ) where
 
 import Control.Lens (makeLenses, (.~))
@@ -12,21 +12,21 @@ import Data.Maybe (fromJust, isJust)
 import SDL.Input.Keyboard.Codes
 import Graphics.Rendering.OpenGL (Vertex2(Vertex2))
 
-import Allwit (Allwit (keyset), Settings, Setting (..), updateOnlyOneSetting)
+import Allwit (Allwit (Allwit, keyset), Setting (..), Settings, updateOnlyOneSetting)
 import State (StateName (WillName), Stately (..))
 
 import Blee (bg, darkwhelk, lightwhelk, red)
 import Key (keyBegun)
-import Mean (hit, ssss)
+import Mean (hit)
 import Rime (Point)
 import Stavework (Writing, blee, makeWriting, renderFeather, stavewriteAll)
 
 
 data WillState = WillState {
-  hand :: [Maybe Setting]
-, finger :: Int
-, settings :: Settings
-, _writings :: [Writing]
+  hand :: [Maybe Setting],
+  finger :: Int,
+  settings :: Settings,
+  _writings :: [Writing]
 }
 makeLenses ''WillState
 
@@ -50,47 +50,47 @@ instance Stately WillState where
 makeWillState :: Point -> Settings -> WillState
 makeWillState (Vertex2 w h) sets = WillState {
   hand = [
-    Just ShowKeys
-  , Just ShowTicks
-  , Nothing
-  ]
-, finger = 0
-, settings = sets
-, _writings = [
-    makeWriting (Vertex2 (w/2) (h*3/4)) "WꞮLZ"
-  , makeWriting (Vertex2 (w/2) (h*3/7)) "tɛl kiz"
-  , makeWriting (Vertex2 (w/2) (h*2/7)) "tɛl tɪks"
-  , makeWriting (Vertex2 (w/2) (h  /7)) "bæk"
+    Just ShowKeys,
+    Just ShowTicks,
+    Nothing
+  ],
+  finger = 0,
+  settings = sets,
+  _writings = [
+    makeWriting (Vertex2 (w/2) (h*3/4)) "WꞮLZ",
+    makeWriting (Vertex2 (w/2) (h*3/7)) "tɛl kiz",
+    makeWriting (Vertex2 (w/2) (h*2/7)) "tɛl tɪks",
+    makeWriting (Vertex2 (w/2) (h  /7)) "bæk"
   ]
 }
 
 chosen :: WillState -> Maybe Setting
-chosen wit = hand wit!!finger wit
+chosen (WillState { hand, finger }) = hand!!finger
 
 choosefare :: Allwit -> StateT WillState IO Allwit
-choosefare allwit = do
+choosefare allwit@Allwit { keyset } = do
   willwit <- get
 
   nudgeFinger allwit
   showFinger
 
-  if keyBegun (keyset allwit) ScancodeReturn && isJust (chosen willwit)
+  if keyBegun keyset ScancodeReturn && isJust (chosen willwit)
   then lift $ execStateT (updateOnlyOneSetting $ fromJust $ chosen willwit) allwit
   else return allwit
 
 nudgeFinger :: Allwit -> StateT WillState IO ()
-nudgeFinger allwit = do
-  willwit <- get
+nudgeFinger (Allwit { keyset }) = do
+  willwit@WillState { hand, finger } <- get
   let nudge
-        | keyBegun (keyset allwit) ScancodeUp = pred
-        | keyBegun (keyset allwit) ScancodeDown = succ
+        | keyBegun keyset ScancodeUp = pred
+        | keyBegun keyset ScancodeDown = succ
         | otherwise = id
-  put willwit { finger = ssss (mod.nudge.finger) (length.hand) willwit }
+  put willwit { finger = mod (nudge finger) (length hand) }
 
 showFinger :: StateT WillState IO ()
 showFinger = do
-  titlewit <- get
-  put titlewit {
-    _writings = hit (succ $ finger titlewit) (blee.~red)
-      $ map (blee.~lightwhelk) (_writings titlewit)
+  willwit@WillState { finger, _writings } <- get
+  put willwit {
+    _writings = hit (succ finger) (blee.~red)
+      $ map (blee.~lightwhelk) _writings
   }

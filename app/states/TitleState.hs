@@ -1,8 +1,8 @@
 module TitleState (
-  TitleState (..)
-, makeTitleState
-, chosen
-, writings
+  TitleState (..),
+  makeTitleState,
+  chosen,
+  writings
 ) where
 
 import Control.Lens (makeLenses, (.~))
@@ -17,15 +17,15 @@ import State (StateName (EndName, PlayName, TitleName, WillName, AboutName), Sta
 import Blee (bg, darkwhelk, red, lightwhelk)
 import Key (keyBegun)
 import Stavework (makeWriting, renderFeather, stavewriteAll, Writing (Writing), blee)
-import Mean (hit, preent, ssss)
+import Mean (hit, preent)
 import Rime (Point, FrogVertex (onehood), (*^))
 import FastenMain (Stake(Middle))
 
 
 data TitleState = TitleState {
-  hand :: [StateName]
-, finger :: Int
-, _writings :: [Writing]
+  hand :: [StateName],
+  finger :: Int,
+  _writings :: [Writing]
 }
 makeLenses ''TitleState
 
@@ -47,19 +47,19 @@ instance Stately TitleState where
 
 makeTitleState :: Point -> TitleState
 makeTitleState (Vertex2 w h) = TitleState {
-  hand = [PlayName, WillName, AboutName, EndName]
-, finger = 0
-, _writings = [
-    makeWriting (Vertex2 (w/2) (h*3/4)) "WƐLKƏM TU FRⱰGFƆRD!"
-  , Writing (Middle, Middle) ((3/4) *^ onehood) lightwhelk Nothing (Vertex2 (w/2) (h*4/9)) "plej"
-  , Writing (Middle, Middle) ((3/4) *^ onehood) lightwhelk Nothing (Vertex2 (w/2) (h*3/9)) "wɪlz"
-  , Writing (Middle, Middle) ((3/4) *^ onehood) lightwhelk Nothing (Vertex2 (w/2) (h*2/9)) "əbawt"
-  , Writing (Middle, Middle) ((3/4) *^ onehood) lightwhelk Nothing (Vertex2 (w/2) (h  /9)) "ɛnd"
+  hand = [PlayName, WillName, AboutName, EndName],
+  finger = 0,
+  _writings = [
+    makeWriting (Vertex2 (w/2) (h*3/4)) "WƐLKƏM TU FRⱰGFƆRD!",
+    Writing (Middle, Middle) ((3/4) *^ onehood) lightwhelk Nothing (Vertex2 (w/2) (h*4/9)) "plej",
+    Writing (Middle, Middle) ((3/4) *^ onehood) lightwhelk Nothing (Vertex2 (w/2) (h*3/9)) "wɪlz",
+    Writing (Middle, Middle) ((3/4) *^ onehood) lightwhelk Nothing (Vertex2 (w/2) (h*2/9)) "əbawt",
+    Writing (Middle, Middle) ((3/4) *^ onehood) lightwhelk Nothing (Vertex2 (w/2) (h  /9)) "ɛnd"
   ]
 }
 
 chosen :: TitleState -> StateName
-chosen wit = hand wit!!finger wit
+chosen (TitleState { hand, finger }) = hand!!finger
 
 choosefare :: Allwit -> StateT TitleState IO ()
 choosefare allwit = do
@@ -67,18 +67,18 @@ choosefare allwit = do
   showFinger
 
 nudgeFinger :: Allwit -> StateT TitleState IO ()
-nudgeFinger allwit = do
-  willwit <- get
+nudgeFinger (Allwit { keyset }) = do
+  titlewit@TitleState { hand, finger } <- get
   let nudge
-        | keyBegun (keyset allwit) ScancodeUp = pred
-        | keyBegun (keyset allwit) ScancodeDown = succ
+        | keyBegun keyset ScancodeUp = pred
+        | keyBegun keyset ScancodeDown = succ
         | otherwise = id
-  put willwit { finger = ssss (mod.nudge.finger) (length.hand) willwit }
+  put titlewit { finger = mod (nudge finger) (length hand) }
 
 showFinger :: StateT TitleState IO ()
 showFinger = do
-  titlewit <- get
+  titlewit@TitleState { finger, _writings } <- get
   put titlewit {
-    _writings = hit (succ $ finger titlewit) (blee.~red)
-      $ map (blee.~lightwhelk) (_writings titlewit)
+    _writings = hit (succ finger) (blee.~red)
+      $ map (blee.~lightwhelk) _writings
   }

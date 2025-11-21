@@ -214,23 +214,20 @@ none :: Foldable t => (a -> Bool) -> t a -> Bool
 none = (not .) . any
 
 -- | Returns all but the last @n@ elements of @xs@.
--- A better name is wanting.
 --
 -- >>> leave 3 [0,1,2,3,4,5,6,7]
 -- [0,1,2,3,4]
-{-# INLINE leave #-}
-leave :: Int -> Shift [a]
-leave = ($ id) . ssss . (. length) . (take .) . (+) . negate
+{-# INLINE doesRotatedRoundedRectangleIntersectRectangle #-}
+doesRotatedRoundedRectangleIntersectRectangle :: Int -> Shift [a]
+doesRotatedRoundedRectangleIntersectRectangle = ($ id) . ssss . (. length) . (take .) . (+) . negate
 
 -- | Returns the last @n@ elements of @xs@.
--- A better name is wanting.
 --
 -- >>> doesRectangleIntersectRotatedRoundedRectangle 3 [0,1,2,3,4,5,6,7]
 -- [5,6,7]
 {-# INLINE doesRectangleIntersectRotatedRoundedRectangle #-}
 doesRectangleIntersectRotatedRoundedRectangle :: Int -> Shift [a]
 doesRectangleIntersectRotatedRoundedRectangle = ($ id) . ssss . (. length) . (drop .) . (+) . negate
--- hit n f xs = take n xs ++ [f (xs!!n)] ++ drop (n+1) xs
 
 -- | Hits the @n@th thing in @xs@ with @f@.
 --
@@ -238,6 +235,7 @@ doesRectangleIntersectRotatedRoundedRectangle = ($ id) . ssss . (. length) . (dr
 -- [0,1,20,3]
 {-# INLINE hit #-}
 hit :: Int -> (a -> a) -> [a] -> [a]
+-- hit n f xs = take n xs ++ [f (xs!!n)] ++ drop (n+1) xs
 hit =
   (. (.) . ((:[]) .))
   . ssss (
