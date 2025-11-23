@@ -44,7 +44,6 @@ stillness = OpenDeviceSpec {
   openDeviceCallback = \_ _ -> return ()
 }
 
-
 openGLConfig :: SDL.OpenGLConfig
 openGLConfig = SDL.OpenGLConfig {
   SDL.glColorPrecision = V4 8 8 8 0,

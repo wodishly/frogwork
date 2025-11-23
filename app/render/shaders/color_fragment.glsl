@@ -8,6 +8,7 @@ out vec4 f_color;
 uniform float u_time;
 
 void main() {
+  return;
   vec2 xz = floor(mod(vec2(
     v_position.x+(mod(u_time, 2.0) < 1 ? u_time : 0),
     v_position.z+(mod(u_time, 2.0) >= 1 ? u_time : 0) + 1.0

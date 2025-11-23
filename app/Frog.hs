@@ -25,7 +25,7 @@ import Skeleton (evermore, once, play)
 import Time (Timewit (lifetime, Timewit), throttle)
 import Mean (anyIn, twimap)
 import Strike (Spitful (..))
-import FastenFrame (frogspit)
+import FastenFrame (onespit)
 
 
 data Frogwit = Frogwit {
@@ -44,7 +44,7 @@ data Frogwit = Frogwit {
 }
 
 instance Spitful Frogwit where
-  spit Frogwit { position } = twimap (<+> position) frogspit
+  spit Frogwit { position } = twimap (<+> position) onespit
 
 makeFrog :: Mesh -> Mesh -> Frogwit
 makeFrog m fresh = Frogwit {

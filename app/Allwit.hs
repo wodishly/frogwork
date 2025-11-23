@@ -85,8 +85,7 @@ begetMeshes now = do
     bun { meshAnimation = Just bunAnimation }
   earth <- makeSimpleMesh defaultSimpleMeshProfile
   frogFrame <- makeSimpleMesh frameMeshProfile
-  heaven <- setMeshTransform (fromAffine (thrice 80) (thrice -40)) =<< makeSimpleMesh frameMeshProfile
-
+  heaven <- setMeshTransform (fromAffine (thrice 80) (thrice -40)) =<< makeSimpleMesh (frameMeshProfileOf "heaven")
 
   glDisable GL_CULL_FACE
 

@@ -6,11 +6,27 @@ in vec4 v_position;
 out vec4 f_color;
 
 
+bool near(float f, float g, float threshold) {
+    return abs(f - g) < threshold;
+}
+
+bool alongEdge(float f, float threshold) {
+  return near(f, 0, threshold) || near(f, 1, threshold);
+}
+
+bool alongEdges(vec4 v, float threshold) {
+  return int(alongEdge(v.x, threshold))
+       + int(alongEdge(v.y, threshold))
+       + int(alongEdge(v.z, threshold))
+      >= 2;
+}
+
+bool alongSpit(vec4 v, float threshold) {
+  return false;//near(v.x, v.y, threshold) && near(v.y, v.z, threshold) && near(v.x, v.z, threshold);
+}
+
 void main() {
-    f_color = vec4(vec3(v_position), 1);
-//  f_color = vec4(0, 1, 0,//vec3(v_position), 
-//    int(abs(v_position.x) == 0.975)
-//    + int(abs(v_position.y) > 0.975)
-//    + int(abs(v_position.z) > 0.975)
-//    >= 2 ? 1 : 0);
+  float threshold = 1.0/40;
+  f_color = vec4(0, 1, 0,
+    alongSpit(v_position, 0.2) || alongEdges(v_position, threshold) ? 1 : 0);
 }
