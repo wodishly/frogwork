@@ -14,5 +14,5 @@ out vec4 v_position;
 void main() {
     v_position = position;
     mat4 modelview_matrix = u_view_matrix * u_model_matrix;
-    gl_Position = position * u_projection_matrix * modelview_matrix;
+    gl_Position = u_projection_matrix * modelview_matrix * position;
 }
