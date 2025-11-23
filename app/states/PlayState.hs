@@ -9,7 +9,7 @@ module PlayState (
 import Prelude hiding (lookup)
 
 import Control.Lens (makeLenses)
-import Control.Monad (when)
+import Control.Monad (when, void)
 import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT, execStateT)
 import Data.Map (lookup)
 import Data.Maybe (fromMaybe)
@@ -25,12 +25,11 @@ import Frog (makeFrog, updateFrog, Frogwit (Frogwit), mesh, position, fresh)
 import Happen (Mousewit (..))
 import Key (arrow)
 import Matrix (frogLookAt, getOrthographicMatrix, getPerspectiveMatrix)
-import Mean (given, ly, preent)
+import Mean (given)
 import Random (FrogSeed, defaultSeed)
 import Rime (FrogVector, Point, clamp, isAught)
 import Shade (Mesh, drawMesh)
 import Stavework (Speechframe (meesh), Writing, makeSpeechframe, makeWriting, speechwrite, stavewriteAll)
-import Strike (Spitful(spit, frame))
 
 data Camera = Camera {
   cPosition :: FrogVector,
@@ -84,7 +83,7 @@ makePlayState (Vertex2 w0 h0) ((f, ff), sp, rest) = PlayState {
   programs = [],
   camera = makeCamera,
   _writings = [
-    makeWriting (Vertex2 (w0/2) (h0/2)) "omg frogs!!!!"
+    -- makeWriting (Vertex2 (w0/2) (h0/2)) "omg frogs!!!!"
 --  , Writing "Hwæt. We gardena in geardagum, þeodcyninga, þrym gefrunon, hu ða æþelingas ellen fremedon."
 --      (Vertex2 0 600) (West, North) (Vertex2 0.3 0.3) red (Say 1 0.05)
 --  , Writing "Oft Scyld Scefing sceaþena þreatum, monegum mægþum, meodosetla ofteah, egsode eorlas."
@@ -116,10 +115,9 @@ drawFriends (Allwit { display, timewit }) = do
 
 gatherMeshes :: StateT PlayState IO [Mesh]
 gatherMeshes = do
-  PlayState { meshes, frog = frog@Frogwit { mesh, fresh } } <- get
-  preent $ spit frog
-  preent $ frame frog
-  return $ meshes ++ [mesh]--, fresh]
+  PlayState { meshes, frog = Frogwit { mesh, fresh } } <- get
+  void $ return fresh
+  return $ meshes ++ [mesh, fresh]
 
 drawSpeech :: Allwit -> StateT PlayState IO ()
 drawSpeech allwit@(Allwit { settings, display, timewit }) = do

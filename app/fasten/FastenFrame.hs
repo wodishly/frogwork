@@ -6,4 +6,4 @@ import Strike (Spit)
 
 
 frogspit :: Spit
-frogspit = (Vertex3 0 0 0, Vertex3 1 2 1)
+frogspit = (Vertex3 0 0 0, Vertex3 1 1 1)

@@ -6,7 +6,7 @@ import Data.Bifunctor (bimap)
 import Data.Bits (Bits (shiftL, shiftR))
 import Data.Function (applyWhen, (&))
 import Data.List (singleton)
-import Debug.Trace (traceShow, traceShowId, traceShowWith)
+import Debug.Trace (traceShowId, traceShowWith)
 import GHC.Stack (HasCallStack)
 
 

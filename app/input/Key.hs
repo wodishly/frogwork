@@ -65,6 +65,7 @@ hearableKeys = [
 
   , ScancodeK -- show keys
   , ScancodeT -- show time
+  , ScancodeM -- be loud
   ]
 
 unkeys :: Keyset

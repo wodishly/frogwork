@@ -2,20 +2,32 @@ module Strike where
 
 import Graphics.Rendering.OpenGL (Vertex3 (Vertex3))
 
-import Mean (Twain, between)
+import Mean (Twain, between, ly)
 import Rime (Axle (..), Point3, Polyhedron, (<+>))
 
 
 -- | A spit is an axle between a @Point3@ and the farthest @Point3@.
 type Spit = Twain Point3
 
+frame' :: Spit -> Polyhedron
+frame' (w0@(Vertex3 x0 y0 z0), Vertex3 x1 y1 z1)
+  = ly $ (w0 <+>) <$> [
+        Vertex3 x0 y0 z0,
+        Vertex3 x0 y0 z1,
+        Vertex3 x0 y1 z1,
+        Vertex3 x0 y1 z0,
+        Vertex3 x1 y1 z0,
+        Vertex3 x1 y1 z1,
+        Vertex3 x1 y0 z1,
+        Vertex3 x1 y0 z0
+      ]
+
 -- | To be spitful is to have a spit, and hence also a frame.
 class Spitful a where
   spit :: a -> Spit
 
   frame :: a -> Polyhedron
-  frame a = (fst (spit a) <+>) <$> (Vertex3 <$> [x0, x1] <*> [y0, y1] <*> [z0, z1])
-    where (Vertex3 x0 y0 z0, Vertex3 x1 y1 z1) = spit a
+  frame = frame' . spit
 
   striketh :: Spitful b => a -> b -> Bool
   striketh struck striking = and (strikethAlong <$> [X, Y, Z] <*> replicate 3 struck <*> replicate 3 striking)

@@ -8,7 +8,6 @@ module Allwit (
   answer,
   makeAllwit,
   setWindowGrabbed,
-  toggle,
   updateOnlyOneSetting,
   wakeState
 ) where
@@ -16,8 +15,8 @@ module Allwit (
 import Prelude hiding (lookup)
 
 import Control.Monad (forM_, void, when)
-import Control.Monad.State (MonadState (get, put), StateT)
-import Data.Map (Map, adjust, fromList, lookup)
+import Control.Monad.State (MonadState (get, put), StateT, MonadTrans (lift))
+import Data.Map (Map, adjust, fromList, lookup, (!))
 import Data.Maybe (fromMaybe)
 
 import Graphics.Rendering.OpenGL (Vertex2 (Vertex2), ($=))
@@ -37,15 +36,15 @@ import Skeleton (evermore, makeAnimation, play)
 import Spell (summon, unwrappingly)
 import Stavemake (Staveware, makeFeather)
 import Time (Timewit, beginTime)
-import Loudness (Loudness)
+import Loudness (Loudness, rest, unrest)
 
 
-data Setting = ShowTicks | ShowKeys | ShowSpeech | RunTests deriving (Show, Eq, Ord)
+data Setting = ShowTicks | ShowKeys | ShowSpeech | RunTests | BeLoud deriving (Show, Eq, Ord)
 
 type Settings = Map Setting Bool
 
 makeSettings :: Settings
-makeSettings = fromList $ map (, False) [ShowTicks, ShowKeys, ShowSpeech, RunTests]
+makeSettings = fromList $ map (, False) [ShowTicks, ShowKeys, ShowSpeech, RunTests, BeLoud]
 
 toggle :: Setting -> Settings -> Settings
 toggle = adjust not
@@ -97,12 +96,17 @@ begetMeshes now = do
 updateAllSettings :: StateT Allwit IO ()
 updateAllSettings = do
   Allwit { keyset } <- get
-  forM_ [(ScancodeK, ShowKeys), (ScancodeT, ShowTicks), (ScancodeTab, ShowSpeech)]
-    (\(code, setting) -> when (keyBegun keyset code) (updateOnlyOneSetting setting))
+  forM_ [
+    (ScancodeK, ShowKeys),
+    (ScancodeT, ShowTicks),
+    (ScancodeTab, ShowSpeech),
+    (ScancodeM, BeLoud)
+    ] (\(code, setting) -> when (keyBegun keyset code) (updateOnlyOneSetting setting))
 
 updateOnlyOneSetting :: Setting -> StateT Allwit IO ()
 updateOnlyOneSetting setting = do
-  allwit@(Allwit { settings }) <- get
+  allwit@(Allwit { settings, loudness = (wile, _) }) <- get
+  lift $ when (setting == BeLoud) $ (if settings!setting then rest else unrest) wile
   put allwit { settings = toggle setting settings }
 
 answer :: StateT Allwit IO ()
@@ -111,6 +115,7 @@ answer = do
   updateAllSettings
   when (fromMaybe False $ lookup ShowKeys settings) (preent keyset)
   when (fromMaybe False $ lookup ShowTicks settings) (preent timewit)
+  -- when (fromMaybe False $ lookup BeLoud settings) (preent "im loud")
 
 fand :: Allwit -> IO Allwit
 fand wit@Allwit { settings } = when (fromMaybe False (lookup RunTests settings)) weep >> return wit

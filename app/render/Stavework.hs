@@ -45,7 +45,7 @@ import State (Stately)
 
 import Blee (Blee, bleeToGLVector4, lightwhelk, white)
 import FastenMain (Stake (..), Stakes, orheight, orwest, orwidth, orwindow)
-import FastenShade (Programful (uniformMap))
+import FastenShade (Meshful (uniformMap))
 import Matrix (RenderView (size, RenderView), getOrthographicMatrix, getPerspectiveMatrix)
 import Mean (twin, twimap)
 import Rime

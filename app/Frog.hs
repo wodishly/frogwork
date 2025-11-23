@@ -23,7 +23,7 @@ import Rime (FrogVector, Point3, hat, (*^), (<+>))
 import Shade (Mesh (meshAnimation), setMeshTransform)
 import Skeleton (evermore, once, play)
 import Time (Timewit (lifetime, Timewit), throttle)
-import Mean (anyIn, ly, twimap)
+import Mean (anyIn, twimap)
 import Strike (Spitful (..))
 import FastenFrame (frogspit)
 

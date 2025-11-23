@@ -13,12 +13,11 @@ module Shade
   )
 where
 
-import Control.Monad (unless)
-import Control.Monad.Identity (Identity (runIdentity))
+import Control.Monad (unless, when, (>=>))
 import Data.Bifunctor (Bifunctor (second))
 import Data.Binary.Get (runGet)
 import Data.HashMap.Lazy ((!))
-import Data.Maybe (fromJust)
+import Data.Maybe (fromJust, isJust)
 import Text.Printf (printf)
 
 import Foreign (Int32, Ptr, Storable, new, nullPtr, plusPtr, sizeOf, withArray, Word8)
@@ -32,12 +31,26 @@ import qualified Graphics.GL as GLRaw (glUniformMatrix4fv)
 
 import FastenMain (assetsBasePath, shaderBasePath)
 import FastenShade
+  ( AssetMeshProfile (..),
+    MeshProfile,
+    Meshful (..),
+    ShaderProfile,
+    Shaderful (shaderProfile),
+    SimpleMeshProfile,
+    UniformMap,
+    ibuffer,
+    names,
+    texObject,
+    uniforms,
+    uvbuffer,
+    vbuffer,
+  )
 import FrogSpell
 import Skeleton (Animation (..), continue)
 import Matrix (FrogMatrix)
 import Mean (Twain, doBoth, twimap, twin)
 import Spell (summon)
-import Time (Timewit (lifetime))
+import Time (Timewit (lifetime, Timewit))
 
 import MothSpell as MOTH
 
@@ -63,7 +76,7 @@ data Mesh = Mesh {
   vbo :: BufferObject,
   uvbo :: BufferObject,
   tex :: Maybe TextureObject,
-  _file :: Maybe FrogFile,
+  file :: Maybe FrogFile,
   _uniformMap :: UniformMap,
   elementCount :: Int32,
   transform :: FrogMatrix,
@@ -80,15 +93,12 @@ instance Meshful Mesh where
 data Concoction = Concoction {
   _program :: Program,
   _uniformMap :: UniformMap,
-  _frogFilePath :: Maybe String
+  _road :: Maybe String
 }
 
 instance Meshful Concoction where
-  program (Concoction x _ _) = x
-  uniformMap (Concoction _ x _) = x
-
-instance Pathlikeful Maybe Concoction where
-  frogFilePath (Concoction _ _ x) = x
+  program Concoction { _program } = _program
+  uniformMap Concoction { _uniformMap } = _uniformMap
 
 makeAsset :: String -> AssetMeshProfile
 makeAsset = AssetMeshProfile
@@ -138,34 +148,36 @@ brew (vsPath, fsPath) = do
 brewProfile :: MeshProfile -> IO Concoction
 brewProfile mProfile = do
   -- parse profile
-  let (sProfile, path) = case mProfile of
-        Left assetful -> (shaderProfile assetful, Just . asset . runIdentity . frogFilePath $ assetful)
+  let (sProfile, rd) = case mProfile of
+        Left assetful@AssetMeshProfile { road } -> (shaderProfile assetful, Just $ asset road)
         Right assetless -> (shaderProfile assetless, Nothing)
 
-  p <- brew (paths sProfile)
-  currentProgram $= Just p
-  let u = HM.fromList $ map (second (uniformLocation p) . twin) (uniforms sProfile)
-  return (Concoction p u path)
+  program <- brew (paths sProfile)
+  currentProgram $= Just program
+  let u = HM.fromList $ map (second (uniformLocation program) . twin) (uniforms sProfile)
+  return (Concoction program u rd)
 
 useMesh :: Mesh -> IO ()
-useMesh mesh = do
-  currentProgram $= Just (program mesh)
-  bindVertexArrayObject $= Just (vao mesh)
-  textureBinding Texture2D $= tex mesh
+useMesh Mesh { _program, vao, tex } = do
+  currentProgram $= Just _program
+  bindVertexArrayObject $= Just vao
+  textureBinding Texture2D $= tex
 
 -- idk if i like this, but something like this
-allocVector :: Storable a => Mesh -> Vector a -> String -> (GLint -> (Ptr a -> IO ())) -> IO ()
-allocVector mesh prop uniformKey callback = case HM.lookup uniformKey (uniformMap mesh) of
-  Just uLoc -> do
-    UniformLocation location <- get uLoc
-    S.unsafeWith prop (callback location)
-  _ -> return ()
+allocVector :: Storable a => Mesh -> Vector a -> String -> (GLint -> Ptr a -> IO ()) -> IO ()
+allocVector Mesh { _uniformMap } prop uniformKey callback =
+  whenJust (HM.lookup uniformKey _uniformMap) $
+    get >=> \(UniformLocation location) -> S.unsafeWith prop (callback location)
+
+whenJust :: Applicative f => Maybe a -> (a -> f ()) -> f ()
+whenJust (Just x) f = f x
+whenJust Nothing _ = pure ()
 
 uniformMatrix :: GLint -> Ptr GLfloat -> IO ()
 uniformMatrix loc = GLRaw.glUniformMatrix4fv loc 1 1
 
 drawMesh :: FrogMatrix -> FrogMatrix -> FrogMatrix -> Timewit -> Mesh -> IO ()
-drawMesh projectionMatrix viewMatrix orthographicMatrix time mesh = do
+drawMesh projectionMatrix viewMatrix orthographicMatrix Timewit { lifetime } mesh@Mesh { _uniformMap, meshAnimation } = do
   useMesh mesh
 
   allocVector mesh (flatten $ transform mesh) "u_model_matrix" uniformMatrix
@@ -174,32 +186,25 @@ drawMesh projectionMatrix viewMatrix orthographicMatrix time mesh = do
   allocVector mesh (flatten viewMatrix) "u_view_matrix" uniformMatrix
   allocVector mesh (flatten orthographicMatrix) "u_orthographic_matrix" uniformMatrix
 
-  let now = lifetime time
-      meshmoth = meshAnimation mesh
-  case (meshmoth, maybe False playing meshmoth) of
-    (Just animation, True) -> do
-      let (skellington, _finished) = continue animation now
-      case HM.lookup "u_bone_matrices" (uniformMap mesh) of
-        Just uLoc -> do
-          UniformLocation bonesLocation <- get uLoc
-          withArray skellington $
-            GLRaw.glUniformMatrix4fv bonesLocation (fromIntegral $ boneCount $ aMoth animation) 1
-        _ -> return ()
-    _ -> return ()
+  let now = lifetime
 
-  case HM.lookup "u_time" (uniformMap mesh) of
-    Just _ -> do
-      timeLocation <- uniformMap mesh ! "u_time"
-      uniform timeLocation $= now
-    _ -> return ()
+  when (maybe False playing meshAnimation) $
+    whenJust meshAnimation $ \animation -> do
+      whenJust (HM.lookup "u_bone_matrices" _uniformMap) $ \uLoc -> do
+        let (skellington, _finished) = continue animation now
+        UniformLocation bonesLocation <- get uLoc
+        withArray skellington $
+          GLRaw.glUniformMatrix4fv bonesLocation (fromIntegral $ boneCount $ aMoth animation) 1
 
-  case HM.lookup "u_texture" (uniformMap mesh) of
-    Just uLoc -> do
-      activeTexture $= TextureUnit 0
-      tex0Pointer <- new (TextureUnit 0)
-      location <- uLoc
-      uniformv location 1 tex0Pointer
-    _ -> return ()
+  whenJust (HM.lookup "u_time" _uniformMap) $ \_ -> do
+    timeLocation <- _uniformMap ! "u_time"
+    uniform timeLocation $= now
+
+  whenJust (HM.lookup "u_texture" _uniformMap) $ \uLoc -> do
+    activeTexture $= TextureUnit 0
+    tex0Pointer <- new (TextureUnit 0)
+    location <- uLoc
+    uniformv location 1 tex0Pointer
 
   drawFaces (elementCount mesh)
 

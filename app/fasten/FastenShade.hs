@@ -1,7 +1,6 @@
 {- HLINT ignore "Use ++" -}
 module FastenShade where
 
-import Control.Monad.Identity (Identity (Identity))
 import Data.HashMap.Lazy (HashMap)
 
 import Foreign (Word32)
@@ -11,11 +10,13 @@ import Graphics.Rendering.OpenGL
     Program,
     TextureObject,
     UniformLocation,
-    Vertex2 (Vertex2)
+    Vertex2 (Vertex2), Vertex3 (Vertex3)
   )
 
-import Mean (Twain, ly)
+import Mean (Twain)
 import Rime (Axle (..), Polyhedron, fournook, inject)
+import FastenFrame (frogspit)
+import Strike (frame')
 
 
 type MeshProfile = Either AssetMeshProfile SimpleMeshProfile
@@ -32,13 +33,12 @@ class Meshful a where
   uniformMap :: a -> UniformMap
 
 -- data sent to the renderer when requesting a mesh
-newtype AssetMeshProfile = AssetMeshProfile String deriving (Show, Eq)
+newtype AssetMeshProfile = AssetMeshProfile {
+  road :: String
+} deriving (Show, Eq)
 
 instance Shaderful AssetMeshProfile where
   shaderProfile _ = defaultAssetShaderProfile
-
-instance Pathlikeful Identity AssetMeshProfile where
-  frogFilePath (AssetMeshProfile s) = Identity s
 
 data SimpleMeshProfile = SimpleMeshProfile {
     vbuffer :: Polyhedron
@@ -70,7 +70,7 @@ defaultAssetShaderProfile = ShaderProfile {
 defaultSimpleMeshProfile :: SimpleMeshProfile
 defaultSimpleMeshProfile = SimpleMeshProfile {
     vbuffer = inject Y <$> fournook (Vertex2 20 -20) (Vertex2 -20 20)
-  , ibuffer = iBuffer
+  , ibuffer = fournookBuffer
   , uvbuffer = Nothing
   , meshShaderProfile = defaultSimpleShaderProfile
   , texObject = Nothing
@@ -85,7 +85,7 @@ defaultSimpleShaderProfile = ShaderProfile {
 staveMeshProfile :: SimpleMeshProfile
 staveMeshProfile = SimpleMeshProfile {
   vbuffer = inject Z <$> fournook (Vertex2 1 -1) (Vertex2 -1 1)
-, ibuffer = iBuffer
+, ibuffer = fournookBuffer
 , uvbuffer = Just $ fournook (Vertex2 1 0) (Vertex2 0 1)
 , meshShaderProfile = ShaderProfile
     (shadersOf "stave")
@@ -96,7 +96,7 @@ staveMeshProfile = SimpleMeshProfile {
 speechMeshProfile :: SimpleMeshProfile
 speechMeshProfile = SimpleMeshProfile {
     vbuffer = inject Z <$> fournook (Vertex2 (7/8) (-7/8)) (Vertex2 (-7/8) (-1/4))
-  , ibuffer = iBuffer
+  , ibuffer = fournookBuffer
   , uvbuffer = Nothing
   , meshShaderProfile = ShaderProfile (shadersOf "speech") []
   , texObject = Nothing
@@ -110,12 +110,20 @@ swizzleR xs = last xs : init xs
 
 frameMeshProfile :: SimpleMeshProfile
 frameMeshProfile = SimpleMeshProfile {
-    vbuffer = ly $ concat [
-        inject Z <$> fournook (Vertex2 1 -1) (Vertex2 -1 1),
-        --(<+> Vertex3 0 0 4) . inject Z <$> reverse (fournook (Vertex2 1 -1) (Vertex2 -1 4))
-        inject Y <$> reverse (fournook (Vertex2 1 -1) (Vertex2 -1 1))
-      ],
-    ibuffer = iBuffer,
+    -- vbuffer = frame' frogspit,
+    vbuffer = [
+      -- // front
+      Vertex3 -1.0 -1.0  1.0,
+      Vertex3  1.0 -1.0  1.0,
+      Vertex3  1.0  1.0  1.0,
+      Vertex3 -1.0  1.0  1.0,
+      -- // back
+      Vertex3 -1.0 -1.0 -1.0,
+      Vertex3  1.0 -1.0 -1.0,
+      Vertex3  1.0  1.0 -1.0,
+      Vertex3 -1.0  1.0 -1.0
+    ],
+    ibuffer = eightnookBuffer,
     uvbuffer = Nothing,
     meshShaderProfile = ShaderProfile (shadersOf "frame") (uniforms defaultSimpleShaderProfile),
     texObject = Nothing
@@ -125,10 +133,44 @@ shadersOf :: String -> Twain FilePath
 -- shadersOf s = twimap (++ "_" ++ s) ("vertex", "fragment")
 shadersOf s = ("vertex_" ++ s, "fragment_" ++ s)
 
-iBuffer :: [Word32]
-iBuffer = [
+fournookBuffer :: [Word32]
+fournookBuffer = [
     0, 1, 2,
     2, 3, 0
+  ]
+
+eightnookBuffer :: [Word32]
+eightnookBuffer = [
+--  0, 1, 3,
+--  3, 1, 2,
+--  2, 6, 7,
+--  7, 3, 2,
+--  7, 6, 5,
+--  5, 4, 7,
+--  5, 1, 4,
+--  4, 1, 0,
+--  4, 3, 7,
+--  3, 4, 0,
+--  5, 6, 2,
+--  5, 1, 2 
+  -- // front
+  0, 1, 2,
+  2, 3, 0,
+  -- // right
+  1, 5, 6,
+  6, 2, 1,
+  -- // back
+  7, 6, 5,
+  5, 4, 7,
+  -- // left
+  4, 0, 3,
+  3, 7, 4,
+  -- // bottom
+  4, 5, 1,
+  1, 0, 4,
+  -- // top
+  3, 2, 6,
+  6, 7, 3
   ]
 
 pattern BUNNY_WALK

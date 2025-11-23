@@ -9,6 +9,7 @@ uniform mat4 u_projection_matrix;
 uniform mat4 u_view_matrix;
 
 out vec4 v_position;
+// out vec2 v_uv;
 
 void main() {
     v_position = position;
