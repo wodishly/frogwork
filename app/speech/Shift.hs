@@ -1,6 +1,5 @@
 {- HLINT ignore "Use section" -}
-module Shift (
-) where
+module Shift where
 
 import Data.Bifunctor (bimap)
 import Data.Function (applyWhen)

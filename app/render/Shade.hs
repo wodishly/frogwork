@@ -1,16 +1,17 @@
-module Shade (
-  Mesh (..)
-, bufferSize
-, drawMesh
-, drawFaces
-, setMeshTransform
-, makeAsset
-, useMesh
-, makeAssetMesh
-, makeSimpleMesh
-, uploadTexture
-, Animation (..)
-) where
+module Shade
+  ( Mesh (..),
+    bufferSize,
+    drawMesh,
+    drawFaces,
+    setMeshTransform,
+    makeAsset,
+    useMesh,
+    makeAssetMesh,
+    makeSimpleMesh,
+    uploadTexture,
+    Animation (..),
+  )
+where
 
 import Control.Monad (unless)
 import Control.Monad.Identity (Identity (runIdentity))
@@ -57,25 +58,32 @@ bufferSize :: Storable a => [a] -> GLsizeiptr
 bufferSize = fromIntegral . uncurry (*) . doBoth length (sizeOf.head)
 
 data Mesh = Mesh {
-    _program :: Program
-  , vao :: VertexArrayObject
-  , vbo :: BufferObject
-  , uvbo :: BufferObject
-  , tex :: Maybe TextureObject
-  , _file :: Maybe FrogFile
-  , _uniformMap :: UniformMap
-  , elementCount :: Int32
-  , transform :: FrogMatrix
-  , meshAnimation :: Maybe Animation
+  _program :: Program,
+  vao :: VertexArrayObject,
+  vbo :: BufferObject,
+  uvbo :: BufferObject,
+  tex :: Maybe TextureObject,
+  _file :: Maybe FrogFile,
+  _uniformMap :: UniformMap,
+  elementCount :: Int32,
+  transform :: FrogMatrix,
+  meshAnimation :: Maybe Animation
 }
 
-instance Programful Mesh where
-  program = _program
-  uniformMap (Mesh _ _ _ _ _ _ x _ _ _) = x
+instance Show Mesh where
+  show (Mesh a b c d e _ _ h i _) = show a ++ show b ++ show c ++ show d ++ show e ++ show h ++ show i
 
-data Concoction = Concoction Program UniformMap (Maybe String)
+instance Meshful Mesh where
+  program Mesh { _program } = _program
+  uniformMap Mesh { _uniformMap } = _uniformMap
 
-instance Programful Concoction where
+data Concoction = Concoction {
+  _program :: Program,
+  _uniformMap :: UniformMap,
+  _frogFilePath :: Maybe String
+}
+
+instance Meshful Concoction where
   program (Concoction x _ _) = x
   uniformMap (Concoction _ x _) = x
 

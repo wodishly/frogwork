@@ -1,19 +1,20 @@
+{- HLINT ignore "Use ++" -}
 module FastenShade where
 
 import Control.Monad.Identity (Identity (Identity))
 import Data.HashMap.Lazy (HashMap)
 
 import Foreign (Word32)
-import Graphics.Rendering.OpenGL (
-    GLfloat
-  , GettableStateVar
-  , Program
-  , TextureObject
-  , UniformLocation
-  , Vertex2 (Vertex2)
+import Graphics.Rendering.OpenGL
+  ( GLfloat,
+    GettableStateVar,
+    Program,
+    TextureObject,
+    UniformLocation,
+    Vertex2 (Vertex2)
   )
 
-import Mean (Twain)
+import Mean (Twain, ly)
 import Rime (Axle (..), Polyhedron, fournook, inject)
 
 
@@ -26,7 +27,7 @@ class Shaderful a where
 class Monad m => Pathlikeful m a where
   frogFilePath :: a -> m String
 
-class Programful a where
+class Meshful a where
   program :: a -> Program
   uniformMap :: a -> UniformMap
 
@@ -101,13 +102,33 @@ speechMeshProfile = SimpleMeshProfile {
   , texObject = Nothing
 }
 
+swizzleL :: [a] -> [a]
+swizzleL xs = tail xs ++ [head xs]
+
+swizzleR :: [a] -> [a]
+swizzleR xs = last xs : init xs
+
+frameMeshProfile :: SimpleMeshProfile
+frameMeshProfile = SimpleMeshProfile {
+    vbuffer = ly $ concat [
+        inject Z <$> fournook (Vertex2 1 -1) (Vertex2 -1 1),
+        --(<+> Vertex3 0 0 4) . inject Z <$> reverse (fournook (Vertex2 1 -1) (Vertex2 -1 4))
+        inject Y <$> reverse (fournook (Vertex2 1 -1) (Vertex2 -1 1))
+      ],
+    ibuffer = iBuffer,
+    uvbuffer = Nothing,
+    meshShaderProfile = ShaderProfile (shadersOf "frame") (uniforms defaultSimpleShaderProfile),
+    texObject = Nothing
+}
+
 shadersOf :: String -> Twain FilePath
+-- shadersOf s = twimap (++ "_" ++ s) ("vertex", "fragment")
 shadersOf s = ("vertex_" ++ s, "fragment_" ++ s)
 
 iBuffer :: [Word32]
 iBuffer = [
-    0, 1, 2
-  , 2, 3, 0
+    0, 1, 2,
+    2, 3, 0
   ]
 
 pattern BUNNY_WALK
@@ -115,7 +136,7 @@ pattern BUNNY_WALK
       , BUNNY_RUN
       , BUNNY_IDLE
      :: (Eq a, Num a) => a
-pattern BUNNY_WALK = 0 
+pattern BUNNY_WALK = 0
 pattern BUNNY_JUMP = 2
 pattern BUNNY_RUN = 4
-pattern BUNNY_IDLE = 5 
+pattern BUNNY_IDLE = 5

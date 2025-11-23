@@ -1,3 +1,4 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {- HLINT ignore "Use head" -}
 module Frog (
   Frogwit (..),
@@ -22,7 +23,9 @@ import Rime (FrogVector, Point3, hat, (*^), (<+>))
 import Shade (Mesh (meshAnimation), setMeshTransform)
 import Skeleton (evermore, once, play)
 import Time (Timewit (lifetime, Timewit), throttle)
-import Mean (anyIn)
+import Mean (anyIn, ly, twimap)
+import Strike (Spitful (..))
+import FastenFrame (frogspit)
 
 
 data Frogwit = Frogwit {
@@ -34,13 +37,17 @@ data Frogwit = Frogwit {
   leapCount :: Int,
   utleaps :: Int,
   mesh :: Mesh,
+  fresh :: Mesh,
   didLeap :: Bool,
   didWalk :: Bool,
   isRunning :: Bool
 }
 
-makeFrog :: Mesh -> Frogwit
-makeFrog m = Frogwit {
+instance Spitful Frogwit where
+  spit Frogwit { position } = twimap (<+> position) frogspit
+
+makeFrog :: Mesh -> Mesh -> Frogwit
+makeFrog m fresh = Frogwit {
   position = Vertex3 0 0 0,
   dy = 0,
   speed = 2,
@@ -49,6 +56,7 @@ makeFrog m = Frogwit {
   leapCount = 0,
   utleaps = 2,
   mesh = m,
+  fresh = fresh,
   didLeap = False,
   didWalk = False,
   isRunning =  False

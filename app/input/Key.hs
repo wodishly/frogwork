@@ -8,18 +8,21 @@ module Key (
   anyKeysContinuing,
   keyEnded, -- uncalled
   arrow,
-  wasd
+  wasd,
+  unlockKeys,
+  lockKeys
 ) where
 
 import Data.Function ((&))
 
-import SDL (InputMotion (Pressed, Released), Event)
+import SDL (InputMotion (Pressed, Released), Event, getKeyboardState)
 import SDL.Input.Keyboard.Codes
 import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2))
 
 import Happen (Keywit, unwrapHappenKeys)
 import Rime (Point, hat)
-import Mean (allIn, has, none, ssss)
+import Mean (allIn, has, none, sSs)
+import Control.Monad (void)
 
 
 data Keyset = Keyset {
@@ -30,6 +33,12 @@ data Keyset = Keyset {
 
 instance Show Keyset where
   show = ($ [begunKeys, continuingKeys, endedKeys]) . concatMap . ((show . map unwrapScancode) .) . (&)
+
+unlockKeys :: IO ()
+unlockKeys = void SDL.getKeyboardState
+
+lockKeys :: IO ()
+lockKeys = return ()
 
 hearableKeys :: [Scancode]
 hearableKeys = [
@@ -79,7 +88,7 @@ anyKeysBegun = any . keyBegun
 
 -- | Checks if the given code continues being depressed since an earlier frame.
 keyContinuing :: Keyset -> Scancode -> Bool
-keyContinuing = has . ssss ((++) . begunKeys) continuingKeys
+keyContinuing = has . sSs ((++) . begunKeys) continuingKeys
 
 -- | Like @keyContinuing@, but for a set of codes.
 anyKeysContinuing :: Keyset -> [Scancode] -> Bool

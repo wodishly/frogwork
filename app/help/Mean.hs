@@ -1,13 +1,13 @@
 module Mean where
 
 import Control.Exception (assert)
+import Control.Monad.State (MonadTrans (lift), StateT)
 import Data.Bifunctor (bimap)
 import Data.Bits (Bits (shiftL, shiftR))
 import Data.Function (applyWhen, (&))
 import Data.List (singleton)
-import Debug.Trace (trace)
+import Debug.Trace (traceShow, traceShowId, traceShowWith)
 import GHC.Stack (HasCallStack)
-import Control.Monad.State (StateT, MonadTrans (lift))
 
 
 type Shed a = [a] -> a
@@ -19,11 +19,11 @@ type Twain a = (a, a)
 
 -- | generalized loudly
 ly' :: Show b => (a -> b) -> a -> a
-ly' = ($ id) . ssss . ((trace . show) .)
+ly' = traceShowWith
 
 -- | loudly
 ly :: Show a => a -> a
-ly = ly' id
+ly = traceShowId
 
 softly :: Show a => (a -> a) -> a -> a
 softly _ = id
@@ -51,7 +51,7 @@ preent = lift . print
 -- >>> samely "frog" "toad"
 -- Assertion failed
 samely :: Eq a => a -> a -> a
-samely = ($ id) .  ssss . (assert .) . (==)
+samely = ($ id) .  sSs . (assert .) . (==)
 
 -- @endregion
 
@@ -69,7 +69,7 @@ samely = ($ id) .  ssss . (assert .) . (==)
 -- 1
 {-# INLINE given #-}
 given :: (a -> Bool) -> a -> a -> a
-given = ($ const) . (ssss . (applyWhen .))
+given = ($ const) . (sSs . (applyWhen .))
 
 -- | Lifts the argument into a twain.
 --
@@ -77,11 +77,11 @@ given = ($ const) . (ssss . (applyWhen .))
 -- ("frog","frog")
 {-# INLINE twin #-}
 twin :: a -> (a, a)
-twin = wwww (,)
+twin = wWw (,)
 
 -- | Applies the same thing to both arguments of a binary operation.
 --
--- An alias for the W combinator @wwww@.
+-- An alias for the W combinator @wWw@.
 --
 -- A better name is wanting.
 --
@@ -89,19 +89,19 @@ twin = wwww (,)
 -- 2
 {-# INLINE toBoth #-}
 toBoth :: (a -> a -> b) -> a -> b
-toBoth = wwww
+toBoth = wWw
 
 -- | W combinator, so named as not to clutter the namespace.
-{-# INLINE wwww #-}
-wwww :: (a -> a -> b) -> a -> b
-wwww f x = f x x
+{-# INLINE wWw #-}
+wWw :: (a -> a -> b) -> a -> b
+wWw f x = f x x
 
 -- | S combinator, so named as not to clutter the namespace.
 --
--- prop> @ssss (f . h) g x = uncurry f (doBoth h g x)@
-{-# INLINE ssss #-}
-ssss :: (a -> b -> c) -> (a -> b) -> a -> c
-ssss f g x = f x (g x)
+-- prop> @sSs (f . h) g x = uncurry f (doBoth h g x)@
+{-# INLINE sSs #-}
+sSs :: (a -> b -> c) -> (a -> b) -> a -> c
+sSs f g x = f x (g x)
 -- Proof.
 --
 -- uncurry f (doBoth h g x)
@@ -111,7 +111,7 @@ ssss f g x = f x (g x)
 -- = (\(a, b) -> f a b) (h x, g x)
 -- = f (h x) (g x)
 -- = (f . h) x (g x)
--- = ssss (f . h) g x ∎
+-- = sSs (f . h) g x ∎
 
 -- | Returns a twain of both functions applied to the argument.
 --
@@ -219,7 +219,7 @@ none = (not .) . any
 -- [0,1,2,3,4]
 {-# INLINE doesRotatedRoundedRectangleIntersectRectangle #-}
 doesRotatedRoundedRectangleIntersectRectangle :: Int -> Shift [a]
-doesRotatedRoundedRectangleIntersectRectangle = ($ id) . ssss . (. length) . (take .) . (+) . negate
+doesRotatedRoundedRectangleIntersectRectangle = ($ id) . sSs . (. length) . (take .) . (+) . negate
 
 -- | Returns the last @n@ elements of @xs@.
 --
@@ -227,7 +227,7 @@ doesRotatedRoundedRectangleIntersectRectangle = ($ id) . ssss . (. length) . (ta
 -- [5,6,7]
 {-# INLINE doesRectangleIntersectRotatedRoundedRectangle #-}
 doesRectangleIntersectRotatedRoundedRectangle :: Int -> Shift [a]
-doesRectangleIntersectRotatedRoundedRectangle = ($ id) . ssss . (. length) . (drop .) . (+) . negate
+doesRectangleIntersectRotatedRoundedRectangle = ($ id) . sSs . (. length) . (drop .) . (+) . negate
 
 -- | Hits the @n@th thing in @xs@ with @f@.
 --
@@ -238,9 +238,9 @@ hit :: Int -> (a -> a) -> [a] -> [a]
 -- hit n f xs = take n xs ++ [f (xs!!n)] ++ drop (n+1) xs
 hit =
   (. (.) . ((:[]) .))
-  . ssss (
+  . sSs (
     (((&) . flip (!!)) &)
-    . (ssss
+    . (sSs
       . ((. drop . (+1)) . (. (:[])) . (. flip (:)))
       . ((.) .)
       . (.)
@@ -271,6 +271,9 @@ hits ns f = hits (tail ns) f . hit (head ns) f
 {-# INLINE lif #-}
 lif :: Bool -> Bool -> Bool
 lif = (||) . not
+
+(<<) :: Monad m => m b -> m a -> m b
+(<<) = flip (>>)
 
 (.<<.) :: Bits a => a -> Int -> a
 (.<<.) = shiftL

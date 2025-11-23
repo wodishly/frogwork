@@ -2,7 +2,8 @@
 module Frogwork (
   Frogwork (..),
   listen,
-  settleState,
+  choose,
+  become,
   didEnd,
   waxwane
 ) where
@@ -22,7 +23,7 @@ import Graphics.Rendering.OpenGL (
   , Position (Position)
   , Size (Size)
   )
-import SDL (pollEvents, V2 (V2), Window, glGetDrawableSize)
+import SDL (pollEvents, V2 (V2), Window, glGetDrawableSize, glSwapWindow)
 import SDL.Input.Keyboard.Codes
 
 import qualified Graphics.Rendering.OpenGL as GL
@@ -49,7 +50,7 @@ import Happen (Mousewit (Mousewit), unwrapHappenPointer, unwrapHappenWheel, unwr
 import Key (anyKeysBegun, hearableKeys, keyBegun, bethinkKeys)
 import Mean (doBoth, full, twimap)
 import Time (keepTime)
-import Matrix (RenderView(..))
+import Matrix (RenderView (..))
 
 
 data Frogwork = Frogwork {
@@ -57,13 +58,16 @@ data Frogwork = Frogwork {
   stateteller :: Stateteller
 }
 
-didEnd :: Frogwork -> Bool
-didEnd (Frogwork { allwit = Allwit { keyset }, stateteller = Stateteller { nowState }}) =
-    nowState == EndName
- || anyKeysBegun keyset [ScancodeQ, ScancodeEscape]
+didEnd :: StateT Frogwork IO Bool
+didEnd = do
+  Frogwork {
+    allwit = Allwit { keyset },
+    stateteller = Stateteller { nowState }
+  } <- get
+  return (nowState == EndName || anyKeysBegun keyset [ScancodeQ, ScancodeEscape])
 
-settleState :: StateT Frogwork IO ()
-settleState = do
+choose :: StateT Frogwork IO ()
+choose = do
   Frogwork {
     allwit = allwit@Allwit { keyset },
     stateteller = stateteller@Stateteller { nowState }
@@ -151,3 +155,6 @@ waxwane wind = do
   , near = 0.1
   , far = 100.0
   }
+
+become :: StateT Frogwork IO ()
+become = get >>= SDL.glSwapWindow . window . allwit

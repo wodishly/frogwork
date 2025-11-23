@@ -21,16 +21,16 @@ import Allwit (Allwit (..), UnholyMeshMash, Setting (ShowSpeech))
 import State (StateName (..), Stately (..))
 
 import Blee (bg, black)
-import Frog (Frogwit (mesh, position, Frogwit), makeFrog, updateFrog)
+import Frog (makeFrog, updateFrog, Frogwit (Frogwit), mesh, position, fresh)
 import Happen (Mousewit (..))
 import Key (arrow)
 import Matrix (frogLookAt, getOrthographicMatrix, getPerspectiveMatrix)
-import Mean (given)
+import Mean (given, ly, preent)
 import Random (FrogSeed, defaultSeed)
 import Rime (FrogVector, Point, clamp, isAught)
 import Shade (Mesh, drawMesh)
 import Stavework (Speechframe (meesh), Writing, makeSpeechframe, makeWriting, speechwrite, stavewriteAll)
-
+import Strike (Spitful(spit, frame))
 
 data Camera = Camera {
   cPosition :: FrogVector,
@@ -72,10 +72,10 @@ instance Stately PlayState where
     drawSpeech allwit
 
 makePlayState :: Point -> UnholyMeshMash -> PlayState
-makePlayState (Vertex2 w0 h0) (f, sp, rest) = PlayState {
+makePlayState (Vertex2 w0 h0) ((f, ff), sp, rest) = PlayState {
   seed = defaultSeed,
   meshes = rest,
-  frog = makeFrog f,
+  frog = makeFrog f ff,
   -- _speechframe = makeSpeechframe sp "rɪbɪt rɪbɪt rɪbɪt rɪbɪt rɪbɪt rɪbɪt rɪbɪt rɪbɪt rɪbɪt rɪbɪt rɪbɪt rɪbɪt rɪbɪt rɪbɪt ",--A frog is any member of a diverse and largely semiaquatic group of short-bodied, tailless amphibian vertebrates composing the order Anura (coming from the Ancient Greek ανουρα, literally 'without tail')."
   _speechframe = makeSpeechframe sp "A frog is any member of a diverse and largely semiaquatic group of short-bodied, tailless amphibian vertebrates composing the order Anura (coming from the Ancient Greek ανουρα, literally 'without tail').",
   -- _speechframe = makeSpeechframe sp (concat $ replicate 128 "i "),
@@ -116,8 +116,10 @@ drawFriends (Allwit { display, timewit }) = do
 
 gatherMeshes :: StateT PlayState IO [Mesh]
 gatherMeshes = do
-  PlayState { meshes, frog } <- get
-  return $ meshes ++ [mesh frog]
+  PlayState { meshes, frog = frog@Frogwit { mesh, fresh } } <- get
+  preent $ spit frog
+  preent $ frame frog
+  return $ meshes ++ [mesh]--, fresh]
 
 drawSpeech :: Allwit -> StateT PlayState IO ()
 drawSpeech allwit@(Allwit { settings, display, timewit }) = do
@@ -133,13 +135,13 @@ drawSpeech allwit@(Allwit { settings, display, timewit }) = do
     put playwit { _speechframe = x }
 
 updateCamera :: Allwit -> StateT PlayState IO ()
-updateCamera (Allwit {
+updateCamera Allwit {
   keyset,
   mouse = Mousewit {
     pointer,
     wheel = Vertex2 _ wy
   }
-}) = do
+} = do
   playwit@PlayState {
     frog = Frogwit { position = Vertex3 x y z },
     euler = Vertex2 pitch yaw,

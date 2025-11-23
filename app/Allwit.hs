@@ -37,6 +37,7 @@ import Skeleton (evermore, makeAnimation, play)
 import Spell (summon, unwrappingly)
 import Stavemake (Staveware, makeFeather)
 import Time (Timewit, beginTime)
+import Loudness (Loudness)
 
 
 data Setting = ShowTicks | ShowKeys | ShowSpeech | RunTests deriving (Show, Eq, Ord)
@@ -58,10 +59,11 @@ data Allwit = Allwit {
   window :: SDL.Window,
   context :: SDL.GLContext,
   staveware :: Staveware,
-  display :: RenderView
+  display :: RenderView,
+  loudness :: Loudness
 }
 
-makeAllwit :: Float -> SDL.Window -> SDL.GLContext -> Staveware -> RenderView -> Allwit
+makeAllwit :: Float -> SDL.Window -> SDL.GLContext -> Staveware -> RenderView -> Loudness -> Allwit
 makeAllwit ticks = Allwit
   makeSettings
   []
@@ -70,19 +72,18 @@ makeAllwit ticks = Allwit
   (beginTime ticks)
 
 -- | the frog, the speech, and the rest
-type UnholyMeshMash = (Mesh, Mesh, [Mesh])
+type UnholyMeshMash = ((Mesh, Mesh), Mesh, [Mesh])
 
 begetMeshes :: Float -> IO (Staveware, UnholyMeshMash)
 begetMeshes now = do
   cocoon <- summon "assets/bunny.moth"
   let mothFile = unwrappingly mothify cocoon
-
   bun <- makeAssetMesh $ makeAsset "bunny"
   let bunAnimation = (play now . evermore) (makeAnimation mothFile) BUNNY_IDLE
   froggy <- setMeshTransform (fromAffine [1.0, 1.0, 1.0] [0, 0, 0]) $
     bun { meshAnimation = Just bunAnimation }
-
   earth <- makeSimpleMesh defaultSimpleMeshProfile
+  frogFrame <- makeSimpleMesh frameMeshProfile
 
   farsee <- setMeshTransform (fromTranslation [-2, 1, 2])
     =<< makeAssetMesh (makeAsset "tv")
@@ -91,7 +92,7 @@ begetMeshes now = do
   hack <- makeSimpleMesh staveMeshProfile
   speech <- makeSimpleMesh speechMeshProfile
 
-  return ((x, hack), (froggy, speech, [earth, farsee, hack]))
+  return ((x, hack), ((froggy, frogFrame), speech, [earth, farsee, hack]))
 
 updateAllSettings :: StateT Allwit IO ()
 updateAllSettings = do
@@ -111,8 +112,8 @@ answer = do
   when (fromMaybe False $ lookup ShowKeys settings) (preent keyset)
   when (fromMaybe False $ lookup ShowTicks settings) (preent timewit)
 
-fand :: Allwit -> IO ()
-fand = ($ weep) . when . fromMaybe False . lookup RunTests . settings
+fand :: Allwit -> IO Allwit
+fand wit@Allwit { settings } = when (fromMaybe False (lookup RunTests settings)) weep >> return wit
 
 setWindowGrabbed :: Bool -> StateT Allwit IO ()
 setWindowGrabbed setting = do

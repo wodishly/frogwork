@@ -1,72 +1,80 @@
 module Main (main) where
 
-import Control.Monad (unless)
-import Control.Monad.State (MonadState (get), execStateT, StateT)
+import Control.Monad.State (MonadState (get), StateT, evalStateT)
 
 import qualified Graphics.Rendering.OpenGL as GL
-import qualified SDL (
-    GLContext
-  , V2 (V2)
-  , Window
-  , createWindow
-  , destroyWindow
-  , get
-  , getKeyboardState
-  , glCreateContext
-  , glDeleteContext
-  , glSwapWindow
-  , initializeAll
-  , quit
-  , ticks
-  , windowSize
+import qualified SDL
+  ( GLContext,
+    V2 (V2),
+    Window,
+    createWindow,
+    destroyWindow,
+    get,
+    glCreateContext,
+    glDeleteContext,
+    initializeAll,
+    quit,
+    ticks,
+    windowSize,
   )
 
 import Allwit (Allwit (..), begetMeshes, fand, makeAllwit, window)
+import Frogwork (Frogwork (..), didEnd, listen, choose, waxwane, become)
 import Stateteller (makeStateteller)
-import Frogwork (Frogwork (..), didEnd, listen, settleState, waxwane)
 
 import FastenMain (openGLWindow)
+import Loudness (Loudness, spoken, bestill)
 import Matrix (RenderView)
+import Key (unlockKeys)
 
 
 main :: IO ()
 main = do
   SDL.initializeAll
-  _ <- SDL.getKeyboardState
-  wind <- SDL.createWindow "frogwork" openGLWindow
-  ctx <- SDL.glCreateContext wind
-  dis <- waxwane wind
+  window <- SDL.createWindow "frogwork" openGLWindow
+  context <- SDL.glCreateContext window
+  display <- waxwane window
+  loudness <- spoken
+
+  unlockKeys
 
   SDL.ticks
-    >>= birth wind ctx dis . fromIntegral
-    >>= execStateT live
-    >> die wind ctx
+    >>= birth window context display loudness . fromIntegral
+    >>= evalStateT live
+    >>= die
 
-birth :: SDL.Window -> SDL.GLContext -> RenderView -> Float -> IO Frogwork
-birth wind ctx display ticks = do
+birth :: SDL.Window -> SDL.GLContext -> RenderView -> Loudness -> Float -> IO Frogwork
+birth wind ctx display loudness ticks = do
   (staveware, meshes) <- begetMeshes ticks
   SDL.V2 x y <- (fromIntegral <$>) <$> SDL.get (SDL.windowSize wind)
 
-  let wit = makeAllwit ticks wind ctx staveware display
-      tell = makeStateteller (x, y) (settings wit) meshes
+  allwit@Allwit { settings } <- fand $ makeAllwit ticks wind ctx staveware display loudness
 
-  fand wit
-  return (Frogwork wit tell)
+  return Frogwork {
+    allwit,
+    stateteller = makeStateteller (x, y) settings meshes
+  }
 
-live :: StateT Frogwork IO ()
+live :: StateT Frogwork IO (SDL.GLContext, SDL.Window, Loudness)
 live = do
-  frogwork <- get
+  Frogwork {
+    allwit = Allwit {
+      context,
+      window,
+      loudness
+    }
+  } <- get
   listen
-  settleState
-  blit
-  unless (didEnd frogwork) live
+  choose
+  become
+  didEnd >>= \x -> if x
+  then return (context, window, loudness)
+  else live
 
-blit :: StateT Frogwork IO ()
-blit = get >>= SDL.glSwapWindow . window . allwit
-
-die :: SDL.Window -> SDL.GLContext -> IO ()
-die wind ctx = do
+die :: (SDL.GLContext, SDL.Window, Loudness) -> IO ()
+die (context, window, loudness) = do
   GL.finish
-  SDL.glDeleteContext ctx
-  SDL.destroyWindow wind
+  SDL.glDeleteContext context
+  SDL.destroyWindow window
+  bestill loudness
   SDL.quit

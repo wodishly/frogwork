@@ -63,12 +63,14 @@ executable frogwork
   other-modules:
     FastenShade
     FastenMain
+    FastenFrame
 
     Mean
     Random
     Rime
     Time
     Matrix
+    Strike
 
     Key
     Happen
@@ -85,6 +87,8 @@ executable frogwork
     Shift
     Token
     Tung
+
+    Loudness
 
     State
     TitleState
@@ -109,30 +113,31 @@ executable frogwork
     LambdaCase
     LexicalNegation
     MultiParamTypeClasses
+    NamedFieldPuns
     OverloadedStrings
+    PatternSynonyms
     RankNTypes
     TemplateHaskell
     TupleSections
-    PatternSynonyms
-    NamedFieldPuns
+    DuplicateRecordFields
 
   -- Other library packages from which modules are imported.
   build-depends:
-      base ^>=4.18.3.0
-    , hmatrix ^>=0.20.2
-    , containers ^>=0.6.7
-    , unordered-containers
-    , lens
-    , mtl
-    , bytestring
-    , binary
-    , sdl2
-    , OpenGL
-    , OpenGLRaw
-    , random
-    , vector
-    , freetype2
-    , split
+    base ^>=4.18.3.0,
+    hmatrix ^>=0.20.2,
+    containers ^>=0.6.7,
+    unordered-containers,
+    lens,
+    mtl,
+    bytestring,
+    binary,
+    sdl2,
+    OpenGL,
+    OpenGLRaw,
+    random,
+    vector,
+    freetype2,
+    split
 
   -- Directories containing source files.
   hs-source-dirs: app
