@@ -37,6 +37,7 @@ import Spell (summon, unwrappingly)
 import Stavemake (Staveware, makeFeather)
 import Time (Timewit, beginTime)
 import Loudness (Loudness, rest, unrest)
+import Graphics.GL
 
 
 data Setting = ShowTicks | ShowKeys | ShowSpeech | RunTests | BeLoud deriving (Show, Eq, Ord)
@@ -75,14 +76,19 @@ type UnholyMeshMash = ((Mesh, Mesh), Mesh, [Mesh])
 
 begetMeshes :: Float -> IO (Staveware, UnholyMeshMash)
 begetMeshes now = do
+  let thrice = replicate 3
   cocoon <- summon "assets/bunny.moth"
   let mothFile = unwrappingly mothify cocoon
   bun <- makeAssetMesh $ makeAsset "bunny"
   let bunAnimation = (play now . evermore) (makeAnimation mothFile) BUNNY_IDLE
-  froggy <- setMeshTransform (fromAffine [1.0, 1.0, 1.0] [0, 0, 0]) $
+  froggy <- setMeshTransform (fromAffine (thrice 1) (thrice 0)) $
     bun { meshAnimation = Just bunAnimation }
   earth <- makeSimpleMesh defaultSimpleMeshProfile
   frogFrame <- makeSimpleMesh frameMeshProfile
+  heaven <- setMeshTransform (fromAffine (thrice 80) (thrice -40)) =<< makeSimpleMesh frameMeshProfile
+
+
+  glDisable GL_CULL_FACE
 
   farsee <- setMeshTransform (fromTranslation [-2, 1, 2])
     =<< makeAssetMesh (makeAsset "tv")
@@ -91,7 +97,7 @@ begetMeshes now = do
   hack <- makeSimpleMesh staveMeshProfile
   speech <- makeSimpleMesh speechMeshProfile
 
-  return ((x, hack), ((froggy, frogFrame), speech, [earth, farsee, hack]))
+  return ((x, hack), ((froggy, frogFrame), speech, [heaven, earth, farsee, hack]))
 
 updateAllSettings :: StateT Allwit IO ()
 updateAllSettings = do

@@ -10,7 +10,7 @@ import Graphics.Rendering.OpenGL
     Program,
     TextureObject,
     UniformLocation,
-    Vertex2 (Vertex2), Vertex3 (Vertex3)
+    Vertex2 (Vertex2)
   )
 
 import Mean (Twain)
@@ -110,19 +110,7 @@ swizzleR xs = last xs : init xs
 
 frameMeshProfile :: SimpleMeshProfile
 frameMeshProfile = SimpleMeshProfile {
-    -- vbuffer = frame' frogspit,
-    vbuffer = [
-      -- // front
-      Vertex3 -1.0 -1.0  1.0,
-      Vertex3  1.0 -1.0  1.0,
-      Vertex3  1.0  1.0  1.0,
-      Vertex3 -1.0  1.0  1.0,
-      -- // back
-      Vertex3 -1.0 -1.0 -1.0,
-      Vertex3  1.0 -1.0 -1.0,
-      Vertex3  1.0  1.0 -1.0,
-      Vertex3 -1.0  1.0 -1.0
-    ],
+    vbuffer = frame' frogspit,
     ibuffer = eightnookBuffer,
     uvbuffer = Nothing,
     meshShaderProfile = ShaderProfile (shadersOf "frame") (uniforms defaultSimpleShaderProfile),
@@ -130,7 +118,6 @@ frameMeshProfile = SimpleMeshProfile {
 }
 
 shadersOf :: String -> Twain FilePath
--- shadersOf s = twimap (++ "_" ++ s) ("vertex", "fragment")
 shadersOf s = ("vertex_" ++ s, "fragment_" ++ s)
 
 fournookBuffer :: [Word32]
@@ -141,18 +128,6 @@ fournookBuffer = [
 
 eightnookBuffer :: [Word32]
 eightnookBuffer = [
---  0, 1, 3,
---  3, 1, 2,
---  2, 6, 7,
---  7, 3, 2,
---  7, 6, 5,
---  5, 4, 7,
---  5, 1, 4,
---  4, 1, 0,
---  4, 3, 7,
---  3, 4, 0,
---  5, 6, 2,
---  5, 1, 2 
   -- // front
   0, 1, 2,
   2, 3, 0,

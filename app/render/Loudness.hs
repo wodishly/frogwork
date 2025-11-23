@@ -7,7 +7,7 @@ module Loudness
   )
 where
 
-import Data.Vector.Storable.Mutable (MVector, RealWorld, unsafeRead)
+import Data.Vector.Storable.Mutable (MVector, RealWorld)
 
 import SDL.Audio
   ( AudioDevice,
@@ -61,7 +61,7 @@ ordeal loudness@(_, AudioSpec {
   return loudness
 
 callback :: AudioFormat a -> MVector RealWorld a -> IO ()
-callback format vector = do
+callback format _vector = do
   -- print $ sizeOf vector
   print $ "whee" ++ show format
   -- print $ unsafeRead 0 vector

@@ -2,7 +2,7 @@ module Strike where
 
 import Graphics.Rendering.OpenGL (Vertex3 (Vertex3))
 
-import Mean (Twain, between, ly)
+import Mean (Twain, between)
 import Rime (Axle (..), Point3, Polyhedron, (<+>))
 
 
@@ -10,16 +10,20 @@ import Rime (Axle (..), Point3, Polyhedron, (<+>))
 type Spit = Twain Point3
 
 frame' :: Spit -> Polyhedron
-frame' (w0@(Vertex3 x0 y0 z0), Vertex3 x1 y1 z1)
-  = ly $ (w0 <+>) <$> [
-        Vertex3 x0 y0 z0,
+frame' (l@(Vertex3 x0 y0 z0), Vertex3 x1 y1 z1)
+  = (l <+>) <$> [
+        -- front bottom of spit
         Vertex3 x0 y0 z1,
-        Vertex3 x0 y1 z1,
-        Vertex3 x0 y1 z0,
-        Vertex3 x1 y1 z0,
-        Vertex3 x1 y1 z1,
         Vertex3 x1 y0 z1,
-        Vertex3 x1 y0 z0
+        -- front top of spit
+        Vertex3 x1 y1 z1,
+        Vertex3 x0 y1 z1,
+        -- back bottom of spit
+        Vertex3 x0 y0 z0,
+        Vertex3 x1 y0 z0,
+        -- back top of spit
+        Vertex3 x1 y1 z0,
+        Vertex3 x0 y1 z0 
       ]
 
 -- | To be spitful is to have a spit, and hence also a frame.
