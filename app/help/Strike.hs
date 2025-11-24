@@ -29,6 +29,9 @@ frame' (l@(Vertex3 x0 y0 z0), Vertex3 x1 y1 z1)
         Vertex3 x0 y1 z0
       ]
 
+class Spitful a where
+  spit :: a -> Spit
+
 spitteth :: Spit -> Spit -> Bool
 spitteth struck striking = and (spittethAlong <$> [X, Y, Z] <*> replicate 3 struck <*> replicate 3 striking)
 

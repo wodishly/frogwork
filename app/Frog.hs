@@ -23,8 +23,8 @@ import Shade (Mesh (meshAnimation), setMeshTransform)
 import Skeleton (evermore, once, play)
 import Time (Timewit (lifetime, Timewit), throttle)
 import Mean (anyIn, twimap)
-import Strike (Spitful (..))
 import FastenFrame (tallspit)
+import Strike (Spitful (spit), shapeshiftFrame)
 
 
 data Frogwit = Frogwit {
@@ -149,7 +149,7 @@ moveMesh forward = do
         , fromList [x, y, z, 1]
         ]
 
-  frogFrame <- lift $ setMeshTransform (shapeshiftFrame frogwit) =<< setMeshTransform transform' fresh
+  frogFrame <- lift $ setMeshTransform (shapeshiftFrame $ spit frogwit) =<< setMeshTransform transform' fresh
   newFrogMesh <- lift $ setMeshTransform transform' mesh
   put frogwit { mesh = newFrogMesh, fresh = frogFrame }
 
