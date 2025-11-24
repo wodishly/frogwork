@@ -3,12 +3,14 @@ module Strike where
 import Graphics.Rendering.OpenGL (Vertex3 (Vertex3))
 
 import Mean (Twain, between)
-import Rime (Axle (..), Point3, Polyhedron, (<+>))
+import Rime (Axle (..), Point3, Polyhedron, (<+>), FrogVertex (toFrogList), (<->))
+import Matrix (FrogMatrix, fromAffine)
 
 
 -- | A spit is an axle between a @Point3@ and the farthest @Point3@.
 type Spit = Twain Point3
 
+-- | aye
 frame' :: Spit -> Polyhedron
 frame' (l@(Vertex3 x0 y0 z0), Vertex3 x1 y1 z1)
   = (l <+>) <$> [
@@ -44,3 +46,8 @@ class Spitful a where
   betweenAlong X a (Vertex3 x _ _) = between (x0, x1) x where (Vertex3 x0 _ _, Vertex3 x1 _ _) = spit a
   betweenAlong Y a (Vertex3 _ y _) = between (y0, y1) y where (Vertex3 _ y0 _, Vertex3 _ y1 _) = spit a
   betweenAlong Z a (Vertex3 _ _ z) = between (z0, z1) z where (Vertex3 _ _ z0, Vertex3 _ _ z1) = spit a
+
+--  shapeshiftFrame :: Spitful a => a -> FrogMatrix
+--  shapeshiftFrame x = fromAffine [1, 2, 1] (zipWith (+) [-0.5, 0.1, -0.5] (toFrogList $ fst $ spit x))
+--    where
+--    stretch@(Vertex3 x y z) = (uncurry (<->) (spit x))

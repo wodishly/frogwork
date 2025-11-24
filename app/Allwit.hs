@@ -29,7 +29,7 @@ import FastenShade
 import Happen (Mousewit (Mousewit))
 import Key (Keyset, keyBegun, unkeys)
 import Matrix (RenderView (..), fromAffine, fromTranslation)
-import Mean (preent, weep)
+import Mean (preent, weep, thrice)
 import MothSpell (mothify)
 import Shade (Mesh (meshAnimation), makeAsset, makeAssetMesh, makeSimpleMesh, setMeshTransform)
 import Skeleton (evermore, makeAnimation, play)
@@ -76,7 +76,6 @@ type UnholyMeshMash = ((Mesh, Mesh), Mesh, [Mesh])
 
 begetMeshes :: Float -> IO (Staveware, UnholyMeshMash)
 begetMeshes now = do
-  let thrice = replicate 3
   cocoon <- summon "assets/bunny.moth"
   let mothFile = unwrappingly mothify cocoon
   bun <- makeAssetMesh $ makeAsset "bunny"
@@ -85,7 +84,8 @@ begetMeshes now = do
     bun { meshAnimation = Just bunAnimation }
   earth <- makeSimpleMesh defaultSimpleMeshProfile
   frogFrame <- makeSimpleMesh frameMeshProfile
-  heaven <- setMeshTransform (fromAffine (thrice 80) (thrice -40)) =<< makeSimpleMesh (frameMeshProfileOf "heaven")
+  heaven <- setMeshTransform (fromAffine (thrice 80) (thrice -40))
+    =<< makeSimpleMesh (frameMeshProfileOf "heaven")
 
   glDisable GL_CULL_FACE
 

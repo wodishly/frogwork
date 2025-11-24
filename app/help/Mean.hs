@@ -142,6 +142,10 @@ uncurry3 f (x, y, z) = f x y z
 
 -- @region For working with lists.
 
+{-# INLINE thrice #-}
+thrice :: a -> [a]
+thrice = replicate 3
+
 {-# INLINE has #-}
 has :: (Foldable t, Eq a) => t a -> a -> Bool
 has = flip elem

@@ -27,6 +27,9 @@ bool alongSpit(vec4 v, float threshold) {
 
 void main() {
   float threshold = 1.0/40;
-  f_color = vec4(0, 1, 0,
-    alongSpit(v_position, 0.2) || alongEdges(v_position, threshold) ? 1 : 0);
+  if (alongSpit(v_position, 0.2) || alongEdges(v_position, threshold)) {
+    f_color = vec4(0, 1, 0, 1);
+  } else {
+    discard;
+  }
 }

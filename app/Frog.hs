@@ -18,12 +18,12 @@ import SDL.Input.Keyboard.Codes
 import Allwit (Allwit (..))
 import FastenShade
 import Key (keyBegun, wasd, anyKeysContinuing)
-import Matrix (frogLookAt)
-import Rime (FrogVector, Point3, hat, (*^), (<+>))
+import Matrix (frogLookAt, fromAffine)
+import Rime (FrogVector, Point3, hat, (*^), (<+>), FrogVertex (toFrogList))
 import Shade (Mesh (meshAnimation), setMeshTransform)
 import Skeleton (evermore, once, play)
 import Time (Timewit (lifetime, Timewit), throttle)
-import Mean (anyIn, twimap)
+import Mean (anyIn, twimap, thrice)
 import Strike (Spitful (..))
 import FastenFrame (onespit)
 
@@ -136,7 +136,7 @@ moveFrog allwit forward = do
 
 moveMesh :: FrogVector -> StateT Frogwit IO ()
 moveMesh forward = do
-  frogwit@Frogwit { position = Vertex3 x y z, mesh } <- get
+  frogwit@Frogwit { position = Vertex3 x y z, mesh, fresh } <- get
 
   let frogPosition = fromList [x, y, z]
       frogTarget = frogPosition + fromList [forward!0, 0, forward!2]
@@ -150,8 +150,10 @@ moveMesh forward = do
         , fromList [x, y, z, 1]
         ]
 
+  frogFrame <- lift $ setMeshTransform (fromAffine [1, 2, 1] (zipWith (+) [-0.5, 0.1, -0.5] (toFrogList $ fst $ spit frogwit))) =<< setMeshTransform transform' fresh
   newFrogMesh <- lift $ setMeshTransform transform' mesh
-  put frogwit { mesh = newFrogMesh }
+  put frogwit { mesh = newFrogMesh, fresh = frogFrame }
+
 
 animateMesh :: Allwit -> StateT Frogwit IO ()
 animateMesh (Allwit { timewit = Timewit { lifetime } }) = do
