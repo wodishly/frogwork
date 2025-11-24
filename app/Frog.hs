@@ -1,4 +1,3 @@
-{-# LANGUAGE DuplicateRecordFields #-}
 {- HLINT ignore "Use head" -}
 module Frog (
   Frogwit (..),
@@ -18,14 +17,14 @@ import SDL.Input.Keyboard.Codes
 import Allwit (Allwit (..))
 import FastenShade
 import Key (keyBegun, wasd, anyKeysContinuing)
-import Matrix (frogLookAt, fromAffine)
-import Rime (FrogVector, Point3, hat, (*^), (<+>), FrogVertex (toFrogList))
+import Matrix (frogLookAt)
+import Rime (FrogVector, Point3, hat, (*^), (<+>))
 import Shade (Mesh (meshAnimation), setMeshTransform)
 import Skeleton (evermore, once, play)
 import Time (Timewit (lifetime, Timewit), throttle)
-import Mean (anyIn, twimap, thrice)
+import Mean (anyIn, twimap)
 import Strike (Spitful (..))
-import FastenFrame (onespit)
+import FastenFrame (tallspit)
 
 
 data Frogwit = Frogwit {
@@ -44,7 +43,7 @@ data Frogwit = Frogwit {
 }
 
 instance Spitful Frogwit where
-  spit Frogwit { position } = twimap (<+> position) onespit
+  spit Frogwit { position } = twimap (<+> position) tallspit
 
 makeFrog :: Mesh -> Mesh -> Frogwit
 makeFrog m fresh = Frogwit {
@@ -150,7 +149,7 @@ moveMesh forward = do
         , fromList [x, y, z, 1]
         ]
 
-  frogFrame <- lift $ setMeshTransform (fromAffine [1, 2, 1] (zipWith (+) [-0.5, 0.1, -0.5] (toFrogList $ fst $ spit frogwit))) =<< setMeshTransform transform' fresh
+  frogFrame <- lift $ setMeshTransform (shapeshiftFrame frogwit) =<< setMeshTransform transform' fresh
   newFrogMesh <- lift $ setMeshTransform transform' mesh
   put frogwit { mesh = newFrogMesh, fresh = frogFrame }
 

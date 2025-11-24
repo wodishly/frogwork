@@ -71,7 +71,7 @@ instance Stately PlayState where
     drawSpeech allwit
 
 makePlayState :: Point -> UnholyMeshMash -> PlayState
-makePlayState (Vertex2 w0 h0) ((f, ff), sp, rest) = PlayState {
+makePlayState (Vertex2 w0 h0) (f, ff, sp, rest) = PlayState {
   seed = defaultSeed,
   meshes = rest,
   frog = makeFrog f ff,
@@ -116,7 +116,6 @@ drawFriends (Allwit { display, timewit }) = do
 gatherMeshes :: StateT PlayState IO [Mesh]
 gatherMeshes = do
   PlayState { meshes, frog = Frogwit { mesh, fresh } } <- get
-  void $ return fresh
   return $ meshes ++ [mesh, fresh]
 
 drawSpeech :: Allwit -> StateT PlayState IO ()

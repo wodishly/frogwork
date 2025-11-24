@@ -72,7 +72,7 @@ makeAllwit ticks = Allwit
   (beginTime ticks)
 
 -- | the frog, the speech, and the rest
-type UnholyMeshMash = ((Mesh, Mesh), Mesh, [Mesh])
+type UnholyMeshMash = (Mesh, Mesh, Mesh, [Mesh])
 
 begetMeshes :: Float -> IO (Staveware, UnholyMeshMash)
 begetMeshes now = do
@@ -96,7 +96,7 @@ begetMeshes now = do
   hack <- makeSimpleMesh staveMeshProfile
   speech <- makeSimpleMesh speechMeshProfile
 
-  return ((x, hack), ((froggy, frogFrame), speech, [heaven, earth, farsee, hack]))
+  return ((x, hack), (froggy, frogFrame, speech, [heaven, earth, farsee, hack]))
 
 updateAllSettings :: StateT Allwit IO ()
 updateAllSettings = do
