@@ -40,11 +40,11 @@ spittethAlong axle spitted spitting = betweenAlong axle spitted (snd spitting)
                                    && betweenAlong axle spitting (fst spitted)
 
 betweenAlong ::  Axle -> Spit -> Point3 -> Bool
-betweenAlong X spit (Vertex3 x _ _) = between (x0, x1) x where (Vertex3 x0 _ _, Vertex3 x1 _ _) = spit
-betweenAlong Y spit (Vertex3 _ y _) = between (y0, y1) y where (Vertex3 _ y0 _, Vertex3 _ y1 _) = spit
-betweenAlong Z spit (Vertex3 _ _ z) = between (z0, z1) z where (Vertex3 _ _ z0, Vertex3 _ _ z1) = spit
+betweenAlong X (Vertex3 x0 _ _, Vertex3 x1 _ _) (Vertex3 x _ _) = between (x0, x1) x
+betweenAlong Y (Vertex3 _ y0 _, Vertex3 _ y1 _) (Vertex3 _ y _) = between (y0, y1) y
+betweenAlong Z (Vertex3 _ _ z0, Vertex3 _ _ z1) (Vertex3 _ _ z) = between (z0, z1) z
 
 shapeshiftFrame :: Spit -> FrogMatrix
-shapeshiftFrame spit = fromAffine [x, y, z] (zipWith (+) [-(x/2), 0.1, -(z/2)] (toFrogList $ fst spit))
+shapeshiftFrame (left, right) = fromAffine [x, y, z] (zipWith (+) [-(x/2), 0.1, -(z/2)] (toFrogList left))
   where
-  Vertex3 x y z = abs <$> uncurry (<->) spit
+  Vertex3 x y z = right <-> left

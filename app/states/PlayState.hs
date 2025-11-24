@@ -9,7 +9,7 @@ module PlayState (
 import Prelude hiding (lookup)
 
 import Control.Lens (makeLenses)
-import Control.Monad (when, void)
+import Control.Monad (when)
 import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT, execStateT)
 import Data.Map (lookup)
 import Data.Maybe (fromMaybe)
@@ -29,7 +29,7 @@ import Mean (given)
 import Random (FrogSeed, defaultSeed)
 import Rime (FrogVector, Point, clamp, isAught)
 import Shade (Mesh, drawMesh)
-import Stavework (Speechframe (meesh), Writing, makeSpeechframe, makeWriting, speechwrite, stavewriteAll)
+import Stavework (Speechframe (meesh), Writing, makeSpeechframe, speechwrite, stavewriteAll)
 
 data Camera = Camera {
   cPosition :: FrogVector,
@@ -97,7 +97,7 @@ makePlayState (Vertex2 w0 h0) (f, ff, sp, rest) = PlayState {
 
 updateFriends :: Allwit -> StateT PlayState IO ()
 updateFriends allwit = do
-  playwit@PlayState { camera, frog } <- get
+  playwit@PlayState { camera, frog, meshes } <- get
   let viewMatrix = frogLookAt (cPosition camera) (cTarget camera)
       forward = flatten $ (viewMatrix ¿ [2]) ?? (Take 3, All)
   newFrog <- lift $ execStateT (updateFrog allwit forward) frog

@@ -153,7 +153,6 @@ moveMesh forward = do
   newFrogMesh <- lift $ setMeshTransform transform' mesh
   put frogwit { mesh = newFrogMesh, fresh = frogFrame }
 
-
 animateMesh :: Allwit -> StateT Frogwit IO ()
 animateMesh (Allwit { timewit = Timewit { lifetime } }) = do
   frogwit@Frogwit { mesh, didLeap, isRunning } <- get

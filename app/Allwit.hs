@@ -1,43 +1,31 @@
-module Allwit (
-  Allwit (..),
-  Setting (..),
-  Settings,
-  UnholyMeshMash,
-  begetMeshes,
-  fand,
-  answer,
-  makeAllwit,
-  setWindowGrabbed,
-  updateOnlyOneSetting,
-  wakeState
-) where
+module Allwit where
 
 import Prelude hiding (lookup)
 
-import Control.Monad (forM_, void, when)
-import Control.Monad.State (MonadState (get, put), StateT, MonadTrans (lift))
-import Data.Map (Map, adjust, fromList, lookup, (!))
-import Data.Maybe (fromMaybe)
+import Control.Monad
+import Control.Monad.State (get, StateT, MonadTrans (lift), MonadState (put))
+import Data.Map (Map, fromList, adjust, (!), lookup)
+import Data.Maybe
 
-import Graphics.Rendering.OpenGL (Vertex2 (Vertex2), ($=))
-import SDL (GLContext, LocationMode (AbsoluteLocation, RelativeLocation))
+import Graphics.GL
+import Graphics.Rendering.OpenGL hiding (get)
+import SDL hiding (get)
 import SDL.Input.Keyboard.Codes
 
 import qualified SDL (Event, Window, setMouseLocationMode, windowGrab)
 
 import FastenShade
-import Happen (Mousewit (Mousewit))
-import Key (Keyset, keyBegun, unkeys)
-import Matrix (RenderView (..), fromAffine, fromTranslation)
-import Mean (preent, weep, thrice)
-import MothSpell (mothify)
-import Shade (Mesh (meshAnimation), makeAsset, makeAssetMesh, makeSimpleMesh, setMeshTransform)
-import Skeleton (evermore, makeAnimation, play)
-import Spell (summon, unwrappingly)
-import Stavemake (Staveware, makeFeather)
-import Time (Timewit, beginTime)
-import Loudness (Loudness, rest, unrest)
-import Graphics.GL
+import Happen
+import Key
+import Loudness
+import Matrix
+import Mean
+import MothSpell
+import Shade
+import Skeleton
+import Spell
+import Stavemake
+import Time
 
 
 data Setting = ShowTicks | ShowKeys | ShowSpeech | RunTests | BeLoud deriving (Show, Eq, Ord)

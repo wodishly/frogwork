@@ -1,29 +1,9 @@
-module Loudness
-  ( Loudness,
-    spoken,
-    bestill,
-    rest,
-    unrest
-  )
-where
+module Loudness where
 
-import Data.Vector.Storable.Mutable (MVector, RealWorld)
+import Data.Vector.Storable.Mutable
 
 import SDL.Audio
-  ( AudioDevice,
-    AudioFormat,
-    AudioSpec (..),
-    OpenDeviceSpec (openDeviceCallback),
-    PlaybackState (Pause, Play),
-    audioDriverName,
-    closeAudioDevice,
-    currentAudioDriver,
-    getAudioDrivers,
-    openAudioDevice,
-    setAudioDevicePlaybackState,
-  )
-
-import FastenMain (stillness)
+import FastenMain
 
 
 type Loudness = (AudioDevice, AudioSpec)
@@ -60,9 +40,9 @@ ordeal loudness@(_, AudioSpec {
   -- pauseAudio 0
   return loudness
 
-callback :: AudioFormat a -> MVector RealWorld a -> IO ()
+callback :: AudioFormat a -> IOVector a -> IO ()
 callback format _vector = do
-  -- print $ sizeOf vector
+  -- M.write _vector 0 1
+  -- x <- set _vector =<< _vector
   print $ "whee" ++ show format
-  -- print $ unsafeRead 0 vector
   return ()

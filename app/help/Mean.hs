@@ -8,6 +8,8 @@ import Data.Function (applyWhen, (&))
 import Data.List (singleton)
 import Debug.Trace (traceShowId, traceShowWith)
 import GHC.Stack (HasCallStack)
+import Data.Tuple (swap)
+import Control.Arrow (Arrow(first))
 
 
 type Shed a = [a] -> a
@@ -239,20 +241,21 @@ doesRectangleIntersectRotatedRoundedRectangle = ($ id) . sSs . (. length) . (dro
 -- [0,1,20,3]
 {-# INLINE hit #-}
 hit :: Int -> (a -> a) -> [a] -> [a]
--- hit n f xs = take n xs ++ [f (xs!!n)] ++ drop (n+1) xs
-hit =
-  (. (.) . ((:[]) .))
-  . sSs (
-    (((&) . flip (!!)) &)
-    . (sSs
-      . ((. drop . (+1)) . (. (:[])) . (. flip (:)))
-      . ((.) .)
-      . (.)
-      . (((. (&)) . flip concatMap) .)
-      . (:)
-      . take
-      )
-  ) id
+-- hit n f xs = take n xs ++ f (xs!!n) : drop (n+1) xs
+hit n f xs = (\(l, r) -> ((++) . uncurry take) (l, r) (((:) . (f .  uncurry (!!) . swap) $ (l, r)) (uncurry ($) . (first (drop . succ)) $ (l, r)))) (n, xs)
+-- hit =
+--   (. (.) . ((:[]) .))
+--   . sSs (
+--     (((&) . flip (!!)) &)
+--     . (sSs
+--       . ((. drop . (+1)) . (. (:[])) . (. flip (:)))
+--       . ((.) .)
+--       . (.)
+--       . (((. (&)) . flip concatMap) .)
+--       . (:)
+--       . take
+--       )
+--   ) id
 
 -- | For each @n@ in @ns@, hits the @n@th thing in @xs@ with @f@.
 --
