@@ -7,7 +7,6 @@ import Foreign (Word32)
 import Graphics.Rendering.OpenGL
   ( GLfloat,
     GettableStateVar,
-    Program,
     TextureObject,
     UniformLocation,
     Vertex2 (Vertex2)
@@ -27,10 +26,6 @@ class Shaderful a where
 
 class Monad m => Pathlikeful m a where
   frogFilePath :: a -> m String
-
-class Meshful a where
-  program :: a -> Program
-  uniformMap :: a -> UniformMap
 
 -- data sent to the renderer when requesting a mesh
 newtype AssetMeshProfile = AssetMeshProfile {
@@ -95,7 +90,8 @@ staveMeshProfile = SimpleMeshProfile {
 
 speechMeshProfile :: SimpleMeshProfile
 speechMeshProfile = SimpleMeshProfile {
-    vbuffer = inject Z <$> fournook (Vertex2 (7/8) (-7/8)) (Vertex2 (-7/8) (-1/4))
+    vbuffer = inject Z <$> fournook (Vertex2 1 -1) (Vertex2 -1 1)
+  --  vbuffer = inject Z <$> fournook (Vertex2 (7/8) (-7/8)) (Vertex2 (-7/8) (-1/4))
   , ibuffer = fournookBuffer
   , uvbuffer = Nothing
   , meshShaderProfile = ShaderProfile (shadersOf "speech") []

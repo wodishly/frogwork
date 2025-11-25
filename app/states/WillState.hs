@@ -46,6 +46,7 @@ instance Stately WillState where
     renderFeather allwit
     ws <- stavewriteAll allwit (_writings willwit)
     put willwit { _writings = ws }
+    return allwit
 
 makeWillState :: Point -> Settings -> WillState
 makeWillState (Vertex2 w h) sets = WillState {
@@ -91,6 +92,6 @@ showFinger :: StateT WillState IO ()
 showFinger = do
   willwit@WillState { finger, _writings } <- get
   put willwit {
-    _writings = hit (succ finger) (blee.~red)
+    _writings = hit (blee.~red) (succ finger)
       $ map (blee.~lightwhelk) _writings
   }

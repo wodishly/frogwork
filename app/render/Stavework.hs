@@ -2,55 +2,29 @@
 @Stavemake@ is for anything to do with writing the stave.
 @Stavework@ imports @State@, so @State@ must not import @Stavework@.
 -}
-module Stavework (
-  Speechframe (..),
-    writings,
-  Writing (..),
-    blee,
-    throoks,
-  makeSpeechframe,
-  speechwrite,
-  makeWriting,
-  renderFeather,
-  stringframe,
-  stavewriteAll,
-) where
+module Stavework where
 
-import Control.Lens (makeLenses, (?~), (^.))
-import Control.Monad (forM_)
-import Control.Monad.State (MonadTrans (lift), StateT)
-import Data.Bifunctor (Bifunctor (bimap, second))
-import Data.HashMap.Lazy (member, (!))
-import Data.Maybe (fromJust, fromMaybe)
+import Control.Lens
+import Control.Monad
+import Control.Monad.State
+import Data.Bifunctor
+import Data.HashMap.Lazy hiding (foldr, map)
+import Data.Maybe
 
-import Foreign (withArray)
-import Numeric.LinearAlgebra (ident)
-import Graphics.Rendering.OpenGL (
-  BufferTarget (ArrayBuffer),
-  GLfloat,
-  TextureTarget2D (Texture2D),
-  TextureUnit (TextureUnit),
-  TransferDirection (WriteToBuffer),
-  Uniform (uniform),
-  Vertex2 (Vertex2),
-  activeTexture,
-  bindBuffer,
-  bufferSubData,
-  textureBinding,
-  ($=)
-  )
+import Foreign
+import Numeric.LinearAlgebra hiding ((!), step, scale)
+import Graphics.Rendering.OpenGL hiding (scale, texture)
 
-import Allwit (Allwit (..))
-import State (Stately)
+import Allwit
+import State hiding (name)
 
-import Blee (Blee, bleeToGLVector4, lightwhelk, white)
-import FastenMain (Stake (..), Stakes, orheight, orwest, orwidth, orwindow)
-import FastenShade (Meshful (uniformMap))
-import Matrix (RenderView (size, RenderView), getOrthographicMatrix, getPerspectiveMatrix)
-import Mean (twin, twimap)
+import Blee
+import FastenMain
+import Matrix
+import Mean
 import Rime
-import Shade (Mesh (elementCount, vbo, Mesh), bufferSize, drawFaces, drawMesh, useMesh)
-import Stavemake (Stave (Stave, advance, texture), Stavebook)
+import Shade
+import Stavemake
 
 
 type Scale = Point
@@ -60,8 +34,8 @@ data Writing = Writing {
   scale :: Scale,
   _blee :: Blee,
   _throoks :: Maybe [Polyhedron],
-  _stead :: Point,
-  _writ :: String
+  stead :: Point,
+  writ :: String
 }
 makeLenses ''Writing
 
@@ -72,11 +46,11 @@ makeWriting = Writing (Middle, Middle) onehood lightwhelk Nothing
 
 data Speechframe = Speechframe {
   rim :: GLfloat,
-  skale :: Scale,
-  _writings :: Maybe [Writing],
+  scale :: Scale,
+  writtens :: Maybe [Writing],
   nooks :: Fournook,
   meesh :: Mesh,
-  speech :: String
+  string :: String
 }
 makeLenses ''Speechframe
 
@@ -85,13 +59,15 @@ makeSpeechframe = Speechframe 22.5 ((1/3) *^ onehood) Nothing
   (Fournook (orwest <+> Vertex2 50 -75) (orwindow <-> Vertex2 100 50))
 
 speechwrite :: Stately a => Allwit -> Speechframe -> StateT a IO Speechframe
-speechwrite wit@(Allwit { staveware }) frame@(Speechframe { skale, speech }) = do
-  let book = fst staveware
-      sundries = sunder book skale speech
-  writtens <- stavewriteAll wit (fromMaybe
+speechwrite wit@(Allwit { staveware = (book, _) }) frame@(Speechframe { scale, string, writtens }) = do
+  let sundries = sunder book scale string
+  ws <- stavewriteAll wit (fromMaybe
     (flayLines $ map (writeSpeechOnFrame frame) (linewrap frame sundries))
-    (_writings frame))
-  return $ frame { _writings = Just writtens }
+    writtens)
+  return $ frame { writtens = Just ws }
+
+becwethe :: Uniform p => Mesh -> String -> p -> IO ()
+becwethe meshful name value = uniformMap meshful ! name >>= ($= value) . uniform
 
 linewrap :: Speechframe -> [(String, Point)] -> [String]
 linewrap frame@(Speechframe { nooks, rim }) sundries
@@ -113,13 +89,13 @@ sunder book scl = map ((second (stringframe book scl) . twin) . (++ " ")) . word
 --
 -- todo: draw out the @32@
 flayLines :: [Writing] -> [Writing]
-flayLines = zipWith (\i wr -> wr { _stead = Vertex2 0 (-32*i) <+> wr^.stead }) [0..]
+flayLines = zipWith (\i wr -> wr { stead = Vertex2 0 (-32*i) <+> stead wr }) [0..]
 
 -- | Fits the speech to the frame.
 writeSpeechOnFrame :: Speechframe -> String -> Writing
-writeSpeechOnFrame (Speechframe { skale, nooks, rim }) = Writing
+writeSpeechOnFrame (Speechframe { scale, nooks, rim }) = Writing
   (West, North)
-  skale
+  scale
   white
   Nothing
   (topLeft nooks <+> Vertex2 rim -rim)
@@ -140,15 +116,14 @@ stavewriteAll allwit@Allwit { staveware = (_, m) } = (lift (useMesh m) >>) . map
 
 -- | The great work.
 stavewrite :: Stately a => Allwit -> Writing -> StateT a IO Writing
-stavewrite allwit@(Allwit { staveware = (book, mish) }) writing = do
-  let writing' = (throoks ?~ fromMaybe (allreckon allwit writing) (writing^.throoks)) writing
-
-  forM_ (zip [0..] (writing^.writ)) $ \(i, char) ->
+stavewrite allwit@(Allwit { staveware = (book, mish) }) writing@Writing { _throoks, _blee, writ } = do
+  let newrooks = Just (fromMaybe (allreckon allwit writing) _throoks)
+  forM_ (zip [0..] writ) $ \(i, char) ->
     if member char book
-    then lift $ carve (book!char) (fromJust (writing'^.throoks)!!i) mish (writing'^.blee)
+    then lift $ carve (book!char) (fromJust newrooks!!i) mish _blee
     else error $ show char ++ " is not in the book"
 
-  return writing'
+  return writing { _throoks = newrooks }
 
 -- | Carves the staves into being.
 carve :: Stave -> Polyhedron -> Mesh -> Blee -> IO ()
@@ -156,7 +131,7 @@ carve (Stave { texture }) vertices mish@(Mesh { vbo, elementCount }) bl = do
   activeTexture $= TextureUnit 0
   textureBinding Texture2D $= Just texture
   bindBuffer ArrayBuffer $= Just vbo
-  uniformMap mish ! "u_blee" >>= ($= bleeToGLVector4 bl) . uniform
+  becwethe mish "u_blee" (bleeToGLVector4 bl)
   withArray vertices (bufferSubData ArrayBuffer WriteToBuffer 0 $ bufferSize vertices)
   bindBuffer ArrayBuffer $= Nothing
   drawFaces elementCount

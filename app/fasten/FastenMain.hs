@@ -2,7 +2,7 @@ module FastenMain where
 
 import SDL (
   AudioDeviceUsage (ForPlayback),
-  AudioFormat (FloatingNativeAudio),
+  AudioFormat (..),
   Changeable (Desire),
   Channels (Stereo),
   Mode (Normal),
@@ -36,12 +36,12 @@ wayToFeathers = assetsBasePath ++ "/feathers"
 stillness :: OpenDeviceSpec
 stillness = OpenDeviceSpec {
   openDeviceFreq = Desire 44100,
-  openDeviceFormat = Desire FloatingNativeAudio,
+  openDeviceFormat = Desire Signed8BitAudio,
   openDeviceChannels = Desire Stereo,
-  openDeviceSamples = 2^11, --bendsome
+  openDeviceSamples = 2^8, --bendsome
   openDeviceUsage = ForPlayback,
   openDeviceName = Nothing,
-  openDeviceCallback = \_ _ -> return ()
+  openDeviceCallback = const $ const $ return ()
 }
 
 openGLConfig :: SDL.OpenGLConfig

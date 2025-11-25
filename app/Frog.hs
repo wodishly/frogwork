@@ -1,30 +1,25 @@
 {- HLINT ignore "Use head" -}
-module Frog (
-  Frogwit (..),
-  makeFrog,
-  moveFrog,
-  updateFrog,
-) where
+module Frog where
 
-import Control.Monad (when)
-import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT)
-import Data.Maybe (isJust, fromJust)
+import Control.Monad
+import Control.Monad.State
+import Data.Maybe
 
 import Numeric.LinearAlgebra (fromColumns, fromList, toColumns, (!))
 import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2), Vertex3 (Vertex3))
 import SDL.Input.Keyboard.Codes
 
-import Allwit (Allwit (..))
+import Allwit
+import FastenFrame
 import FastenShade
-import Key (keyBegun, wasd, anyKeysContinuing)
-import Matrix (frogLookAt)
-import Rime (FrogVector, Point3, hat, (*^), (<+>))
-import Shade (Mesh (meshAnimation), setMeshTransform)
-import Skeleton (evermore, once, play)
-import Time (Timewit (lifetime, Timewit), throttle)
-import Mean (anyIn, twimap)
-import FastenFrame (tallspit)
-import Strike (Spitful (spit), shapeshiftFrame)
+import Key
+import Matrix
+import Mean
+import Rime
+import Shade
+import Skeleton
+import Strike
+import Time
 
 
 data Frogwit = Frogwit {
@@ -65,10 +60,10 @@ didMove :: Frogwit -> Bool
 didMove = anyIn [didWalk, didLeap]
 
 hasLeapsLeft :: Frogwit -> Bool
-hasLeapsLeft (Frogwit { leapCount, utleaps }) = leapCount < utleaps
+hasLeapsLeft Frogwit { leapCount, utleaps } = leapCount < utleaps
 
 run :: Allwit -> StateT Frogwit IO ()
-run (Allwit { keyset }) = do
+run Allwit { keyset } = do
   frogwit <- get
   let isRunning = anyKeysContinuing keyset [ScancodeLShift, ScancodeRShift]
   put frogwit {
@@ -77,8 +72,9 @@ run (Allwit { keyset }) = do
   }
 
 leap :: Allwit -> StateT Frogwit IO ()
-leap (Allwit { keyset }) = do
+leap Allwit { keyset } = do
   frogwit@Frogwit { aLeap, leapCount } <- get
+
   when (keyBegun keyset ScancodeSpace && hasLeapsLeft frogwit) $
     put frogwit {
       dy = aLeap,
@@ -87,29 +83,30 @@ leap (Allwit { keyset }) = do
     }
 
 fall :: Allwit -> StateT Frogwit IO ()
-fall (Allwit { timewit }) = do
+fall Allwit { timewit } = do
   frogwit@Frogwit { position = Vertex3 x y z, dy, weight } <- get
   let y' = y + throttle timewit dy
   if y' <= 0
     then land
-    else do
-      put frogwit {
-        dy = dy + throttle timewit weight
-      , position = Vertex3 x y' z
-      }
+    else put frogwit {
+      dy = dy + throttle timewit weight,
+      position = Vertex3 x y' z
+    }
 
 land :: StateT Frogwit IO ()
 land = do
-  frogwit@Frogwit { position = Vertex3 x _ z } <- get
+  frogwit@Frogwit {
+    position = Vertex3 x _ z
+  } <- get
   put frogwit {
-    dy = 0
-  , leapCount = 0
-  , position = Vertex3 x 0 z
-  , didLeap = False
+    dy = 0,
+    leapCount = 0,
+    position = Vertex3 x 0 z,
+    didLeap = False
   }
 
 walk :: Allwit -> FrogVector -> StateT Frogwit IO ()
-walk (Allwit { keyset, timewit }) forward = do
+walk Allwit { keyset, timewit } forward = do
   frogwit@Frogwit { position, speed } <- get
   let direction = hat $ Vertex3 (forward!0) 0 -(forward!2)
       position' = position <+> (throttle timewit speed *^ direction)

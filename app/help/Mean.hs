@@ -8,8 +8,8 @@ import Data.Function (applyWhen, (&))
 import Data.List (singleton)
 import Debug.Trace (traceShowId, traceShowWith)
 import GHC.Stack (HasCallStack)
-import Data.Tuple (swap)
-import Control.Arrow (Arrow(first))
+import Control.Arrow (Arrow(first, second))
+import Data.Bool (bool)
 
 
 type Shed a = [a] -> a
@@ -173,7 +173,7 @@ anyIn = (. any . (&)) . (&)
 -- | Whether the argument is unempty.
 {-# INLINE full #-}
 full :: Foldable t => t a -> Bool
-full = not.null
+full = not . null
 
 -- split xs into a list of lists xss where each `last xss` gladdens `f`
 {-# INLINE split #-}
@@ -181,10 +181,13 @@ split :: (a -> Bool) -> Shell [a]
 split = (. map singleton) . split'
 
 split' :: (a -> Bool) -> Shift [[a]]
-split' f (a:b:rest) = if (f.last) a
+split' f (a:b:rest) = if (f . last) a
   then a : split' f (b:rest)
   else split' f ((a++b):rest)
 split' _ xs = xs
+
+mif :: a -> a -> Bool -> a
+mif = flip bool
 
 -- | Wraps the argument in a list.
 --
@@ -240,30 +243,18 @@ doesRectangleIntersectRotatedRoundedRectangle = ($ id) . sSs . (. length) . (dro
 -- >>> hit 2 (*10) [0,1,2,3]
 -- [0,1,20,3]
 {-# INLINE hit #-}
-hit :: Int -> (a -> a) -> [a] -> [a]
--- hit n f xs = take n xs ++ f (xs!!n) : drop (n+1) xs
-hit n f xs = (\(l, r) -> ((++) . uncurry take) (l, r) (((:) . (f .  uncurry (!!) . swap) $ (l, r)) (uncurry ($) . (first (drop . succ)) $ (l, r)))) (n, xs)
--- hit =
---   (. (.) . ((:[]) .))
---   . sSs (
---     (((&) . flip (!!)) &)
---     . (sSs
---       . ((. drop . (+1)) . (. (:[])) . (. flip (:)))
---       . ((.) .)
---       . (.)
---       . (((. (&)) . flip concatMap) .)
---       . (:)
---       . take
---       )
---   ) id
+hit :: (a -> a) -> Int -> [a] -> [a]
+-- hit f = (yoke .) . (second (yoke . first (map f) . splitAt 1) .) . splitAt
+hit f n xs = yoke (second (yoke . first (map f) . splitAt 1) (splitAt n xs))
+  where yoke (a,b) = a++b
 
 -- | For each @n@ in @ns@, hits the @n@th thing in @xs@ with @f@.
 --
 -- >>> hits [1,2] (*10) [0,1,2,3]
 -- [0,10,20,3]
-hits :: [Int] -> Shift a -> Shift [a]
-hits [] _ = id
-hits ns f = hits (tail ns) f . hit (head ns) f
+hits ::Shift a -> [Int] -> Shift [a]
+hits _ [] = id
+hits f ns = hits f (tail ns) . hit f (head ns)
 
 -- | Logical if.
 --

@@ -1,56 +1,29 @@
-module Shade
-  ( Mesh (..),
-    bufferSize,
-    drawMesh,
-    drawFaces,
-    setMeshTransform,
-    makeAsset,
-    useMesh,
-    makeAssetMesh,
-    makeSimpleMesh,
-    uploadTexture,
-    Animation (..),
-  )
-where
+module Shade where
 
-import Control.Monad (unless, when, (>=>))
-import Data.Bifunctor (Bifunctor (second))
-import Data.Binary.Get (runGet)
-import Data.HashMap.Lazy ((!))
-import Data.Maybe (fromJust, isJust)
-import Text.Printf (printf)
+import Control.Monad
+import Data.Bifunctor
+import Data.Binary.Get
+import Data.HashMap.Lazy hiding (map)
+import Data.Maybe
+import Text.Printf
 
-import Foreign (Int32, Ptr, Storable, new, nullPtr, plusPtr, sizeOf, withArray, Word8)
-import Numeric.LinearAlgebra (Vector, flatten, ident)
+import Foreign
+import Numeric.LinearAlgebra hiding ((!), format)
 import Graphics.Rendering.OpenGL as GL
 
-import qualified Data.ByteString as BS (readFile)
-import qualified Data.HashMap.Lazy as HM (fromList, lookup)
-import qualified Data.Vector.Storable as S (unsafeWith)
-import qualified Graphics.GL as GLRaw (glUniformMatrix4fv)
+import qualified Data.ByteString as BS
+import qualified Data.HashMap.Lazy as HM hiding (map)
+import qualified Data.Vector.Storable as S
+import qualified Graphics.GL as GLRaw
 
-import FastenMain (assetsBasePath, shaderBasePath)
+import FastenMain
 import FastenShade
-  ( AssetMeshProfile (..),
-    MeshProfile,
-    Meshful (..),
-    ShaderProfile,
-    Shaderful (shaderProfile),
-    SimpleMeshProfile,
-    UniformMap,
-    ibuffer,
-    names,
-    texObject,
-    uniforms,
-    uvbuffer,
-    vbuffer,
-  )
 import FrogSpell
-import Skeleton (Animation (..), continue)
-import Matrix (FrogMatrix)
-import Mean (Twain, doBoth, twimap, twin)
-import Spell (summon)
-import Time (Timewit (lifetime, Timewit))
+import Skeleton
+import Matrix
+import Mean
+import Spell
+import Time
 
 import MothSpell as MOTH
 
@@ -68,16 +41,16 @@ bufferOffset :: Int -> Ptr Int
 bufferOffset = plusPtr nullPtr . fromIntegral
 
 bufferSize :: Storable a => [a] -> GLsizeiptr
-bufferSize = fromIntegral . uncurry (*) . doBoth length (sizeOf.head)
+bufferSize = fromIntegral . uncurry (*) . doBoth length (sizeOf . head)
 
 data Mesh = Mesh {
-  _program :: Program,
+  program :: Program,
   vao :: VertexArrayObject,
   vbo :: BufferObject,
   uvbo :: BufferObject,
   tex :: Maybe TextureObject,
   file :: Maybe FrogFile,
-  _uniformMap :: UniformMap,
+  uniformMap :: UniformMap,
   elementCount :: Int32,
   transform :: FrogMatrix,
   meshAnimation :: Maybe Animation
@@ -86,19 +59,11 @@ data Mesh = Mesh {
 instance Show Mesh where
   show (Mesh a b c d e _ _ h i _) = show a ++ show b ++ show c ++ show d ++ show e ++ show h ++ show i
 
-instance Meshful Mesh where
-  program Mesh { _program } = _program
-  uniformMap Mesh { _uniformMap } = _uniformMap
-
 data Concoction = Concoction {
   _program :: Program,
   _uniformMap :: UniformMap,
   _road :: Maybe String
 }
-
-instance Meshful Concoction where
-  program Concoction { _program } = _program
-  uniformMap Concoction { _uniformMap } = _uniformMap
 
 makeAsset :: String -> AssetMeshProfile
 makeAsset = AssetMeshProfile
@@ -152,21 +117,21 @@ brewProfile mProfile = do
         Left assetful@AssetMeshProfile { road } -> (shaderProfile assetful, Just $ asset road)
         Right assetless -> (shaderProfile assetless, Nothing)
 
-  program <- brew (paths sProfile)
-  currentProgram $= Just program
-  let u = HM.fromList $ map (second (uniformLocation program) . twin) (uniforms sProfile)
-  return (Concoction program u rd)
+  pp <- brew (paths sProfile)
+  currentProgram $= Just pp
+  let u = HM.fromList $ map (second (uniformLocation pp) . twin) (uniforms sProfile)
+  return (Concoction pp u rd)
 
 useMesh :: Mesh -> IO ()
-useMesh Mesh { _program, vao, tex } = do
-  currentProgram $= Just _program
+useMesh Mesh { program, vao, tex } = do
+  currentProgram $= Just program
   bindVertexArrayObject $= Just vao
   textureBinding Texture2D $= tex
 
 -- idk if i like this, but something like this
 allocVector :: Storable a => Mesh -> Vector a -> String -> (GLint -> Ptr a -> IO ()) -> IO ()
-allocVector Mesh { _uniformMap } prop uniformKey callback =
-  whenJust (HM.lookup uniformKey _uniformMap) $
+allocVector Mesh { uniformMap } prop uniformKey callback =
+  whenJust (HM.lookup uniformKey uniformMap) $
     get >=> \(UniformLocation location) -> S.unsafeWith prop (callback location)
 
 whenJust :: Applicative f => Maybe a -> (a -> f ()) -> f ()
@@ -177,7 +142,7 @@ uniformMatrix :: GLint -> Ptr GLfloat -> IO ()
 uniformMatrix loc = GLRaw.glUniformMatrix4fv loc 1 1
 
 drawMesh :: FrogMatrix -> FrogMatrix -> FrogMatrix -> Timewit -> Mesh -> IO ()
-drawMesh projectionMatrix viewMatrix orthographicMatrix Timewit { lifetime } mesh@Mesh { _uniformMap, meshAnimation } = do
+drawMesh projectionMatrix viewMatrix orthographicMatrix Timewit { lifetime } mesh@Mesh { uniformMap, meshAnimation } = do
   useMesh mesh
 
   allocVector mesh (flatten $ transform mesh) "u_model_matrix" uniformMatrix
@@ -190,17 +155,17 @@ drawMesh projectionMatrix viewMatrix orthographicMatrix Timewit { lifetime } mes
 
   when (maybe False playing meshAnimation) $
     whenJust meshAnimation $ \animation -> do
-      whenJust (HM.lookup "u_bone_matrices" _uniformMap) $ \uLoc -> do
+      whenJust (HM.lookup "u_bone_matrices" uniformMap) $ \uLoc -> do
         let (skellington, _finished) = continue animation now
         UniformLocation bonesLocation <- get uLoc
         withArray skellington $
           GLRaw.glUniformMatrix4fv bonesLocation (fromIntegral $ boneCount $ aMoth animation) 1
 
-  whenJust (HM.lookup "u_time" _uniformMap) $ \_ -> do
-    timeLocation <- _uniformMap ! "u_time"
+  whenJust (HM.lookup "u_time" uniformMap) $ \_ -> do
+    timeLocation <- uniformMap ! "u_time"
     uniform timeLocation $= now
 
-  whenJust (HM.lookup "u_texture" _uniformMap) $ \uLoc -> do
+  whenJust (HM.lookup "u_texture" uniformMap) $ \uLoc -> do
     activeTexture $= TextureUnit 0
     tex0Pointer <- new (TextureUnit 0)
     location <- uLoc

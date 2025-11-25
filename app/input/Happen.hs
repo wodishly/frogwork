@@ -48,7 +48,7 @@ unwrapHappenWheel = unwrapHappen (\case
 
 unwrapHappenKeys :: [Event] -> [Keywit]
 unwrapHappenKeys = unwrapHappen (\case
-    KeyboardEvent e -> Just (doBoth (keysymScancode.keyboardEventKeysym) keyboardEventKeyMotion e)
+    KeyboardEvent e -> Just (doBoth (keysymScancode . keyboardEventKeysym) keyboardEventKeyMotion e)
     _ -> Nothing
   )
 

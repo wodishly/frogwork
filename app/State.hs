@@ -1,18 +1,13 @@
-module State (
-  StateName (..),
-  Stately (..),
-  doOnceAt,
-  doAtEach,
-) where
+module State where
 
-import Control.Monad (when)
-import Control.Monad.State (StateT)
+import Control.Monad
+import Control.Monad.State
+import Data.Bifunctor
+import Data.Fixed
 
-import Mean (between, twin)
-import Time (Timewit (..))
-import Allwit (Allwit)
-import Data.Fixed (mod')
-import Data.Bifunctor (Bifunctor(second))
+import Allwit
+import Mean
+import Time
 
 
 data StateName
@@ -30,14 +25,11 @@ class Stately a where
   update :: Allwit -> StateT a IO Allwit
   update = return
 
-  render :: Allwit -> StateT a IO ()
-  render _ = return ()
+  render :: Allwit -> StateT a IO Allwit
+  render = return
 
   loop :: Allwit -> StateT a IO Allwit
-  loop allwit = do
-    w' <- update allwit
-    render w'
-    return w'
+  loop allwit = update allwit >>= render
 
 doOnceAt :: Stately a => Timewit -> Float -> StateT a IO () -> StateT a IO ()
 doOnceAt (Timewit { lifetime, delta }) = when . between (second (+delta) (twin lifetime))

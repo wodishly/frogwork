@@ -10,9 +10,6 @@ import Data.Maybe
 import Graphics.GL
 import Graphics.Rendering.OpenGL hiding (get)
 import SDL hiding (get)
-import SDL.Input.Keyboard.Codes
-
-import qualified SDL (Event, Window, setMouseLocationMode, windowGrab)
 
 import FastenShade
 import Happen
@@ -52,12 +49,12 @@ data Allwit = Allwit {
 }
 
 makeAllwit :: Float -> SDL.Window -> SDL.GLContext -> Staveware -> RenderView -> Loudness -> Allwit
-makeAllwit ticks = Allwit
+makeAllwit t = Allwit
   makeSettings
   []
   unkeys
   (Mousewit (Vertex2 0 0) (Vertex2 0 0))
-  (beginTime ticks)
+  (beginTime t)
 
 -- | the frog, the speech, and the rest
 type UnholyMeshMash = (Mesh, Mesh, Mesh, [Mesh])

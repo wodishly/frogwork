@@ -65,10 +65,10 @@ shiftOffset = shiftRime id
 -- hasOnset = full.onset
 
 hasInset :: Breath -> Bool
-hasInset = full.inset.rime
+hasInset = full . inset . rime
 
 hasOffset :: Breath -> Bool
-hasOffset = full.offset.rime
+hasOffset = full . offset . rime
 
 hasRime :: Breath -> Bool
 hasRime b = hasInset b || hasOffset b
@@ -80,7 +80,7 @@ hasRime b = hasInset b || hasOffset b
 -- isLight = not.isHeavy
 
 makeRime :: Flight -> Rime
-makeRime ls = case findIndex (not.worth Bear) ls of
+makeRime ls = case findIndex (not . worth Bear) ls of
   Just n -> uncurry Rime (splitAt n ls)
   Nothing -> Rime ls []
 
@@ -94,7 +94,7 @@ thrifork :: Breath -> [Flight]
 thrifork b = filter full (map ($ b) thrifork')
 
 thrifork' :: [Breath -> Flight]
-thrifork' = [onset, inset.rime, offset.rime]
+thrifork' = [onset, inset . rime, offset . rime]
 
 -- flatten prosodic structure of word into flight of loudness
 flatten :: Bright -> Flight
@@ -110,9 +110,9 @@ nudge w = w
 
 trimBadOnset :: Breath -> (Onset, Maybe Breath)
 trimBadOnset b
-  | (not.hasRime) b = (onset b, Nothing)
-  | (isGoodOnset.onset) b = ([], Just b)
-  | otherwise = first ([(head.onset) b] ++) (trimBadOnset $ shiftOnset tail b)
+  | (not . hasRime) b = (onset b, Nothing)
+  | (isGoodOnset . onset) b = ([], Just b)
+  | otherwise = first ([(head . onset) b] ++) (trimBadOnset $ shiftOnset tail b)
 
 -- todo: an actual version of this
 isGoodOnset :: Onset -> Bool

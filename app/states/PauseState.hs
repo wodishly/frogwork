@@ -28,6 +28,7 @@ instance Stately PauseState where
     renderFeather allwit
     ws <- stavewriteAll allwit (_writings pausewit)
     put pausewit { _writings = ws }
+    return allwit
 
 makePauseState :: Point -> PauseState
 makePauseState wind = PauseState { _writings = [makeWriting ((1/2) *^ wind) "pɔz"] }

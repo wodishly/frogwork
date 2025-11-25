@@ -52,7 +52,7 @@ asPoint = toBoth GL.Vertex2 . realToFrac
 
 {-# INLINE average #-}
 average :: Real a => [a] -> GLfloat
-average = sSs ((/) . realToFrac . sum) (fromIntegral.length)
+average = sSs ((/) . realToFrac . sum) (fromIntegral . length)
 
 {-# INLINE clamp #-}
 clamp :: Ord a => (a, a) -> a -> a
@@ -90,7 +90,7 @@ class GL.Vertex v => FrogVertex v where
 
   {-# INLINE isAught #-}
   isAught :: FrogVertex v => v -> Bool
-  isAught = not.isNought
+  isAught = not . isNought
 
 instance (RealFrac a, GL.VertexComponent a) => FrogVertex (GL.Vertex2 a) where
   {-# INLINE fromSDL #-}

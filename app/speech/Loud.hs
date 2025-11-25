@@ -77,10 +77,10 @@ isDerm :: Loud -> Bool
 isDerm = worths [Bear, Choke]
 
 isRough :: Loud -> Bool
-isRough = not.worth Smooth
+isRough = not . worth Smooth
 
 isThroat :: Loud -> Bool
-isThroat = allIn [not.worth Root, worths [Thru, Body]]
+isThroat = allIn [not . worth Root, worths [Thru, Body]]
 
 unbear :: Shift Loud
 unbear = offs [Bear, Long]

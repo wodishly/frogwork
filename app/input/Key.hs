@@ -101,8 +101,8 @@ keyEnded = has . endedKeys
 
 bethinkKeys :: [Event] -> Keyset -> Keyset
 bethinkKeys events keyset = let news = unwrapHappenKeys events in Keyset
-  (filter (allIn [keyDown news, not.keyContinuing keyset]) hearableKeys)
-  (filter (allIn [not.keyUp news, keyContinuing keyset]) hearableKeys)
+  (filter (allIn [keyDown news, not . keyContinuing keyset]) hearableKeys)
+  (filter (allIn [not . keyUp news, keyContinuing keyset]) hearableKeys)
   (filter (allIn [keyUp news, keyContinuing keyset]) hearableKeys)
 
 -- | Uses a 2-tuple of antipodal keycodes to compute a unit direction vector.

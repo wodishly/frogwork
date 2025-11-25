@@ -44,6 +44,7 @@ instance Stately TitleState where
     renderFeather allwit
     ws <- stavewriteAll allwit (_writings titlewit)
     put titlewit { _writings = ws }
+    return allwit
 
 makeTitleState :: Point -> TitleState
 makeTitleState (Vertex2 w h) = TitleState {
@@ -79,6 +80,6 @@ showFinger :: StateT TitleState IO ()
 showFinger = do
   titlewit@TitleState { finger, _writings } <- get
   put titlewit {
-    _writings = hit (succ finger) (blee.~red)
+    _writings = hit (blee.~red) (succ finger)
       $ map (blee.~lightwhelk) _writings
   }

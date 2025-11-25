@@ -1,31 +1,18 @@
-module Main (main) where
+module Main where
 
-import Control.Monad.State (MonadState (get), StateT, evalStateT)
+import Control.Monad.State
 
 import qualified Graphics.Rendering.OpenGL as GL
 import qualified SDL
-  ( GLContext,
-    V2 (V2),
-    Window,
-    createWindow,
-    destroyWindow,
-    get,
-    glCreateContext,
-    glDeleteContext,
-    initializeAll,
-    quit,
-    ticks,
-    windowSize,
-  )
 
-import Allwit (Allwit (..), begetMeshes, fand, makeAllwit, window)
-import Frogwork (Frogwork (..), didEnd, listen, choose, waxwane, become)
-import Stateteller (makeStateteller)
-
-import FastenMain (openGLWindow)
-import Loudness (Loudness, spoken, bestill)
-import Matrix (RenderView)
-import Key (unlockKeys)
+import Allwit
+import FastenMain
+import Frogwork
+import Key
+import Loudness
+import Matrix
+import Mean
+import Stateteller
 
 
 main :: IO ()
@@ -44,11 +31,11 @@ main = do
     >>= die
 
 birth :: SDL.Window -> SDL.GLContext -> RenderView -> Loudness -> Float -> IO Frogwork
-birth wind ctx display loudness ticks = do
+birth window ctx display loudness ticks = do
   (staveware, meshes) <- begetMeshes ticks
-  SDL.V2 x y <- (fromIntegral <$>) <$> SDL.get (SDL.windowSize wind)
+  SDL.V2 x y <- (fromIntegral <$>) <$> SDL.get (SDL.windowSize window)
 
-  allwit@Allwit { settings } <- fand $ makeAllwit ticks wind ctx staveware display loudness
+  allwit@Allwit { settings } <- fand $ makeAllwit ticks window ctx staveware display loudness
 
   return Frogwork {
     allwit,
@@ -67,9 +54,9 @@ live = do
   listen
   choose
   become
-  didEnd >>= \x -> if x
-  then return (context, window, loudness)
-  else live
+  didEnd >>= mif
+    (return (context, window, loudness))
+    live
 
 die :: (SDL.GLContext, SDL.Window, Loudness) -> IO ()
 die (context, window, loudness) = do

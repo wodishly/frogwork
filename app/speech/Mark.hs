@@ -29,7 +29,7 @@ class (Show a, Eq a) => Mark a where
   above = flip below
 
   def :: a -> Branch a
-  def m = Branch m True (map (off'.def) (below' m))
+  def m = Branch m True (map (off' . def) (below' m))
 
 data Branch a = Branch {
   _mark :: a,
@@ -78,10 +78,10 @@ off' l = off (_mark l) l
 -- un' l = un (_mark l) l
 
 ons :: Mark a => [a] -> Shift (Branch a)
-ons = (flip.foldr) on
+ons = (flip . foldr) on
 
 offs :: Mark a => [a] -> Shift (Branch a)
-offs = (flip.foldr) off
+offs = (flip . foldr) off
 
 get :: Mark a => a -> Shift (Branch a)
 get = (fromJust .) . get'

@@ -1,25 +1,12 @@
 {- HLINT ignore "Use head" -}
 module Matrix where
 
-import Numeric.LinearAlgebra as H (
-    asColumn
-  , asRow
-  , cross
-  , fromList
-  , fromRows
-  , toList
-  , (><)
-  , (|||)
-  )
+import Prelude hiding ((<>))
+
+import Numeric.LinearAlgebra as H hiding (normalize)
 import Graphics.Rendering.OpenGL (GLfloat)
 
-import qualified Numeric.LinearAlgebra as H (
-    Element
-  , Matrix
-  , Vector
-  )
-
-import Mean (sq, dimensionError)
+import Mean
 import Rime
 
 
@@ -109,24 +96,24 @@ getOrthographicMatrix (RenderView _ (w, h) _ _ _) = (4><4) [
 
 frogLookAt :: FrogVector -> FrogVector -> FrogMatrix
 frogLookAt eye target =
-  let dir = normalize (eye - target)
-      right = normalize (cross (fromList [0, 1, 0]) dir)
+  let dir = frogNormalize (eye - target)
+      right = frogNormalize (cross (fromList [0, 1, 0]) dir)
       up = cross dir right
-      rotation = fromRows [right, up, dir, fromList (replicate 3 0)] ||| col [0, 0, 0, 1]
+      rotation = fromRows [right, up, dir, fromList (replicate 3 0)] ||| frogCol [0, 0, 0, 1]
       translation = fromTranslation (toList -eye)
   in rotation <> translation
 
-{-# INLINE row #-}
-row :: H.Element t => [t] -> H.Matrix t
-row = asRow.fromList
+{-# INLINE frogRow #-}
+frogRow :: H.Element t => [t] -> H.Matrix t
+frogRow = asRow . fromList
 
-{-# INLINE col #-}
-col :: H.Element t => [t] -> H.Matrix t
-col = asColumn.fromList
+{-# INLINE frogCol #-}
+frogCol :: H.Element t => [t] -> H.Matrix t
+frogCol = asColumn . fromList
 
-{-# INLINE normalize #-}
-normalize :: (Fractional t, H.Element t, Floating t) => H.Vector t -> H.Vector t
-normalize v =
+{-# INLINE frogNormalize #-}
+frogNormalize :: (Fractional t, H.Element t, Floating t) => H.Vector t -> H.Vector t
+frogNormalize v =
   let l = toList v
       d = sqrt $ sum $ map sq l
   in fromList (map (/d) l)

@@ -1,9 +1,6 @@
-module EndState (
-  EndState (..)
-, makeEndState
-) where
+module EndState where
 
-import State (StateName (EndName), Stately (..))
+import State
 
 
 data EndState = EndState

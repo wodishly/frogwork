@@ -80,7 +80,7 @@ shadesOf :: Int -> [(String, String)]
 shadesOf n = filter ((== n) . length . fst) shades
 
 betoken :: Shell String
-betoken = filter (/= ".") . betoken' (maximum (map (length.fst) shades)) . map shell
+betoken = filter (/= ".") . betoken' (maximum (map (length . fst) shades)) . map shell
 
 -- inwend on length of n-graph
 betoken' :: Int -> Shift [String]

@@ -16,7 +16,7 @@ import Blee (bg, darkwhelk)
 import FastenMain (orheight, orwidth)
 import Random (rand)
 import Rime (Point)
-import Stavework (Writing (_stead), makeWriting, renderFeather, stavewriteAll)
+import Stavework (Writing (stead), makeWriting, renderFeather, stavewriteAll)
 
 
 newtype AboutState = AboutState {
@@ -37,6 +37,7 @@ instance Stately AboutState where
     renderFeather allwit
     ws <- stavewriteAll allwit (_writings aboutwit)
     put aboutwit { _writings = ws }
+    return allwit
 
 makeAboutState :: Point -> AboutState
 makeAboutState wind = AboutState [makeWriting wind "rɪbɪt"]
@@ -46,4 +47,4 @@ flutter = do
   aboutwit@AboutState { _writings } <- get
   rx <- lift rand
   ry <- lift rand
-  put aboutwit { _writings = [(head _writings) { _stead = Vertex2 (rx*orwidth) (ry*orheight) }] }
+  put aboutwit { _writings = [(head _writings) { stead = Vertex2 (rx*orwidth) (ry*orheight) }] }

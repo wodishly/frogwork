@@ -1,19 +1,12 @@
 {- HLINT ignore "Use section" -}
-module Frogwork (
-  Frogwork (..),
-  listen,
-  choose,
-  become,
-  didEnd,
-  waxwane
-) where
+module Frogwork where
 
 import Prelude hiding (lookup)
 
-import Control.Lens ((^.))
-import Control.Monad (when)
-import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT (runStateT), execStateT)
-import Data.Maybe (isNothing)
+import Control.Lens
+import Control.Monad
+import Control.Monad.State
+import Data.Maybe
 
 import Graphics.Rendering.OpenGL (
     BlendingFactor (OneMinusSrcAlpha, SrcAlpha)
@@ -29,28 +22,18 @@ import SDL.Input.Keyboard.Codes
 import qualified Graphics.Rendering.OpenGL as GL
 import qualified SDL.Time as SDL
 
-import Allwit (Allwit (..), answer)
-import State (StateName (..))
-import Stateteller (
-  Stateteller (Stateteller, nowState),
-  aboutState,
-  endState,
-  flushWritings,
-  goto,
-  pauseState,
-  playState,
-  titleState,
-  willState,
-  )
+import Allwit
+import State
+import Stateteller
 
 import qualified TitleState as Title (chosen)
 import qualified WillState as Will (chosen)
 
-import Happen (Mousewit (Mousewit), unwrapHappenPointer, unwrapHappenWheel, unwrapHappenWindow)
-import Key (anyKeysBegun, hearableKeys, keyBegun, bethinkKeys)
-import Mean (doBoth, full, twimap)
-import Time (keepTime)
-import Matrix (RenderView (..))
+import Happen
+import Key
+import Mean
+import Time
+import Matrix
 
 
 data Frogwork = Frogwork {
@@ -59,12 +42,10 @@ data Frogwork = Frogwork {
 }
 
 didEnd :: StateT Frogwork IO Bool
-didEnd = do
-  Frogwork {
+didEnd = get >>= \Frogwork {
     allwit = Allwit { keyset },
     stateteller = Stateteller { nowState }
-  } <- get
-  return (nowState == EndName || anyKeysBegun keyset [ScancodeQ, ScancodeEscape])
+  } -> return (nowState == EndName || anyKeysBegun keyset [ScancodeQ, ScancodeEscape])
 
 choose :: StateT Frogwork IO ()
 choose = do
