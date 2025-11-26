@@ -1,15 +1,12 @@
-module FrogSpell (
-  frogify
-, FrogFile (..)
-, FrogVertex (..)
-) where
+module FrogSpell where
 
-import Data.Binary.Get (Get)
-import Graphics.Rendering.OpenGL (GLfloat, Vertex3)
-import Foreign (Int16, Int32, Word32, Word8)
+import Data.Binary.Get
+import Graphics.Rendering.OpenGL
+import Foreign
 
-import Rime (Polygon, Polyhedron, Polytope, ZPolytope)
-import Spell ((✿), int, u8, u32, s16, s32, f32x2, f32x3, f32x4, u8x4)
+import Rime
+import Spell
+
 
 data FrogFile = FrogFile {
   -- header

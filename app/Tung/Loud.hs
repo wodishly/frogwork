@@ -1,5 +1,5 @@
 {- HLINT ignore "Use section" -}
-module Loud (
+module Tung.Loud (
   Loud,
   Flight,
   Loudmark (..),
@@ -21,9 +21,10 @@ import Data.Function (applyWhen)
 import Data.Maybe (fromMaybe)
 import Data.Tuple (swap)
 
-import Mark (Branch, Mark (..), off, offs, ons, worth, worths)
+import Tung.Mark (Branch, Mark (..), off, offs, ons, worth, worths)
+import Tung.Token (betoken, shades)
+
 import Mean (Shift, allIn)
-import Token (betoken, shades)
 
 
 type Loud = Branch Loudmark

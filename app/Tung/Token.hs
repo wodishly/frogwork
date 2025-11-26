@@ -1,5 +1,5 @@
 {- HLINT ignore "Use infix" -}
-module Token (
+module Tung.Token (
   betoken,
   shades,
   sharps,

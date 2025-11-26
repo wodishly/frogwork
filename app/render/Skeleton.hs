@@ -1,28 +1,19 @@
 module Skeleton where
 
-import Data.Fixed (mod')
-import Data.Function (applyWhen)
-import Data.List (findIndex)
-import Data.Maybe (fromMaybe)
+import Data.Fixed
+import Data.Function
+import Data.List
+import Data.Maybe
 
-import Numeric.LinearAlgebra (dot, flatten, toList, (><))
-import Graphics.Rendering.OpenGL (GLfloat, Vertex4 (Vertex4))
+import Numeric.LinearAlgebra
+import Graphics.Rendering.OpenGL
 
-import Matrix (FrogMatrix, fromAffine)
-import Rime (
-    FrogVertex (toFrogVector)
-  , Point3
-  , Point4
-  , clamp
-  , toFrogList
-  , (<+>)
-  , (<->)
-  , (*^)
-  , (^/), swizzle, unswizzle
-  )
+import Matrix
+import Mean
+import Rime
 
 import MothSpell as MOTH
-import Mean (flight)
+import Prelude hiding ((<>))
 
 
 type Interpolation a = a -> a -> Float -> a

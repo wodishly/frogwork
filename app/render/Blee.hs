@@ -1,30 +1,18 @@
-module Blee (
-  Blee
-, white
-, red
-, green
-, blue
-, black
-, lightwhelk
-, darkwhelk
-, clerp
-, bg
-, from255
-, bleeToGLVector4
-) where
+module Blee where
 
-import Control.Monad.State (StateT, MonadTrans (lift))
+import Control.Monad.State
 
-import Graphics.Rendering.OpenGL (
-    ClearBuffer (..)
-  , Color4 (Color4)
-  , GLfloat
-  , clear
-  , clearColor
-  , Vector4 (Vector4), HasSetter (($=))
+import Graphics.Rendering.OpenGL
+  ( ClearBuffer (..),
+    Color4 (Color4),
+    GLfloat,
+    HasSetter (($=)),
+    Vector4 (Vector4),
+    clear,
+    clearColor,
   )
 
-import Rime (clamp)
+import Rime
 
 
 type Blee = Color4 GLfloat

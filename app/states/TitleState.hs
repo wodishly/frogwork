@@ -1,25 +1,20 @@
-module TitleState (
-  TitleState (..),
-  makeTitleState,
-  chosen,
-  writings
-) where
+module TitleState where
 
-import Control.Lens (makeLenses, (.~))
-import Control.Monad.State (MonadState (get, put), StateT)
+import Control.Lens
+import Control.Monad.State
 
 import SDL.Input.Keyboard.Codes
-import Graphics.Rendering.OpenGL (Vertex2(Vertex2))
+import Graphics.Rendering.OpenGL (Vertex2 (Vertex2))
 
-import Allwit (Allwit(..))
-import State (StateName (EndName, PlayName, TitleName, WillName, AboutName), Stately (..), doOnceAt)
+import Allwit
+import State
 
-import Blee (bg, darkwhelk, red, lightwhelk)
-import Key (keyBegun)
-import Stavework (makeWriting, renderFeather, stavewriteAll, Writing (Writing), blee)
-import Mean (hit, preent)
-import Rime (Point, FrogVertex (onehood), (*^))
-import FastenMain (Stake(Middle))
+import Blee
+import Key
+import Stavework
+import Mean
+import Rime
+import FastenMain
 
 
 data TitleState = TitleState {
@@ -34,7 +29,6 @@ instance Stately TitleState where
 
   update allwit = do
     _ <- get
-    doOnceAt (timewit allwit) 4000 $ preent "hi"
     choosefare allwit
     return allwit
 

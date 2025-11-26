@@ -1,26 +1,26 @@
 {- HLINT ignore "Use head" -}
 module Rime where
 
-import Data.Functor ((<&>))
-import Numeric.LinearAlgebra (fromList, toList)
+import Data.Functor
 
-import Foreign (Int32)
-import Graphics.Rendering.OpenGL (
-  GLfloat,
-  GLint
+import Foreign
+import Numeric.LinearAlgebra hiding (real)
+import Graphics.Rendering.OpenGL
+  ( GLfloat,
+    GLint,
+  )
+import qualified Graphics.Rendering.OpenGL as GL
+  ( Vertex,
+    Vertex2 (Vertex2),
+    Vertex3 (Vertex3),
+    Vertex4 (Vertex4),
+    VertexComponent,
   )
 
-import qualified SDL (Point (P), V2 (V2))
 import qualified Numeric.LinearAlgebra as H (Vector, size)
-import qualified Graphics.Rendering.OpenGL as GL (
-  Vertex,
-  Vertex2 (Vertex2),
-  Vertex3 (Vertex3),
-  Vertex4 (Vertex4),
-  VertexComponent
-  )
+import qualified SDL (Point (P), V2 (V2))
 
-import Mean (toBoth, sq, dimensionError, sSs)
+import Mean
 
 
 infixl 7 *^, ^*, /^, ^/

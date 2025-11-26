@@ -1,17 +1,13 @@
-module PauseState (
-  PauseState (..),
-  makePauseState,
-  writings
-) where
+module PauseState where
 
-import Control.Lens (makeLenses)
-import Control.Monad.State (MonadState (get, put))
+import Control.Lens
+import Control.Monad.State
 
-import State (StateName (PauseName), Stately (..))
+import State
 
-import Blee (bg, black)
-import Rime (Point, (*^))
-import Stavework (Writing, makeWriting, renderFeather, stavewriteAll)
+import Blee
+import Rime
+import Stavework 
 
 
 newtype PauseState = PauseState {
@@ -31,4 +27,4 @@ instance Stately PauseState where
     return allwit
 
 makePauseState :: Point -> PauseState
-makePauseState wind = PauseState { _writings = [makeWriting ((1/2) *^ wind) "pɔz"] }
+makePauseState window = PauseState { _writings = [makeWriting ((1/2) *^ window) "pɔz"] }

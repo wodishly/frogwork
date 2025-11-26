@@ -1,5 +1,5 @@
 {- HLINT ignore "Use section" -}
-module Mark (
+module Tung.Mark (
   Branch,
   Mark (..),
   on,

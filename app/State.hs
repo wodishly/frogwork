@@ -2,7 +2,6 @@ module State where
 
 import Control.Monad
 import Control.Monad.State
-import Data.Bifunctor
 import Data.Fixed
 
 import Allwit
@@ -31,8 +30,8 @@ class Stately a where
   loop :: Allwit -> StateT a IO Allwit
   loop allwit = update allwit >>= render
 
-doOnceAt :: Stately a => Timewit -> Float -> StateT a IO () -> StateT a IO ()
-doOnceAt (Timewit { lifetime, delta }) = when . between (second (+delta) (twin lifetime))
+doOnceAt :: Stately a => Float -> Timewit -> StateT a IO () -> StateT a IO ()
+doOnceAt t Timewit { lifetime, delta } = when (between (lifetime, lifetime+delta) t)
 
-doAtEach :: Stately a => Timewit -> Float -> StateT a IO () -> StateT a IO ()
-doAtEach (Timewit { lifetime, delta }) t = when (mod' lifetime t > mod' (lifetime + delta) t)
+doAtEach :: Stately a => Float -> Timewit -> StateT a IO () -> StateT a IO ()
+doAtEach t Timewit { lifetime, delta } = when (mod' lifetime t > mod' (lifetime + delta) t)

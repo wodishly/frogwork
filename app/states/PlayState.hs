@@ -25,6 +25,7 @@ import Random
 import Rime
 import Shade
 import Stavework
+import Tung
 
 
 data Camera = Camera {
@@ -65,11 +66,13 @@ instance Stately PlayState where
     ws <- stavewriteAll allwit (writings playwit)
     put playwit { writings = ws }
     drawSpeech allwit
+    doAtEach 1 (timewit allwit) (lift fremdcroak)
+    lift $ maybe (return ()) (const fremdcroak) =<< rMaybeLoud (1/60)
     return allwit
 
 makePlayState :: Point -> UnholyMeshMash -> PlayState
 makePlayState _ (f, ff, sp, rest) = PlayState {
-  seed = defaultSeed,
+  seed = formseed,
   meshes = rest,
   frog = makeFrog f ff,
   speechframe = makeSpeechframe sp (concat $ replicate 2 "rɪbɪt "),

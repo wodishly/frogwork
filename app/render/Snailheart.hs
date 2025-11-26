@@ -1,5 +1,5 @@
 {-# LANGUAGE GADTs #-}
-module Loudness where
+module Snailheart where
 
 import SDL.Audio
 import FastenMain

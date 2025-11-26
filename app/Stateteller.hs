@@ -1,8 +1,8 @@
 {- HLINT ignore "Use section" -}
 module Stateteller where
 
-import Control.Lens (Lens', makeLenses, (%~), (.~), (^.))
-import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT (runStateT), execStateT)
+import Control.Lens
+import Control.Monad.State
 
 import Graphics.Rendering.OpenGL (Vertex2 (Vertex2))
 
@@ -31,9 +31,9 @@ data Stateteller = Stateteller {
 makeLenses ''Stateteller
 
 makeStateteller :: (Int, Int) -> Settings -> UnholyMeshMash -> Stateteller
-makeStateteller (w, h) sets meshes = Stateteller
+makeStateteller (w, h) settings meshes = Stateteller
   (makeTitleState wind)
-  (makeWillState  wind sets)
+  (makeWillState  wind settings)
   (makePlayState  wind meshes)
   (makePauseState wind)
   (makeAboutState wind)
@@ -42,24 +42,24 @@ makeStateteller (w, h) sets meshes = Stateteller
   where wind = fromIntegral <$> Vertex2 w h
 
 goto :: Stately a => Lens' Stateteller a -> Allwit -> StateT Stateteller IO Allwit
-goto lens wit = do
+goto oldState oldWit = do
   teller <- get
   let oldName = nowState teller
-      newName = name $ teller^.lens
+      newName = name $ teller^.oldState
 
   wit' <- if newName /= oldName
     then do
       flushWritings
-      lift $ execStateT (wakeState $ newName == PlayName) wit
-    else return wit
-  (wit'', state) <- lift $ runStateT (loop wit') (teller^.lens)
-  updateState lens state newName
-  return wit''
+      lift $ execStateT (wakeState $ newName == PlayName) oldWit
+    else return oldWit
+  (newWit, newState) <- lift $ runStateT (loop wit') (teller^.oldState)
+  updateState oldState newState newName
+  return newWit
 
 updateState :: Stately a => Lens' Stateteller a -> a -> StateName -> StateT Stateteller IO ()
-updateState lens state newName = do
+updateState newState oldState newName = do
   teller <- get
-  put $ (lens.~state) teller { nowState = samely newName (name state) }
+  put $ (newState .~ oldState) teller { nowState = samely newName (name oldState) }
 
 flushWritings :: StateT Stateteller IO ()
 flushWritings = do

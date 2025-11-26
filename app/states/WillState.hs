@@ -1,25 +1,20 @@
-module WillState (
-  WillState (..),
-  makeWillState,
-  chosen,
-  writings
-) where
+module WillState where
 
-import Control.Lens (makeLenses, (.~))
-import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT, execStateT)
-import Data.Maybe (fromJust, isJust)
+import Control.Lens hiding (Setting, chosen)
+import Control.Monad.State
+import Data.Maybe
 
 import SDL.Input.Keyboard.Codes
-import Graphics.Rendering.OpenGL (Vertex2(Vertex2))
+import Graphics.Rendering.OpenGL (Vertex2 (Vertex2))
 
-import Allwit (Allwit (Allwit, keyset), Setting (..), Settings, updateOnlyOneSetting)
-import State (StateName (WillName), Stately (..))
+import Allwit
+import State
 
-import Blee (bg, darkwhelk, lightwhelk, red)
-import Key (keyBegun)
-import Mean (hit)
-import Rime (Point)
-import Stavework (Writing, blee, makeWriting, renderFeather, stavewriteAll)
+import Blee
+import Key
+import Mean
+import Rime
+import Stavework
 
 
 data WillState = WillState {
@@ -49,14 +44,14 @@ instance Stately WillState where
     return allwit
 
 makeWillState :: Point -> Settings -> WillState
-makeWillState (Vertex2 w h) sets = WillState {
+makeWillState (Vertex2 w h) settings = WillState {
   hand = [
     Just ShowKeys,
     Just ShowTicks,
     Nothing
   ],
   finger = 0,
-  settings = sets,
+  settings,
   _writings = [
     makeWriting (Vertex2 (w/2) (h*3/4)) "WꞮLZ",
     makeWriting (Vertex2 (w/2) (h*3/7)) "tɛl kiz",
@@ -66,7 +61,7 @@ makeWillState (Vertex2 w h) sets = WillState {
 }
 
 chosen :: WillState -> Maybe Setting
-chosen (WillState { hand, finger }) = hand!!finger
+chosen WillState { hand, finger } = hand!!finger
 
 choosefare :: Allwit -> StateT WillState IO Allwit
 choosefare allwit@Allwit { keyset } = do
@@ -80,7 +75,7 @@ choosefare allwit@Allwit { keyset } = do
   else return allwit
 
 nudgeFinger :: Allwit -> StateT WillState IO ()
-nudgeFinger (Allwit { keyset }) = do
+nudgeFinger Allwit { keyset } = do
   willwit@WillState { hand, finger } <- get
   let nudge
         | keyBegun keyset ScancodeUp = pred

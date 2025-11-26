@@ -1,24 +1,19 @@
-module Time (
-  Timewit (..),
-  beginTime,
-  keepTime,
-  throttle
-) where
-
+module Time where
 
 data Timewit = Timewit {
-  lifetime :: Float,
-  delta :: Float
+  delta :: Float,
+  lifetime :: Float
 } deriving (Show, Eq)
 
 beginTime :: Float -> Timewit
-beginTime = flip Timewit 0
+beginTime = Timewit 0
 
 keepTime :: Timewit -> Float -> Timewit
-keepTime Timewit { lifetime } ticks = Timewit {
-    lifetime = now
-  , delta = now - lifetime
-} where now = ticks / 1000
+keepTime Timewit { lifetime } ticks =
+  Timewit {
+    lifetime = now,
+    delta = now - lifetime
+  } where now = ticks / 1000
 
 throttle :: Timewit -> Float -> Float
 throttle Timewit { delta } = (delta *)

@@ -1,28 +1,15 @@
-module Key (
-  Keyset,
-  unkeys,
-  bethinkKeys,
-  hearableKeys,
-  keyBegun,
-  anyKeysBegun,
-  anyKeysContinuing,
-  keyEnded, -- uncalled
-  arrow,
-  wasd,
-  unlockKeys,
-  lockKeys
-) where
+module Key where
 
-import Data.Function ((&))
+import Control.Monad
+import Data.Function
 
 import SDL (InputMotion (Pressed, Released), Event, getKeyboardState)
 import SDL.Input.Keyboard.Codes
 import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2))
 
-import Happen (Keywit, unwrapHappenKeys)
-import Rime (Point, hat)
-import Mean (allIn, has, none, sSs)
-import Control.Monad (void)
+import Happen
+import Rime
+import Mean
 
 
 data Keyset = Keyset {

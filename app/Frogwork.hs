@@ -8,15 +8,15 @@ import Control.Monad
 import Control.Monad.State
 import Data.Maybe
 
-import Graphics.Rendering.OpenGL (
-    BlendingFactor (OneMinusSrcAlpha, SrcAlpha)
-  , Capability (Enabled)
-  , ComparisonFunction (Lequal)
-  , HasSetter (($=))
-  , Position (Position)
-  , Size (Size)
+import Graphics.Rendering.OpenGL
+  ( BlendingFactor (OneMinusSrcAlpha, SrcAlpha),
+    Capability (Enabled),
+    ComparisonFunction (Lequal),
+    HasSetter (($=)),
+    Position (Position),
+    Size (Size),
   )
-import SDL (pollEvents, V2 (V2), Window, glGetDrawableSize, glSwapWindow)
+import SDL (V2 (V2), Window, glGetDrawableSize, glSwapWindow, pollEvents)
 import SDL.Input.Keyboard.Codes
 
 import qualified Graphics.Rendering.OpenGL as GL
@@ -73,7 +73,7 @@ choose = do
 
 listen :: StateT Frogwork IO ()
 listen = do
-  listenEvents
+  listenEvents -- call me before @listenKeys@, for i churn the eventlist
   listenTime
   listenKeys
   listenMouse

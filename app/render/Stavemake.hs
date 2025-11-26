@@ -2,22 +2,15 @@
 @Stavemake@ is for anything to do with begetting the stave.
 @State@ imports @Stavemake@, so @Stavemake@ must not import @State@.
 -}
-module Stavemake (
-  Stave (..),
-  Stavebook,
-  Staveware,
-  makeFeather,
-  makeStavebook,
-  makeStavebook', -- uncalled
-) where
+module Stavemake where
 
-import Control.Monad (forM, when)
-import Data.Char (chr)
-import Data.HashMap.Lazy (HashMap, fromList)
-import Data.List.Split (chunksOf)
-import Text.Printf (printf)
+import Control.Monad
+import Data.Char
+import Data.HashMap.Lazy hiding (map)
+import Data.List.Split
+import Text.Printf
 
-import Foreign (peek, peekArray, withArray)
+import Foreign
 import FreeType.Core.Base
 import FreeType.Core.Types
 import Graphics.Rendering.OpenGL (
@@ -37,11 +30,11 @@ import qualified Graphics.Rendering.OpenGL as GL (
   textureWrapMode
   )
 
-import FastenMain (wayToFeathers, orheight, staveSharpness)
+import FastenMain
 
-import Mean (doBoth, (.>>.))
-import Rime (Point)
-import Shade (Mesh (..), uploadTexture)
+import Mean
+import Rime
+import Shade
 
 
 data Stave = Stave {

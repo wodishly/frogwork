@@ -1,5 +1,5 @@
 {- HLINT ignore "Use infix" -}
-module Breath (
+module Tung.Breath (
   Bright,
   Breath (..),
   Rime (..),
@@ -13,10 +13,11 @@ import Data.Bifunctor (first)
 import Data.List (findIndex)
 import Data.Maybe (fromJust, maybeToList)
 
-import Loud (Flight, Loudmark (Bear), clean, cleans, dirtys)
-import Mark (worth)
+import Tung.Loud (Flight, Loudmark (Bear), clean, cleans, dirtys)
+import Tung.Mark (worth)
+import Tung.Token (sharps)
+
 import Mean (Shift, full, lif, multipleton, split)
-import Token (sharps)
 
 
 type Onset = Flight

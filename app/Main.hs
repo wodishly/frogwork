@@ -9,10 +9,11 @@ import Allwit
 import FastenMain
 import Frogwork
 import Key
-import Loudness
+import Snailheart
 import Matrix
 import Mean
 import Stateteller
+import Tung (orcroak)
 
 
 main :: IO ()
@@ -24,6 +25,8 @@ main = do
   loudness <- spoken
 
   unlockKeys
+
+  orcroak
 
   SDL.ticks
     >>= birth window context display loudness . fromIntegral

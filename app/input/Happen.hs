@@ -1,13 +1,6 @@
-module Happen (
-  Keywit,
-  Mousewit (..),
-  unwrapHappenKeys,
-  unwrapHappenPointer,
-  unwrapHappenWheel,
-  unwrapHappenWindow,
-) where
+module Happen where
 
-import Data.Maybe (mapMaybe)
+import Data.Maybe
 
 import SDL (
   Event (eventPayload),
@@ -22,8 +15,8 @@ import SDL (
 
 import qualified SDL (Point (P))
 
-import Mean (doBoth)
-import Rime (Point, fromSDL)
+import Mean
+import Rime
 
 
 type Keywit = (Scancode, InputMotion)

@@ -1,28 +1,14 @@
-module Spell (
-  s32
-, s16
-, int
-, f32
-, f32x2
-, f32x3
-, f32x4
-, u8
-, u8x4
-, u32
-, summon
-, unwrappingly
-, (✿)
-) where
+module Spell where
 
-import Control.Monad (replicateM)
-import Data.Binary.Get (Get, getFloatle, getInt16le, getInt32le, getWord32le, getWord8, runGet)
+import Control.Monad
+import Data.Binary.Get
 
-import Foreign (Int16, Int32, Word32, Word8)
-import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2), Vertex3 (Vertex3), Vertex4 (Vertex4))
+import Foreign
+import Graphics.Rendering.OpenGL
 
 import qualified Data.ByteString.Lazy as BL
 
-import Rime (LatticePoint4, Point4, Point3, Point2)
+import Rime
 
 
 {-# INLINE (✿) #-}

@@ -1,18 +1,14 @@
-module Random (
-  FrogSeed
-, defaultSeed
-, rand
-) where
+module Random where
 
-import System.Random (randoms, mkStdGen, randomIO)
+import System.Random
 
 import Graphics.Rendering.OpenGL (GLfloat)
 
 
 type FrogSeed = [GLfloat]
 
-defaultSeed :: FrogSeed
-defaultSeed = randoms $ mkStdGen 0
+formseed :: FrogSeed
+formseed = randoms (mkStdGen 0)
 
 -- returns a random number in [0, 1)
 rand :: IO GLfloat

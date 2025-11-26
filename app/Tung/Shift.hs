@@ -1,13 +1,14 @@
 {- HLINT ignore "Use section" -}
-module Shift where
+module Tung.Shift where
 
 import Data.Bifunctor (bimap)
 import Data.Function (applyWhen)
 import Data.Maybe (catMaybes)
 
-import Breath (Breath (..), Bright, flatten, makeBright, shiftInset, shiftOnset)
-import Loud (Flight, Loud, Loudmark (..), isDerm, isRough, isThroat, offbearThroat, onbearThroat, unbear, unloud)
-import Mark (become, get, on, set, worth)
+import Tung.Breath (Breath (..), Bright, flatten, makeBright, shiftInset, shiftOnset)
+import Tung.Loud (Flight, Loud, Loudmark (..), isDerm, isRough, isThroat, offbearThroat, onbearThroat, unbear, unloud)
+import Tung.Mark (become, get, on, set, worth)
+
 import Mean (Shed, Shift, doesRotatedRoundedRectangleIntersectRectangle, full, hit, samely, shell)
 
 

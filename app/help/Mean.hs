@@ -272,12 +272,12 @@ lif = (||) . not
 
 (<<) :: Monad m => m b -> m a -> m b
 (<<) = flip (>>)
-
-(.<<.) :: Bits a => a -> Int -> a
-(.<<.) = shiftL
-
-(.>>.) :: Bits a => a -> Int -> a
-(.>>.) = shiftR
+--
+--(.<<.) :: Bits a => a -> Int -> a
+--(.<<.) = shiftL
+--
+--(.>>.) :: Bits a => a -> Int -> a
+--(.>>.) = shiftR
 
 sq :: Num a => a -> a
 sq = toBoth (*)

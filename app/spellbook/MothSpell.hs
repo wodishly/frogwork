@@ -1,14 +1,14 @@
 module MothSpell where
 
-import Data.Binary.Get (Get)
-import Foreign (Word8)
+import Data.Binary.Get
+import Foreign
 
-import Numeric.LinearAlgebra ((><))
-import Graphics.Rendering.OpenGL (GLfloat)
+import Numeric.LinearAlgebra
+import Graphics.Rendering.OpenGL
 
-import Matrix (FrogMatrix)
-import Spell ((✿), int, u8, s32, f32, f32x3, f32x4)
-import Rime (Point3, Point4)
+import Matrix
+import Spell
+import Rime
 
 
 data MothFile = MothFile {

@@ -1,11 +1,10 @@
-{-# LANGUAGE TypeSynonymInstances #-}
 module Strike where
 
 import Graphics.Rendering.OpenGL (Vertex3 (Vertex3))
 
-import Mean (Twain, between)
-import Rime (Axle (..), Point3, Polyhedron, (<+>), FrogVertex (toFrogList), (<->))
-import Matrix (FrogMatrix, fromAffine)
+import Mean
+import Rime
+import Matrix
 
 
 -- | A spit is an axle between a @Point3@ and the farthest @Point3@.
@@ -36,8 +35,9 @@ spitteth :: Spit -> Spit -> Bool
 spitteth struck striking = and (spittethAlong <$> [X, Y, Z] <*> replicate 3 struck <*> replicate 3 striking)
 
 spittethAlong :: Axle -> Spit -> Spit -> Bool
-spittethAlong axle spitted spitting = betweenAlong axle spitted (snd spitting)
-                                   && betweenAlong axle spitting (fst spitted)
+spittethAlong axle spitted spitting
+  = betweenAlong axle spitted (snd spitting)
+  && betweenAlong axle spitting (fst spitted)
 
 betweenAlong ::  Axle -> Spit -> Point3 -> Bool
 betweenAlong X (Vertex3 x0 _ _, Vertex3 x1 _ _) (Vertex3 x _ _) = between (x0, x1) x
@@ -45,6 +45,7 @@ betweenAlong Y (Vertex3 _ y0 _, Vertex3 _ y1 _) (Vertex3 _ y _) = between (y0, y
 betweenAlong Z (Vertex3 _ _ z0, Vertex3 _ _ z1) (Vertex3 _ _ z) = between (z0, z1) z
 
 shapeshiftFrame :: Spit -> FrogMatrix
-shapeshiftFrame (left, right) = fromAffine [x, y, z] (zipWith (+) [-(x/2), 0.1, -(z/2)] (toFrogList left))
-  where
-  Vertex3 x y z = right <-> left
+shapeshiftFrame (left, right) = fromAffine
+  [x, y, z]
+  (zipWith (+) [-(x/2), 0.1, -(z/2)] (toFrogList left))
+  where Vertex3 x y z = right <-> left

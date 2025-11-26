@@ -14,7 +14,7 @@ import SDL hiding (get)
 import FastenShade
 import Happen
 import Key
-import Loudness
+import Snailheart
 import Matrix
 import Mean
 import MothSpell

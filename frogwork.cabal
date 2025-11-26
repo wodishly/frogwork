@@ -81,14 +81,14 @@ executable frogwork
     Stavemake
     Stavework
 
-    Breath
-    Loud
-    Mark
-    Shift
-    Token
+    Tung.Breath
+    Tung.Loud
+    Tung.Mark
+    Tung.Shift
+    Tung.Token
     Tung
 
-    Loudness
+    Snailheart
 
     State
     TitleState
