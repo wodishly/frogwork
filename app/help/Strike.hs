@@ -1,7 +1,5 @@
 module Strike where
 
-import Graphics.Rendering.OpenGL (Vertex3 (Vertex3))
-
 import Mean
 import Rime
 import Matrix

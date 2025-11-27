@@ -1,19 +1,13 @@
 module AboutState where
 
-import Control.Lens
-import Control.Monad.State
-
-import Graphics.Rendering.OpenGL (Vertex2 (Vertex2))
-
 import Allwit
-import State
-
 import Blee
 import FastenMain
+import Mean
 import Random
 import Rime
+import State
 import Stavework
-import Mean (preent)
 
 
 newtype AboutState = AboutState {

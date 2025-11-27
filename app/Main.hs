@@ -1,6 +1,4 @@
-module Main where
-
-import Control.Monad.State
+module Main (main) where
 
 import qualified Graphics.Rendering.OpenGL as GL
 import qualified SDL
@@ -13,7 +11,8 @@ import Snailheart
 import Matrix
 import Mean
 import Stateteller
-import Tung (orcroak)
+import State
+import Tung
 
 
 main :: IO ()

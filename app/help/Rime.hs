@@ -1,14 +1,19 @@
 {- HLINT ignore "Use head" -}
-module Rime where
+module Rime
+  ( module Rime,
+    GLfloat,
+    GL.Vertex,
+    GL.Vertex2 (Vertex2),
+    GL.Vertex3 (Vertex3),
+    GL.Vertex4 (Vertex4),
+    mod',
+  ) where
 
-import Data.Functor
 
-import Foreign
+import Data.Fixed (mod')
+import Foreign (Int32)
 import Numeric.LinearAlgebra hiding (real)
-import Graphics.Rendering.OpenGL
-  ( GLfloat,
-    GLint,
-  )
+import Graphics.Rendering.OpenGL (GLfloat, GLint)
 import qualified Graphics.Rendering.OpenGL as GL
   ( Vertex,
     Vertex2 (Vertex2),

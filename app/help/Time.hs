@@ -1,5 +1,6 @@
 module Time where
 
+
 data Timewit = Timewit {
   delta :: Float,
   lifetime :: Float

@@ -1,4 +1,8 @@
-module Shade where
+module Shade (
+  module Shade,
+  module GL,
+  module Foreign,
+) where
 
 import Control.Monad
 import Data.Bifunctor
@@ -7,9 +11,10 @@ import Data.HashMap.Lazy hiding (map)
 import Data.Maybe
 import Text.Printf
 
-import Foreign
+import Foreign (Int32, Ptr, Storable (sizeOf), Word8, new, nullPtr, peek, peekArray, plusPtr, withArray, (.>>.))
 import Numeric.LinearAlgebra hiding ((!), format)
-import Graphics.Rendering.OpenGL as GL
+import Graphics.Rendering.OpenGL as GL hiding (get, position, scale, texture, bitmap, flush)
+import qualified Graphics.Rendering.OpenGL as GL (get)
 
 import qualified Data.ByteString as BS
 import qualified Data.HashMap.Lazy as HM hiding (map)
@@ -20,13 +25,24 @@ import FastenMain
 import FastenShade
 import FrogSpell
 import Skeleton
-import Matrix
+import Matrix hiding ((!))
 import Mean
 import Spell
 import Time
 
 import MothSpell as MOTH
 
+
+data Meshlist = Meshlist {
+  bodies :: [Meshset],
+  grimes :: [Mesh],
+  worldlies :: [Mesh]
+}
+
+data Meshset = Meshset {
+  main :: Mesh,
+  hitframe :: Mesh
+}
 
 drawFaces :: Int32 -> IO ()
 drawFaces count = drawElements Triangles count UnsignedInt (bufferOffset 0)
@@ -79,8 +95,8 @@ knead kind path = do
 
   compileShader shader
 
-  status <- get (compileStatus shader)
-  get (shaderInfoLog shader) >>= print
+  status <- GL.get (compileStatus shader)
+  GL.get (shaderInfoLog shader) >>= print
   unless status (error $ (case kind of
       VertexShader -> "vertex"
       FragmentShader -> "fragment"
@@ -104,10 +120,10 @@ brew (vsPath, fsPath) = do
   bindFragDataLocation p "color" $= 0
   linkProgram p
 
-  get (shaderInfoLog vertexShader) >>= print
-  get (shaderInfoLog fragmentShader) >>= print
+  GL.get (shaderInfoLog vertexShader) >>= print
+  GL.get (shaderInfoLog fragmentShader) >>= print
 
-  get (linkStatus p) >>= flip unless (error "fuck")
+  GL.get (linkStatus p) >>= flip unless (error "fuck")
   return p
 
 brewProfile :: MeshProfile -> IO Concoction
@@ -132,7 +148,7 @@ useMesh Mesh { program, vao, tex } = do
 allocVector :: Storable a => Mesh -> Vector a -> String -> (GLint -> Ptr a -> IO ()) -> IO ()
 allocVector Mesh { uniformMap } prop uniformKey callback =
   whenJust (HM.lookup uniformKey uniformMap) $
-    get >=> \(UniformLocation location) -> S.unsafeWith prop (callback location)
+    GL.get >=> \(UniformLocation location) -> S.unsafeWith prop (callback location)
 
 whenJust :: Applicative f => Maybe a -> (a -> f ()) -> f ()
 whenJust (Just x) f = f x
@@ -157,7 +173,7 @@ drawMesh projectionMatrix viewMatrix orthographicMatrix Timewit { lifetime } mes
     whenJust meshAnimation $ \animation -> do
       whenJust (HM.lookup "u_bone_matrices" uniformMap) $ \uLoc -> do
         let (skellington, _finished) = continue animation now
-        UniformLocation bonesLocation <- get uLoc
+        UniformLocation bonesLocation <- GL.get uLoc
         withArray skellington $
           GLRaw.glUniformMatrix4fv bonesLocation (fromIntegral $ boneCount $ aMoth animation) 1
 

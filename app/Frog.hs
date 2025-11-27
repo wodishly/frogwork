@@ -1,14 +1,6 @@
 {- HLINT ignore "Use head" -}
 module Frog where
 
-import Control.Monad
-import Control.Monad.State
-import Data.Maybe
-
-import Numeric.LinearAlgebra (fromColumns, fromList, toColumns, (!))
-import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2), Vertex3 (Vertex3))
-import SDL.Input.Keyboard.Codes
-
 import Allwit
 import FastenFrame
 import FastenShade
@@ -18,6 +10,7 @@ import Mean
 import Rime
 import Shade
 import Skeleton
+import State
 import Strike
 import Time
 
@@ -30,8 +23,8 @@ data Frogwit = Frogwit {
   weight :: GLfloat,
   leapCount :: Int,
   utleaps :: Int,
-  mesh :: Mesh,
-  fresh :: Mesh,
+  meshset :: Meshset,
+--  hitframe :: Mesh,
   didLeap :: Bool,
   didWalk :: Bool,
   isRunning :: Bool
@@ -40,8 +33,8 @@ data Frogwit = Frogwit {
 instance Spitful Frogwit where
   spit Frogwit { position } = twimap (<+> position) tallspit
 
-makeFrog :: Mesh -> Mesh -> Frogwit
-makeFrog m fresh = Frogwit {
+makeFrog :: Meshset -> Frogwit
+makeFrog meshset = Frogwit {
   position = Vertex3 0 0 0,
   dy = 0,
   speed = 2,
@@ -49,8 +42,7 @@ makeFrog m fresh = Frogwit {
   weight = -8,
   leapCount = 0,
   utleaps = 2,
-  mesh = m,
-  fresh = fresh,
+  meshset,
   didLeap = False,
   didWalk = False,
   isRunning =  False
@@ -130,9 +122,21 @@ moveFrog allwit forward = do
   leap allwit
   fall allwit
 
+stirshift :: FrogVector -> FrogVector -> FrogMatrix
+stirshift start end = let
+  end' = start + fromList [end!0, 0, end!2]
+  trans = frogLookAt start end'
+  columns = toColumns trans
+  in fromColumns [
+    columns!!0,
+    columns!!1,
+    columns!!2,
+    fromList $ toList start ++ [1]
+  ]
+
 moveMesh :: FrogVector -> StateT Frogwit IO ()
 moveMesh forward = do
-  frogwit@Frogwit { position = Vertex3 x y z, mesh, fresh } <- get
+  frogwit@Frogwit { position = Vertex3 x y z, meshset = Meshset { main, hitframe } } <- get
 
   let frogPosition = fromList [x, y, z]
       frogTarget = frogPosition + fromList [forward!0, 0, forward!2]
@@ -146,24 +150,25 @@ moveMesh forward = do
         , fromList [x, y, z, 1]
         ]
 
-  frogFrame <- lift $ setMeshTransform (shapeshiftFrame $ spit frogwit) =<< setMeshTransform transform' fresh
-  newFrogMesh <- lift $ setMeshTransform transform' mesh
-  put frogwit { mesh = newFrogMesh, fresh = frogFrame }
+  frogFrame <- lift $ setMeshTransform (shapeshiftFrame $ spit frogwit) =<< setMeshTransform transform' hitframe
+  newFrogMesh <- lift $ setMeshTransform transform' main
+  put frogwit { meshset = Meshset { main = newFrogMesh, hitframe = frogFrame } }
 
 animateMesh :: Allwit -> StateT Frogwit IO ()
 animateMesh (Allwit { timewit = Timewit { lifetime } }) = do
-  frogwit@Frogwit { mesh, didLeap, isRunning } <- get
+  frogwit@Frogwit { meshset = meshset@Meshset { main }, didLeap, isRunning } <- get
 
-  let athem = meshAnimation mesh
+  let athem = meshAnimation main
 
   when (isJust athem) $
-    let newAnimation = play lifetime
-          ((if didLeap then once else evermore) (fromJust athem))
-          (if didLeap
-            then BUNNY_JUMP
-            else if didMove frogwit
-              then if isRunning
-                then BUNNY_RUN
-                else BUNNY_WALK
-              else BUNNY_IDLE)
-    in put frogwit { mesh = mesh { meshAnimation = Just newAnimation } }
+    let
+    what
+      | didLeap = BUNNY_JUMP
+      | didMove frogwit && isRunning  = BUNNY_RUN
+      | didMove frogwit  = BUNNY_WALK
+      | otherwise = BUNNY_IDLE
+    how
+      | didLeap = once
+      | otherwise = evermore
+    newAnimation = play lifetime (how (fromJust athem)) what
+    in put frogwit { meshset = meshset { main = main { meshAnimation = Just newAnimation } } }

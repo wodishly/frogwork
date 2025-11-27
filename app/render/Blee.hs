@@ -1,11 +1,8 @@
 module Blee where
 
-import Control.Monad.State
-
 import Graphics.Rendering.OpenGL
   ( ClearBuffer (..),
     Color4 (Color4),
-    GLfloat,
     HasSetter (($=)),
     Vector4 (Vector4),
     clear,
@@ -13,6 +10,7 @@ import Graphics.Rendering.OpenGL
   )
 
 import Rime
+import State
 
 
 type Blee = Color4 GLfloat

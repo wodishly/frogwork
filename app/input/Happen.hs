@@ -1,18 +1,19 @@
-module Happen where
+module Happen (
+  module Happen,
+  module SDL,
+) where
 
-import Data.Maybe
-
-import SDL (
-  Event (eventPayload),
-  EventPayload (KeyboardEvent, MouseMotionEvent, MouseWheelEvent, WindowResizedEvent),
-  InputMotion,
-  KeyboardEventData (keyboardEventKeyMotion, keyboardEventKeysym),
-  Keysym (keysymScancode),
-  MouseMotionEventData (mouseMotionEventRelMotion),
-  MouseWheelEventData (mouseWheelEventPos),
-  Scancode,
+import SDL
+  ( Event (eventPayload),
+    EventPayload (KeyboardEvent, MouseMotionEvent, MouseWheelEvent, WindowResizedEvent),
+    InputMotion (..),
+    KeyboardEventData (keyboardEventKeyMotion, keyboardEventKeysym),
+    Keysym (keysymScancode),
+    MouseMotionEventData (mouseMotionEventRelMotion),
+    MouseWheelEventData (mouseWheelEventPos),
+    Scancode,
+    getKeyboardState,
   )
-
 import qualified SDL (Point (P))
 
 import Mean

@@ -1,22 +1,17 @@
-{- HLINT ignore "Use section" -}
 module Stateteller where
 
-import Control.Lens
-import Control.Monad.State
-
-import Graphics.Rendering.OpenGL (Vertex2 (Vertex2))
-
 import Allwit
+import Mean
+import Shade
 import State
-import TitleState as Title
-import WillState as Will
-import PlayState as Play
-import PauseState as Pause
+import Stavework
+
 import AboutState as About
 import EndState as End
-
-import Mean
-import Stavework
+import PauseState as Pause
+import PlayState as Play
+import TitleState as Title
+import WillState as Will
 
 
 data Stateteller = Stateteller {
@@ -30,7 +25,7 @@ data Stateteller = Stateteller {
 }
 makeLenses ''Stateteller
 
-makeStateteller :: (Int, Int) -> Settings -> UnholyMeshMash -> Stateteller
+makeStateteller :: (Int, Int) -> Settings -> Meshlist -> Stateteller
 makeStateteller (w, h) settings meshes = Stateteller
   (makeTitleState wind)
   (makeWillState  wind settings)
@@ -65,9 +60,9 @@ flushWritings :: StateT Stateteller IO ()
 flushWritings = do
   teller <- get
   put teller {
-    _titleState = flush Title.writings (teller^.titleState)
-  , _willState = flush Will.writings (teller^.willState)
-  , _playState = (teller^.playState) { speechframe = (teller^.playState).speechframe { writtens = Nothing } }
-  , _pauseState = flush Pause.writings (teller^.pauseState)
-  , _aboutState = flush About.writings (teller^.aboutState)
+    _titleState = flush Title.writings (teller^.titleState),
+    _willState = flush Will.writings (teller^.willState),
+    _playState = (teller^.playState) { speechframe = (teller^.playState).speechframe { writtens = Nothing } },
+    _pauseState = flush Pause.writings (teller^.pauseState),
+    _aboutState = flush About.writings (teller^.aboutState)
   } where flush = (%~ map (throoks %~ const Nothing))

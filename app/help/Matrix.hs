@@ -1,10 +1,12 @@
 {- HLINT ignore "Use head" -}
-module Matrix where
+module Matrix (
+  module Matrix,
+  module H,
+) where
 
 import Prelude hiding ((<>))
 
-import Numeric.LinearAlgebra as H hiding (normalize)
-import Graphics.Rendering.OpenGL (GLfloat)
+import Numeric.LinearAlgebra as H hiding (normalize, scale, step, format)
 
 import Mean
 import Rime

@@ -1,11 +1,9 @@
-module Key where
+module Key (
+  module Key,
+  module SDL.Input.Keyboard.Codes,
+) where
 
-import Control.Monad
-import Data.Function
-
-import SDL (InputMotion (Pressed, Released), Event, getKeyboardState)
 import SDL.Input.Keyboard.Codes
-import Graphics.Rendering.OpenGL (GLfloat, Vertex2 (Vertex2))
 
 import Happen
 import Rime
@@ -19,40 +17,40 @@ data Keyset = Keyset {
 } deriving (Eq)
 
 instance Show Keyset where
-  show = ($ [begunKeys, continuingKeys, endedKeys]) . concatMap . ((show . map unwrapScancode) .) . (&)
+  show (Keyset b c e) = concatMap (show . map unwrapScancode) [b, c, e]
 
 unlockKeys :: IO ()
-unlockKeys = void SDL.getKeyboardState
+unlockKeys = void getKeyboardState
 
 lockKeys :: IO ()
 lockKeys = return ()
 
 hearableKeys :: [Scancode]
 hearableKeys = [
-    ScancodeLeft -- arrows to control camera
-  , ScancodeRight
-  , ScancodeUp
-  , ScancodeDown
+  ScancodeLeft, -- arrows to control camera
+  ScancodeRight,
+  ScancodeUp,
+  ScancodeDown,
 
-  , ScancodeW -- wasd to move
-  , ScancodeA
-  , ScancodeS
-  , ScancodeD
+  ScancodeW, -- wasd to move
+  ScancodeA,
+  ScancodeS,
+  ScancodeD,
 
-  , ScancodeSpace -- leap
-  , ScancodeLShift -- run
-  , ScancodeRShift -- run
+  ScancodeSpace, -- leap
+  ScancodeLShift, -- run
+  ScancodeRShift, -- run
 
-  , ScancodeTab -- show spell
-  , ScancodeReturn -- choose
-  , ScancodeEscape -- quit
-  , ScancodeP -- pause
-  , ScancodeQ -- quit
-  , ScancodeR -- restart
+  ScancodeTab, -- show spell
+  ScancodeReturn, -- choose
+  ScancodeEscape, -- quit
+  ScancodeP, -- pause
+  ScancodeQ, -- quit
+  ScancodeR, -- restart
 
-  , ScancodeK -- show keys
-  , ScancodeT -- show time
-  , ScancodeM -- be loud
+  ScancodeK, -- show keys
+  ScancodeT, -- show time
+  ScancodeM  -- be loud
   ]
 
 unkeys :: Keyset

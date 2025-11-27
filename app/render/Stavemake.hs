@@ -4,34 +4,11 @@
 -}
 module Stavemake where
 
-import Control.Monad
-import Data.Char
-import Data.HashMap.Lazy hiding (map)
-import Data.List.Split
-import Text.Printf
-
-import Foreign
+import Data.HashMap.Lazy (HashMap, fromList)
 import FreeType.Core.Base
 import FreeType.Core.Types
-import Graphics.Rendering.OpenGL (
-  Clamping (ClampToEdge),
-  GLfloat,
-  PixelFormat (Red),
-  Repetition (Repeated),
-  TextureCoordName (S, T),
-  TextureFilter (Linear'),
-  TextureObject,
-  TextureTarget2D (Texture2D),
-  Vertex2 (Vertex2),
-  ($=),
-  )
-import qualified Graphics.Rendering.OpenGL as GL (
-  textureFilter,
-  textureWrapMode
-  )
 
 import FastenMain
-
 import Mean
 import Rime
 import Shade
@@ -179,9 +156,9 @@ makeStavebook'' loud sharp road = do
     -- does this do anything? unsure if safe to destroy
     -- GL.texture Texture2D $= Enabled
 
-    GL.textureFilter Texture2D $= ((Linear', Nothing), Linear')
-    GL.textureWrapMode Texture2D S $= (Repeated, ClampToEdge)
-    GL.textureWrapMode Texture2D T $= (Repeated, ClampToEdge)
+    textureFilter Texture2D $= ((Linear', Nothing), Linear')
+    textureWrapMode Texture2D S $= (Repeated, ClampToEdge)
+    textureWrapMode Texture2D T $= (Repeated, ClampToEdge)
     when loud $ putStrLn "made texture!"
 
     return (stave, Stave

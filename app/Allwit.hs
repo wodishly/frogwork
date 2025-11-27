@@ -2,20 +2,17 @@ module Allwit where
 
 import Prelude hiding (lookup)
 
-import Control.Monad
 import Control.Monad.State (get, StateT, MonadTrans (lift), MonadState (put))
-import Data.Map (Map, fromList, adjust, (!), lookup)
-import Data.Maybe
+import Data.Map (Map, fromList, adjust, (!))
 
-import Graphics.GL
-import Graphics.Rendering.OpenGL hiding (get)
-import SDL hiding (get)
+import Graphics.GL -- glDisable, CULL_FACE
+import qualified SDL (GLContext, LocationMode (AbsoluteLocation, RelativeLocation), Window, setMouseLocationMode, windowGrab)
 
 import FastenShade
 import Happen
 import Key
 import Snailheart
-import Matrix
+import Matrix hiding ((!), fromList)
 import Mean
 import MothSpell
 import Shade
@@ -37,7 +34,7 @@ toggle = adjust not
 
 data Allwit = Allwit {
   settings :: Settings,
-  events :: [SDL.Event],
+  events :: [Event],
   keyset :: Keyset,
   mouse :: Mousewit,
   timewit :: Timewit,
@@ -56,10 +53,7 @@ makeAllwit t = Allwit
   (Mousewit (Vertex2 0 0) (Vertex2 0 0))
   (beginTime t)
 
--- | the frog, the speech, and the rest
-type UnholyMeshMash = (Mesh, Mesh, Mesh, [Mesh])
-
-begetMeshes :: Float -> IO (Staveware, UnholyMeshMash)
+begetMeshes :: Float -> IO (Staveware, Meshlist)
 begetMeshes now = do
   cocoon <- summon "assets/bunny.moth"
   let mothFile = unwrappingly mothify cocoon
@@ -68,7 +62,7 @@ begetMeshes now = do
   froggy <- setMeshTransform (fromAffine (thrice 1) (thrice 0)) $
     bun { meshAnimation = Just bunAnimation }
   earth <- makeSimpleMesh defaultSimpleMeshProfile
-  frogFrame <- makeSimpleMesh frameMeshProfile
+  -- frogFrame <- makeSimpleMesh frameMeshProfile
   heaven <- setMeshTransform (fromAffine (thrice 80) (thrice -40))
     =<< makeSimpleMesh (frameMeshProfileOf "heaven")
 
@@ -81,7 +75,17 @@ begetMeshes now = do
   hack <- makeSimpleMesh staveMeshProfile
   speech <- makeSimpleMesh speechMeshProfile
 
-  return ((x, hack), (froggy, frogFrame, speech, [heaven, earth, farsee, hack]))
+  frogset <- makeMeshset froggy
+  farseeset <- makeMeshset farsee
+
+  return ((x, hack), Meshlist {
+      bodies = [frogset, farseeset],
+      grimes = [speech],
+      worldlies = [heaven, earth, hack]
+    })
+
+makeMeshset :: Mesh -> IO Meshset
+makeMeshset m = Meshset m <$> makeSimpleMesh frameMeshProfile
 
 updateAllSettings :: StateT Allwit IO ()
 updateAllSettings = do
@@ -115,7 +119,7 @@ setWindowGrabbed setting = do
   Allwit { window } <- get
 
   SDL.windowGrab window $= setting
-  void $ SDL.setMouseLocationMode $ if setting then RelativeLocation else AbsoluteLocation
+  void $ SDL.setMouseLocationMode $ if setting then SDL.RelativeLocation else SDL.AbsoluteLocation
 
 wakeState :: Bool -> StateT Allwit IO ()
 wakeState grabbed = do

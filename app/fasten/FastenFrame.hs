@@ -1,9 +1,9 @@
 module FastenFrame where
 
-import Rime (FrogVertex (nonehood, onehood, (^*^)))
-import Strike (Spit)
-import Control.Arrow (Arrow(second))
-import Graphics.Rendering.OpenGL (Vertex3(Vertex3))
+import Mean
+import Rime
+import Strike
+
 
 {-# INLINE onespit #-}
 onespit :: Spit

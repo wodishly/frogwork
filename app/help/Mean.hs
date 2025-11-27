@@ -1,16 +1,35 @@
-module Mean where
+module Mean
+  ( module Mean,
+    module Control.Lens,
+    module Control.Monad,
+    module Data.Bifunctor,
+    module Data.Function,
+    module Data.Functor,
+    module Data.Maybe,
+    module Data.Map,
+    module Data.List.Split,
+    module Text.Printf,
+    module Data.Char,
+  )
+where
+
+import Control.Lens (Lens', makeLenses, (%~), (.~), (^.))
+import Control.Monad (forM, forM_, void, when)
+import Control.Monad.State (MonadTrans (lift), StateT)
+import Data.Bifunctor (Bifunctor (bimap, first, second))
+import Data.Function (applyWhen, (&))
+import Data.Functor ((<&>))
+import Data.Char (chr)
+import Data.List.Split (chunksOf)
+import Data.Maybe (fromJust, fromMaybe, isJust, isNothing, maybe, mapMaybe)
+import Text.Printf (printf)
 
 import Control.Exception (assert)
-import Control.Monad.State (MonadTrans (lift), StateT)
-import Data.Bifunctor (bimap)
-import Data.Bits (Bits (shiftL, shiftR))
-import Data.Function (applyWhen, (&))
+import Data.Bool (bool)
 import Data.List (singleton)
+import Data.Map (lookup)
 import Debug.Trace (traceShowId, traceShowWith)
 import GHC.Stack (HasCallStack)
-import Control.Arrow (Arrow(first, second))
-import Data.Bool (bool)
-
 
 type Shed a = [a] -> a
 type Shell a = a -> [a]

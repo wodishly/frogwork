@@ -5,17 +5,15 @@ import Data.HashMap.Lazy (HashMap)
 
 import Foreign (Word32)
 import Graphics.Rendering.OpenGL
-  ( GLfloat,
-    GettableStateVar,
+  ( GettableStateVar,
     TextureObject,
     UniformLocation,
-    Vertex2 (Vertex2)
   )
 
-import Mean (Twain)
-import Rime (Axle (..), Polyhedron, fournook, inject)
-import FastenFrame (onespit)
-import Strike (frame')
+import Mean
+import Rime
+import FastenFrame
+import Strike
 
 
 type MeshProfile = Either AssetMeshProfile SimpleMeshProfile

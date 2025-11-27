@@ -4,26 +4,16 @@
 -}
 module Stavework where
 
-import Control.Lens
-import Control.Monad
-import Control.Monad.State
-import Data.Bifunctor
-import Data.HashMap.Lazy hiding (foldr, map)
-import Data.Maybe
-
-import Foreign
-import Numeric.LinearAlgebra hiding ((!), step, scale)
-import Graphics.Rendering.OpenGL hiding (scale, texture)
+import Data.HashMap.Lazy ((!), member)
 
 import Allwit
-import State hiding (name)
-
 import Blee
 import FastenMain
-import Matrix
+import Matrix hiding ((!))
 import Mean
 import Rime
 import Shade
+import State
 import Stavemake
 
 
@@ -67,7 +57,7 @@ speechwrite wit@(Allwit { staveware = (book, _) }) frame@(Speechframe { scale, s
   return $ frame { writtens = Just ws }
 
 becwethe :: Uniform p => Mesh -> String -> p -> IO ()
-becwethe meshful name value = uniformMap meshful ! name >>= ($= value) . uniform
+becwethe meshful s value = uniformMap meshful ! s >>= ($= value) . uniform
 
 linewrap :: Speechframe -> [(String, Point)] -> [String]
 linewrap frame@(Speechframe { nooks, rim }) sundries

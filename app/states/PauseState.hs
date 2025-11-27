@@ -1,13 +1,10 @@
 module PauseState where
 
-import Control.Lens
-import Control.Monad.State
-
-import State
-
 import Blee
+import Mean
 import Rime
-import Stavework 
+import State
+import Stavework
 
 
 newtype PauseState = PauseState {

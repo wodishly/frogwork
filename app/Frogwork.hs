@@ -3,11 +3,6 @@ module Frogwork where
 
 import Prelude hiding (lookup)
 
-import Control.Lens
-import Control.Monad
-import Control.Monad.State
-import Data.Maybe
-
 import Graphics.Rendering.OpenGL
   ( BlendingFactor (OneMinusSrcAlpha, SrcAlpha),
     Capability (Enabled),

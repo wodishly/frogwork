@@ -1,12 +1,5 @@
 module WillState where
 
-import Control.Lens hiding (Setting, chosen)
-import Control.Monad.State
-import Data.Maybe
-
-import SDL.Input.Keyboard.Codes
-import Graphics.Rendering.OpenGL (Vertex2 (Vertex2))
-
 import Allwit
 import State
 

@@ -1,11 +1,19 @@
-module State where
+module State
+  ( module State,
+    StateT,
+    MonadState (get, put),
+    MonadTrans (lift),
+    evalStateT,
+    execStateT,
+    runStateT,
+  )
+where
 
-import Control.Monad
-import Control.Monad.State
-import Data.Fixed
+import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT (runStateT), evalStateT, execStateT)
 
 import Allwit
 import Mean
+import Rime
 import Time
 
 

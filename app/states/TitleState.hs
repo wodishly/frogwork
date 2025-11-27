@@ -1,20 +1,13 @@
 module TitleState where
 
-import Control.Lens
-import Control.Monad.State
-
-import SDL.Input.Keyboard.Codes
-import Graphics.Rendering.OpenGL (Vertex2 (Vertex2))
-
 import Allwit
-import State
-
 import Blee
+import FastenMain
 import Key
-import Stavework
 import Mean
 import Rime
-import FastenMain
+import State
+import Stavework
 
 
 data TitleState = TitleState {

@@ -3,18 +3,7 @@ module PlayState where
 
 import Prelude hiding (lookup)
 
-import Control.Lens (makeLenses)
-import Control.Monad (when)
-import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT, execStateT)
-import Data.Map (lookup)
-import Data.Maybe
-
-import Numeric.LinearAlgebra (Extractor (..), flatten, fromList, (??), (¿))
-import Graphics.Rendering.OpenGL as GL (GLfloat, Program, Vertex2 (Vertex2), Vertex3 (Vertex3), VertexArrayObject)
-
 import Allwit
-import State
-
 import Blee
 import Frog
 import Happen
@@ -24,7 +13,9 @@ import Mean
 import Random
 import Rime
 import Shade
+import State
 import Stavework
+import Telly
 import Tung
 
 
@@ -40,7 +31,8 @@ makeCamera = Camera
 
 data PlayState = PlayState {
   seed :: FrogSeed,
-  meshes :: [Mesh],
+  spitless :: [Mesh],
+  spitful :: [Tellywit],
   frog :: Frogwit,
   speechframe :: Speechframe,
   euler :: Point,
@@ -70,12 +62,13 @@ instance Stately PlayState where
     lift $ maybe (return ()) (const fremdcroak) =<< rMaybeLoud (1/60)
     return allwit
 
-makePlayState :: Point -> UnholyMeshMash -> PlayState
-makePlayState _ (f, ff, sp, rest) = PlayState {
+makePlayState :: Point -> Meshlist -> PlayState
+makePlayState _ Meshlist { bodies, grimes, worldlies } = PlayState {
   seed = formseed,
-  meshes = rest,
-  frog = makeFrog f ff,
-  speechframe = makeSpeechframe sp (concat $ replicate 2 "rɪbɪt "),
+  spitless = worldlies,
+  spitful = [makeTelly (head (tail bodies))],
+  frog = makeFrog (head bodies),
+  speechframe = makeSpeechframe (head grimes) (concat $ replicate 2 "rɪbɪt "),
   euler = Vertex2 0.3 1.57079633,
   radius = 10,
   programs = [],
@@ -85,11 +78,12 @@ makePlayState _ (f, ff, sp, rest) = PlayState {
 
 updateFriends :: Allwit -> StateT PlayState IO ()
 updateFriends allwit = do
-  playwit@PlayState { camera, frog } <- get
+  playwit@PlayState { camera, frog, spitful } <- get
   let viewMatrix = frogLookAt camera.position camera.target
       forward = flatten $ (viewMatrix ¿ [2]) ?? (Take 3, All)
   newFrog <- lift $ execStateT (updateFrog allwit forward) frog
-  put playwit { frog = newFrog }
+  newTelly <- lift $ execStateT (updateTelly allwit) (head spitful)
+  put playwit { frog = newFrog, spitful = newTelly : tail spitful }
 
 drawFriends :: Allwit -> StateT PlayState IO ()
 drawFriends Allwit { display, timewit } = do
@@ -103,8 +97,11 @@ drawFriends Allwit { display, timewit } = do
 
 gatherMeshes :: StateT PlayState IO [Mesh]
 gatherMeshes = do
-  PlayState { meshes, frog = Frogwit { mesh, fresh } } <- get
-  return $ meshes ++ [mesh, fresh]
+  PlayState { frog, spitful, spitless } <- get
+  return $
+    spitless
+    ++ concatMap yoke (frog.meshset : map (.meshset) spitful)
+  where yoke Meshset { main, hitframe } = [main, hitframe]
 
 drawSpeech :: Allwit -> StateT PlayState IO ()
 drawSpeech allwit@(Allwit { settings, display, timewit }) = do
