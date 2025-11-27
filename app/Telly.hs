@@ -4,7 +4,6 @@ module Telly where
 import Allwit
 import Rime
 import Shade
-import State
 import Strike hiding (spit)
 
 

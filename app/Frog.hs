@@ -10,7 +10,6 @@ import Mean
 import Rime
 import Shade
 import Skeleton
-import State
 import Strike
 import Time
 

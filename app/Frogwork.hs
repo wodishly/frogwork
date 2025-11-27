@@ -3,15 +3,7 @@ module Frogwork where
 
 import Prelude hiding (lookup)
 
-import Graphics.Rendering.OpenGL
-  ( BlendingFactor (OneMinusSrcAlpha, SrcAlpha),
-    Capability (Enabled),
-    ComparisonFunction (Lequal),
-    HasSetter (($=)),
-    Position (Position),
-    Size (Size),
-  )
-import SDL (V2 (V2), Window, glGetDrawableSize, glSwapWindow, pollEvents)
+import SDL (glSwapWindow, pollEvents)
 import SDL.Input.Keyboard.Codes
 
 import qualified Graphics.Rendering.OpenGL as GL
@@ -28,7 +20,6 @@ import Happen
 import Key
 import Mean
 import Time
-import Matrix
 
 
 data Frogwork = Frogwork {
@@ -116,21 +107,6 @@ listenWindow = do
       allwit = allwit { display = dis },
       stateteller = teller'
     }
-
-waxwane :: SDL.Window -> IO RenderView
-waxwane wind = do
-  SDL.V2 width height <- (fromIntegral <$>) <$> SDL.glGetDrawableSize wind
-  GL.viewport $= (Position 0 0, Size width height)
-  GL.depthFunc $= Just Lequal
-  GL.blend $= Enabled
-  GL.blendFunc $= (SrcAlpha, OneMinusSrcAlpha)
-  return RenderView {
-    aspect = fromIntegral width / fromIntegral height
-  , size = (fromIntegral width, fromIntegral height)
-  , fov = pi / 4.0
-  , near = 0.1
-  , far = 100.0
-  }
 
 become :: StateT Frogwork IO ()
 become = get >>= SDL.glSwapWindow . window . allwit

@@ -1,15 +1,4 @@
-module State
-  ( module State,
-    StateT,
-    MonadState (get, put),
-    MonadTrans (lift),
-    evalStateT,
-    execStateT,
-    runStateT,
-  )
-where
-
-import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT (runStateT), evalStateT, execStateT)
+module State where
 
 import Allwit
 import Mean

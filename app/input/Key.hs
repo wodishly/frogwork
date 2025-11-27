@@ -4,6 +4,7 @@ module Key (
 ) where
 
 import SDL.Input.Keyboard.Codes
+import qualified SDL (Event, InputMotion (Pressed, Released), getKeyboardState)
 
 import Happen
 import Rime
@@ -20,7 +21,7 @@ instance Show Keyset where
   show (Keyset b c e) = concatMap (show . map unwrapScancode) [b, c, e]
 
 unlockKeys :: IO ()
-unlockKeys = void getKeyboardState
+unlockKeys = void SDL.getKeyboardState
 
 lockKeys :: IO ()
 lockKeys = return ()
@@ -58,11 +59,11 @@ unkeys = Keyset [] [] []
 
 -- | Checks @wits@ to see if @code@ is @Pressed@.
 keyDown :: [Keywit] -> Scancode -> Bool
-keyDown = (. (, Pressed)) . has
+keyDown = (. (, SDL.Pressed)) . has
 
 -- | Checks @wits@ to see if @code@ is @Released@.
 keyUp :: [Keywit] -> Scancode -> Bool
-keyUp = (. (, Released)) . has
+keyUp = (. (, SDL.Released)) . has
 
 -- | Checks if the given code began being depressed on this frame.
 keyBegun :: Keyset -> Scancode -> Bool
@@ -84,7 +85,7 @@ anyKeysContinuing = any . keyContinuing
 keyEnded :: Keyset -> Scancode -> Bool
 keyEnded = has . endedKeys
 
-bethinkKeys :: [Event] -> Keyset -> Keyset
+bethinkKeys :: [SDL.Event] -> Keyset -> Keyset
 bethinkKeys events keyset = let news = unwrapHappenKeys events in Keyset
   (filter (allIn [keyDown news, not . keyContinuing keyset]) hearableKeys)
   (filter (allIn [not . keyUp news, keyContinuing keyset]) hearableKeys)

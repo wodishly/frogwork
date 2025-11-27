@@ -1,12 +1,22 @@
-module Allwit where
+module Allwit (
+  module Allwit,
+  module Control.Monad.State
+) where
 
 import Prelude hiding (lookup)
 
-import Control.Monad.State (get, StateT, MonadTrans (lift), MonadState (put))
-import Data.Map (Map, fromList, adjust, (!))
+import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT (runStateT), evalStateT, execStateT)
+import Data.Map (Map, adjust, fromList, (!))
 
 import Graphics.GL -- glDisable, CULL_FACE
-import qualified SDL (GLContext, LocationMode (AbsoluteLocation, RelativeLocation), Window, setMouseLocationMode, windowGrab)
+import qualified SDL
+  ( Event,
+    GLContext,
+    LocationMode (AbsoluteLocation, RelativeLocation),
+    Window,
+    setMouseLocationMode,
+    windowGrab,
+  )
 
 import FastenShade
 import Happen
@@ -34,7 +44,7 @@ toggle = adjust not
 
 data Allwit = Allwit {
   settings :: Settings,
-  events :: [Event],
+  events :: [SDL.Event],
   keyset :: Keyset,
   mouse :: Mousewit,
   timewit :: Timewit,
