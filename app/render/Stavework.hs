@@ -1,10 +1,9 @@
 {-|
 @Stavemake@ is for anything to do with writing the stave.
-@Stavework@ imports @State@, so @State@ must not import @Stavework@.
 -}
 module Stavework where
 
-import Data.HashMap.Lazy ((!), member)
+import Data.HashMap.Lazy ((!))
 
 import Allwit
 import Blee
@@ -13,7 +12,6 @@ import Matrix hiding ((!))
 import Mean
 import Rime
 import Shade
-import State
 import Stavemake
 
 
@@ -48,73 +46,6 @@ makeSpeechframe :: Mesh -> String -> Speechframe
 makeSpeechframe = Speechframe 22.5 ((1/3) *^ onehood) Nothing
   (Fournook (orwest <+> Vertex2 50 -75) (orwindow <-> Vertex2 100 50))
 
-speechwrite :: Stately a => Allwit -> Speechframe -> StateT a IO Speechframe
-speechwrite wit@(Allwit { staveware = (book, _) }) frame@(Speechframe { scale, string, writtens }) = do
-  let sundries = sunder book scale string
-  ws <- stavewriteAll wit (fromMaybe
-    (flayLines $ map (writeSpeechOnFrame frame) (linewrap frame sundries))
-    writtens)
-  return $ frame { writtens = Just ws }
-
-becwethe :: Uniform p => Mesh -> String -> p -> IO ()
-becwethe meshful s value = uniformMap meshful ! s >>= ($= value) . uniform
-
-linewrap :: Speechframe -> [(String, Point)] -> [String]
-linewrap frame@(Speechframe { nooks, rim }) sundries
-  | length sundries < 2 = map fst sundries
-  | otherwise = let
-    -- todo: work this out
-    Vertex2 w_speech _ = snd (head sundries)
-    Vertex2 w_frame _ = (greatness nooks <-> Vertex2 (2*rim) 0)
-    in if w_speech > w_frame
-      then fst (head sundries) : linewrap frame (tail sundries)
-      else linewrap frame (f (head sundries) (head $ tail sundries) : drop 2 sundries)
-        where f x = bimap (fst x ++) (snd x <+>)
-
--- | Sunders the string into twains of each word with its bounding frame.
-sunder :: Stavebook -> Scale -> String -> [(String, Point)]
-sunder book scl = map ((second (stringframe book scl) . twin) . (++ " ")) . words
-
--- | Flays each line of writing below the last.
---
--- todo: draw out the @32@
-flayLines :: [Writing] -> [Writing]
-flayLines = zipWith (\i wr -> wr { stead = Vertex2 0 (-32*i) <+> stead wr }) [0..]
-
--- | Fits the speech to the frame.
-writeSpeechOnFrame :: Speechframe -> String -> Writing
-writeSpeechOnFrame (Speechframe { scale, nooks, rim }) = Writing
-  (West, North)
-  scale
-  white
-  Nothing
-  (topLeft nooks <+> Vertex2 rim -rim)
-
-scaleToScreen :: Allwit -> Point -> Point
-scaleToScreen (Allwit { display = RenderView { size = (w, h) } }) = (^*^) (Vertex2 (w/orwidth) (h/orheight))
-
-allreckon :: Allwit -> Writing -> [Polyhedron]
-allreckon allwit@(Allwit { staveware = (book, _) }) (Writing stk scl' _ _ std' wr) =
-  let advances = scanl (+) 0 (map (advance . (book!)) wr)
-      (scl, std) = twimap (scaleToScreen allwit) (scl', std')
-      offset = reckonStakes book stk scl wr
-  in zipWith (\i char -> stavenook (offset <+> std) scl (advances!!i) (book!char)) [0..] wr
-
--- | The greater work.
-stavewriteAll :: Stately a => Allwit -> [Writing] -> StateT a IO [Writing]
-stavewriteAll allwit@Allwit { staveware = (_, m) } = (lift (useMesh m) >>) . mapM (stavewrite allwit)
-
--- | The great work.
-stavewrite :: Stately a => Allwit -> Writing -> StateT a IO Writing
-stavewrite allwit@(Allwit { staveware = (book, mish) }) writing@Writing { _throoks, _blee, writ } = do
-  let newrooks = Just (fromMaybe (allreckon allwit writing) _throoks)
-  forM_ (zip [0..] writ) $ \(i, char) ->
-    if member char book
-    then lift $ carve (book!char) (fromJust newrooks!!i) mish _blee
-    else error $ show char ++ " is not in the book"
-
-  return writing { _throoks = newrooks }
-
 -- | Carves the staves into being.
 carve :: Stave -> Polyhedron -> Mesh -> Blee -> IO ()
 carve (Stave { texture }) vertices mish@(Mesh { vbo, elementCount }) bl = do
@@ -126,13 +57,18 @@ carve (Stave { texture }) vertices mish@(Mesh { vbo, elementCount }) bl = do
   bindBuffer ArrayBuffer $= Nothing
   drawFaces elementCount
 
-renderFeather :: Stately a => Allwit -> StateT a IO ()
-renderFeather (Allwit { display, timewit, staveware }) = lift $ drawMesh
-  (getPerspectiveMatrix display)
-  (ident 4)
-  (getOrthographicMatrix display)
-  timewit
-  (snd staveware)
+becwethe :: Uniform p => Mesh -> String -> p -> IO ()
+becwethe meshful s value = uniformMap meshful ! s >>= ($= value) . uniform
+
+allreckon :: Allwit -> Writing -> [Polyhedron]
+allreckon allwit@(Allwit { staveware = (book, _) }) (Writing stk scl' _ _ std' wr) =
+  let advances = scanl (+) 0 (map (advance . (book!)) wr)
+      (scl, std) = twimap (scaleToScreen allwit) (scl', std')
+      offset = reckonStakes book stk scl wr
+  in zipWith (\i char -> stavenook (offset <+> std) scl (advances!!i) (book!char)) [0..] wr
+
+scaleToScreen :: Allwit -> Point -> Point
+scaleToScreen (Allwit { display = RenderView { size = (w, h) } }) = (^*^) (Vertex2 (w/orwidth) (h/orheight))
 
 reckonStakes :: Stavebook -> Stakes -> Scale -> String -> Point
 reckonStakes book (xstake, ystake) scl wr = Vertex2 ew ns where
@@ -167,3 +103,42 @@ stavenook bottomLeft scl step (Stave (Vertex2 left top) great@(Vertex2 _ height)
     where
     z0 = bottomLeft <+> ((1/2) *^ scl ^*^ Vertex2 (left+step) (top-height))
     z1 = (1/2) *^ scl ^*^ great
+
+-- | Flays each line of writing below the last.
+--
+-- todo: draw out the @32@
+flayLines :: Speechframe -> Stavebook -> [Writing]
+flayLines frame@Speechframe { nooks, rim, scale, string } book = zipWith
+  (\i wr -> wr { stead = Vertex2 0 (-32*i) <+> stead wr })
+  [0..]
+  (map (writeSpeechOnFrame frame) (linewrap nooks rim book scale string))
+
+-- | Fits the speech to the frame.
+writeSpeechOnFrame :: Speechframe -> String -> Writing
+writeSpeechOnFrame (Speechframe { scale, nooks, rim }) = Writing
+  (West, North)
+  scale
+  white
+  Nothing
+  (topLeft nooks <+> Vertex2 rim -rim)
+
+linewrap :: Fournook -> GLfloat -> Stavebook -> Scale -> String -> [String]
+linewrap nooks rim book scale string = linewrap' nooks rim sundries
+  where sundries = sunder book scale string
+
+-- | Sunders the string into twains of each word with its bounding frame.
+sunder :: Stavebook -> Scale -> String -> [(String, Point)]
+sunder book scl = map ((second (stringframe book scl) . twin) . (++ " ")) . words
+
+linewrap' :: Fournook -> GLfloat -> [(String, Point)] -> [String]
+linewrap' nooks rim sundries
+  = if length sundries < 2
+  then map fst sundries
+  else let
+    -- todo: work this out
+    Vertex2 w_speech _ = snd (head sundries)
+    Vertex2 w_frame _ = (greatness nooks <-> Vertex2 (2*rim) 0)
+      in if w_speech > w_frame
+        then fst (head sundries) : linewrap' nooks rim (tail sundries)
+        else linewrap' nooks rim (f (head sundries) (head $ tail sundries) : drop 2 sundries)
+          where f x = bimap (fst x ++) (snd x <+>)

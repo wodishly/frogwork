@@ -171,6 +171,10 @@ thrice = replicate 3
 has :: (Foldable t, Eq a) => t a -> a -> Bool
 has = flip elem
 
+{-# INLINE nas #-}
+nas :: (Foldable t, Eq a) => t a -> a -> Bool
+nas = flip notElem
+
 -- | >>> flight 4
 -- [0,1,2,3]
 {-# INLINE flight #-}

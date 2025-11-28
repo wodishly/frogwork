@@ -23,11 +23,8 @@ instance Stately AboutState where
     return allwit
 
   render allwit = do
-    aboutwit <- get
     bg darkwhelk
-    renderFeather allwit
-    ws <- stavewriteAll allwit (_writings aboutwit)
-    put aboutwit { _writings = ws }
+    stavewrite writings allwit
     return allwit
 
 makeAboutState :: Point -> AboutState

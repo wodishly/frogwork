@@ -39,7 +39,7 @@ data PlayState = PlayState {
   radius :: GLfloat,
   programs :: [(Program, VertexArrayObject)],
   camera :: Camera,
-  writings :: [Writing]
+  _writings :: [Writing]
 }
 makeLenses ''PlayState
 
@@ -52,15 +52,22 @@ instance Stately PlayState where
     return allwit
 
   render allwit = do
-    playwit <- get
     bg black
     drawFriends allwit
-    ws <- stavewriteAll allwit (writings playwit)
-    put playwit { writings = ws }
-    drawSpeech allwit
+    stavewrite writings allwit
+
     doAtEach 1 (timewit allwit) (lift fremdcroak)
     lift $ maybe (return ()) (const fremdcroak) =<< rMaybeLoud (1/60)
+
     return allwit
+
+  stavewrite lens allwit = do
+    playwit <- get
+
+    when (fromMaybe False $ lookup ShowSpeech allwit.settings) $ do
+      ws <- stavewriteAll allwit (playwit^.lens)
+      drawSpeech allwit
+      put $ (lens.~ws) playwit
 
 makePlayState :: Point -> Meshlist -> PlayState
 makePlayState _ Meshlist { bodies, grimes, worldlies } = PlayState {
@@ -73,7 +80,7 @@ makePlayState _ Meshlist { bodies, grimes, worldlies } = PlayState {
   radius = 10,
   programs = [],
   camera = makeCamera,
-  writings = []
+  _writings = []
 }
 
 updateFriends :: Allwit -> StateT PlayState IO ()
@@ -86,35 +93,35 @@ updateFriends allwit = do
   put playwit { frog = newFrog, spitful = newTelly : tail spitful }
 
 drawFriends :: Allwit -> StateT PlayState IO ()
-drawFriends Allwit { display, timewit } = do
+drawFriends allwit = do
   PlayState { camera } <- get
 
-  gatherMeshes >>= lift . mapM_ (drawMesh
-    (getPerspectiveMatrix display)
-    (frogLookAt camera.position camera.target)
-    (getOrthographicMatrix display)
-    timewit)
+  gatherMeshes >>= lift . mapM_ (drawWith allwit (frogLookAt camera.position camera.target))
 
 gatherMeshes :: StateT PlayState IO [Mesh]
 gatherMeshes = do
   PlayState { frog, spitful, spitless } <- get
-  return $
-    spitless
-    ++ concatMap yoke (frog.meshset : map (.meshset) spitful)
-  where yoke Meshset { main, hitframe } = [main, hitframe]
+
+  return $ spitless ++ concatMap yoke (frog.meshset : map (.meshset) spitful)
+    where yoke Meshset { main, hitframe } = [main, hitframe]
 
 drawSpeech :: Allwit -> StateT PlayState IO ()
-drawSpeech allwit@(Allwit { settings, display, timewit }) = do
-  playwit@(PlayState { camera, speechframe = _speechframe@Speechframe { meesh } }) <- get
-  when (fromMaybe False (lookup ShowSpeech settings)) $ do
-    lift $ drawMesh
-      (getPerspectiveMatrix display)
-      (frogLookAt camera.position camera.target)
-      (getOrthographicMatrix display)
-      timewit
-      meesh
-    x <- speechwrite allwit _speechframe
-    put playwit { speechframe = x }
+drawSpeech allwit = do
+  playwit@PlayState {
+    camera,
+    speechframe = _speechframe@Speechframe { meesh }
+  } <- get
+
+  lift $ drawWith allwit (frogLookAt camera.position camera.target) meesh
+
+  speechframe' <- speechwrite allwit _speechframe
+  put playwit { speechframe = speechframe' }
+
+  where
+  speechwrite :: Stately a => Allwit -> Speechframe -> StateT a IO Speechframe
+  speechwrite wit@(Allwit { staveware = (book, _) }) frame@(Speechframe { writtens }) = do
+    ws <- stavewriteAll wit (fromMaybe (flayLines frame book) writtens)
+    return $ frame { writtens = Just ws }
 
 updateCamera :: Allwit -> StateT PlayState IO ()
 updateCamera Allwit {

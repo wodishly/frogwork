@@ -1,5 +1,6 @@
 module PauseState where
 
+import Allwit
 import Blee
 import Mean
 import Rime

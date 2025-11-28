@@ -10,7 +10,7 @@ import Graphics.Rendering.OpenGL
   )
 
 import Rime
-import State
+import Allwit
 
 
 type Blee = Color4 GLfloat
@@ -30,7 +30,7 @@ from255 = (((. f) .) .) . (((. f) .) . ((. f) . Color4) . f)
 
 from256 :: Int -> Int -> Int -> Int -> Blee
 from256 = (((. f) .) .) . (((. f) .) . ((. f) . Color4) . f)
-  where f = (/255) . (- 1) . fromIntegral
+  where f = (/255) . pred . fromIntegral
 
 bleeToGLVector4 :: Blee -> Vector4 GLfloat
 bleeToGLVector4 (Color4 r g b a) = Vector4 r g b a

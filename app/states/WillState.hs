@@ -29,11 +29,8 @@ instance Stately WillState where
     choosefare allwit
 
   render allwit = do
-    willwit <- get
     bg darkwhelk
-    renderFeather allwit
-    ws <- stavewriteAll allwit (_writings willwit)
-    put willwit { _writings = ws }
+    stavewrite writings allwit
     return allwit
 
 makeWillState :: Point -> Settings -> WillState

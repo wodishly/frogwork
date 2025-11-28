@@ -26,11 +26,8 @@ instance Stately TitleState where
     return allwit
 
   render allwit = do
-    titlewit <- get
     bg darkwhelk
-    renderFeather allwit
-    ws <- stavewriteAll allwit (_writings titlewit)
-    put titlewit { _writings = ws }
+    stavewrite writings allwit
     return allwit
 
 makeTitleState :: Point -> TitleState

@@ -157,8 +157,8 @@ whenJust Nothing _ = pure ()
 uniformMatrix :: GLint -> Ptr GLfloat -> IO ()
 uniformMatrix loc = GLRaw.glUniformMatrix4fv loc 1 1
 
-drawMesh :: FrogMatrix -> FrogMatrix -> FrogMatrix -> Timewit -> Mesh -> IO ()
-drawMesh projectionMatrix viewMatrix orthographicMatrix Timewit { lifetime } mesh@Mesh { uniformMap, meshAnimation } = do
+drawMesh :: FrogMatrix -> FrogMatrix -> Timewit -> FrogMatrix -> Mesh -> IO ()
+drawMesh projectionMatrix orthographicMatrix Timewit { lifetime } viewMatrix mesh@Mesh { uniformMap, meshAnimation } = do
   useMesh mesh
 
   allocVector mesh (flatten $ transform mesh) "u_model_matrix" uniformMatrix
