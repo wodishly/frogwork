@@ -9,6 +9,8 @@ import Rime
 import Shade
 import Stavework
 import Time
+import Blee
+import Key
 
 
 data StateName
@@ -32,12 +34,32 @@ class Stately a where
   loop :: Allwit -> StateT a IO Allwit
   loop allwit = update allwit >>= render
 
-  stavewrite :: Lens' a [Writing] -> Allwit -> StateT a IO ()
-  stavewrite lens allwit = do
+  stave :: Lens' a [Writing] -> Allwit -> StateT a IO ()
+  stave lens allwit = do
     statewit <- get
     renderFeather allwit
     ws <- stavewriteAll allwit (statewit^.lens)
     put $ (lens.~ws) statewit
+
+class Stately a => Choosing a b | a -> b where
+  chosen :: a -> b
+  updateHand :: Allwit -> StateT a IO Allwit
+
+  showFinger :: Stately a => Lens' a [Writing] -> Lens' a Int -> StateT a IO ()
+  showFinger writings finger = do
+    statewit <- get
+    put $ (over writings $ choose statewit . unchoose) statewit
+    where choose statewit = hit (set blee red) (succ (view finger statewit))
+          unchoose = map (set blee lightwhelk)
+
+  nudgeFinger :: Allwit -> Lens' a Int -> Lens' a [b] -> StateT a IO ()
+  nudgeFinger Allwit { keyset } finger hand = do
+    statewit <- get
+    let nudge
+          | keyBegun keyset ScancodeUp = pred
+          | keyBegun keyset ScancodeDown = succ
+          | otherwise = id
+    put $ (set finger $ mod (nudge (view finger statewit)) (length (view hand statewit))) statewit
 
 doOnceAt :: Stately a => Float -> Timewit -> StateT a IO () -> StateT a IO ()
 doOnceAt t Timewit { lifetime, delta } = when (between (lifetime, lifetime+delta) t)

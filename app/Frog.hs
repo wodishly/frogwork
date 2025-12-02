@@ -22,18 +22,15 @@ data Frogwit = Frogwit {
   weight :: GLfloat,
   leapCount :: Int,
   utleaps :: Int,
+  spit :: Spit,
   meshset :: Meshset,
---  hitframe :: Mesh,
   didLeap :: Bool,
   didWalk :: Bool,
   isRunning :: Bool
 }
 
-instance Spitful Frogwit where
-  spit Frogwit { position } = twimap (<+> position) tallspit
-
 makeFrog :: Meshset -> Frogwit
-makeFrog meshset = Frogwit {
+makeFrog Meshset { main, hitframe } = Frogwit {
   position = Vertex3 0 0 0,
   dy = 0,
   speed = 2,
@@ -41,7 +38,11 @@ makeFrog meshset = Frogwit {
   weight = -8,
   leapCount = 0,
   utleaps = 2,
-  meshset,
+  spit = tallspit,
+  meshset = Meshset {
+    main,
+    hitframe = setMeshTransform (shapeshiftFrame tallspit (Vertex3 0 0 0)) hitframe
+  },
   didLeap = False,
   didWalk = False,
   isRunning =  False
@@ -135,7 +136,7 @@ stirshift start end = let
 
 moveMesh :: FrogVector -> StateT Frogwit IO ()
 moveMesh forward = do
-  frogwit@Frogwit { position = Vertex3 x y z, meshset = Meshset { main, hitframe } } <- get
+  frogwit@Frogwit { position = position@(Vertex3 x y z), spit, meshset = Meshset { main, hitframe } } <- get
 
   let frogPosition = fromList [x, y, z]
       frogTarget = frogPosition + fromList [forward!0, 0, forward!2]
@@ -149,8 +150,8 @@ moveMesh forward = do
         , fromList [x, y, z, 1]
         ]
 
-  frogFrame <- lift $ setMeshTransform (shapeshiftFrame $ spit frogwit) =<< setMeshTransform transform' hitframe
-  newFrogMesh <- lift $ setMeshTransform transform' main
+  let frogFrame = setMeshTransform (shapeshiftFrame spit position) $ setMeshTransform transform' hitframe
+      newFrogMesh = setMeshTransform transform' main
   put frogwit { meshset = Meshset { main = newFrogMesh, hitframe = frogFrame } }
 
 animateMesh :: Allwit -> StateT Frogwit IO ()

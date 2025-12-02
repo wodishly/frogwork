@@ -10,13 +10,12 @@ import Happen
 import Key
 import Matrix
 import Mean
-import Random
 import Rime
 import Shade
 import State
 import Stavework
 import Telly
-import Tung
+import Weird
 
 
 data Camera = Camera {
@@ -30,7 +29,6 @@ makeCamera = Camera
   (fromList [0, 0, 1])
 
 data PlayState = PlayState {
-  seed :: FrogSeed,
   spitless :: [Mesh],
   spitful :: [Tellywit],
   frog :: Frogwit,
@@ -54,34 +52,33 @@ instance Stately PlayState where
   render allwit = do
     bg black
     drawFriends allwit
-    stavewrite writings allwit
+    stave writings allwit
 
-    doAtEach 1 (timewit allwit) (lift fremdcroak)
-    lift $ maybe (return ()) (const fremdcroak) =<< rMaybeLoud (1/60)
+    -- doAtEach 1 (timewit allwit) (lift fremdcroak)
+    -- lift $ when (weird < (1/60)) fremdcroak
 
     return allwit
 
-  stavewrite lens allwit = do
+  stave lens allwit = do
     playwit <- get
 
     when (fromMaybe False $ lookup ShowSpeech allwit.settings) $ do
-      ws <- stavewriteAll allwit (playwit^.lens)
-      drawSpeech allwit
-      put $ (lens.~ws) playwit
+      ws <- stavewriteAll allwit (view lens playwit)
+      drawSpeechframe allwit
+      put $ set lens ws playwit
 
-makePlayState :: Point -> Meshlist -> PlayState
-makePlayState _ Meshlist { bodies, grimes, worldlies } = PlayState {
-  seed = formseed,
+makePlayState :: Allwit -> Point -> Meshlist -> (Allwit, PlayState)
+makePlayState allwit _ Meshlist { bodies, grimes = (stavegrime, _), worldlies } = (allwit', PlayState {
   spitless = worldlies,
-  spitful = [makeTelly (head (tail bodies))],
+  spitful = [makeTelly (Vertex3 (ws!!0) 0 (ws!!1)) (Vertex3 -1 0 -1, Vertex3 1 2 1) (head (tail bodies))],
   frog = makeFrog (head bodies),
-  speechframe = makeSpeechframe (head grimes) (concat $ replicate 2 "rɪbɪt "),
+  speechframe = makeSpeechframe stavegrime (concat $ replicate 2 "rɪbɪt "),
   euler = Vertex2 0.3 1.57079633,
   radius = 10,
   programs = [],
   camera = makeCamera,
   _writings = []
-}
+}) where (ws, allwit') = first (map ((*4) . (- 0.5)) . ly) (weirds 2 allwit)
 
 updateFriends :: Allwit -> StateT PlayState IO ()
 updateFriends allwit = do
@@ -98,30 +95,25 @@ drawFriends allwit = do
 
   gatherMeshes >>= lift . mapM_ (drawWith allwit (frogLookAt camera.position camera.target))
 
-gatherMeshes :: StateT PlayState IO [Mesh]
-gatherMeshes = do
-  PlayState { frog, spitful, spitless } <- get
+  where
+  gatherMeshes :: StateT PlayState IO [Mesh]
+  gatherMeshes = do
+    PlayState { frog, spitful, spitless } <- get
 
-  return $ spitless ++ concatMap yoke (frog.meshset : map (.meshset) spitful)
-    where yoke Meshset { main, hitframe } = [main, hitframe]
+    return $ spitless ++ concatMap yoke (frog.meshset : map (.meshset) spitful)
+      where yoke Meshset { main, hitframe } = [main, hitframe]
 
-drawSpeech :: Allwit -> StateT PlayState IO ()
-drawSpeech allwit = do
+drawSpeechframe :: Allwit -> StateT PlayState IO ()
+drawSpeechframe allwit@(Allwit { staveware = (book, _) }) = do
   playwit@PlayState {
     camera,
-    speechframe = _speechframe@Speechframe { meesh }
+    speechframe = _speechframe@Speechframe { mesh, writtens }
   } <- get
 
-  lift $ drawWith allwit (frogLookAt camera.position camera.target) meesh
+  lift $ drawWith allwit (frogLookAt camera.position camera.target) mesh
 
-  speechframe' <- speechwrite allwit _speechframe
-  put playwit { speechframe = speechframe' }
-
-  where
-  speechwrite :: Stately a => Allwit -> Speechframe -> StateT a IO Speechframe
-  speechwrite wit@(Allwit { staveware = (book, _) }) frame@(Speechframe { writtens }) = do
-    ws <- stavewriteAll wit (fromMaybe (flayLines frame book) writtens)
-    return $ frame { writtens = Just ws }
+  ws <- stavewriteAll allwit (fromMaybe (flayLines _speechframe book) writtens)
+  put playwit { speechframe = _speechframe { writtens = Just ws } }
 
 updateCamera :: Allwit -> StateT PlayState IO ()
 updateCamera Allwit {

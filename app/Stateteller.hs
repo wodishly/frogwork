@@ -29,11 +29,11 @@ data Stateteller = Stateteller {
 }
 makeLenses ''Stateteller
 
-makeStateteller :: (Int, Int) -> Settings -> Meshlist -> Stateteller
-makeStateteller (w, h) settings meshes = Stateteller
+makeStateteller :: Allwit -> (Int, Int) -> Settings -> Meshlist -> Stateteller
+makeStateteller allwit (w, h) settings meshes = Stateteller
   (makeTitleState wind)
   (makeWillState  wind settings)
-  (makePlayState  wind meshes)
+  (snd $ makePlayState allwit wind meshes)
   (makePauseState wind)
   (makeAboutState wind)
   makeEndState
@@ -64,9 +64,9 @@ flushWritings :: StateT Stateteller IO ()
 flushWritings = do
   teller <- get
   put teller {
-    _titleState = flush Title.writings (teller^.titleState),
-    _willState = flush Will.writings (teller^.willState),
+    _titleState = floosh Title.writings (teller^.titleState),
+    _willState = floosh Will.writings (teller^.willState),
     _playState = (teller^.playState) { speechframe = (teller^.playState).speechframe { writtens = Nothing } },
-    _pauseState = flush Pause.writings (teller^.pauseState),
-    _aboutState = flush About.writings (teller^.aboutState)
-  } where flush = (%~ map (throoks %~ const Nothing))
+    _pauseState = floosh Pause.writings (teller^.pauseState),
+    _aboutState = floosh About.writings (teller^.aboutState)
+  } where floosh = (%~ map flush)

@@ -7,12 +7,13 @@ import Allwit
 import FastenMain
 import Frogwork
 import Happen
+
 import Key
 import Matrix
 import Mean
 import Snailheart
 import Stateteller
-import Tung
+-- import Tung
 
 
 main :: IO ()
@@ -25,7 +26,7 @@ main = do
 
   unlockKeys
 
-  orcroak
+  -- orcroak
 
   SDL.ticks
     >>= birth window context display loudness . fromIntegral
@@ -41,7 +42,7 @@ birth window ctx display loudness ticks = do
 
   return Frogwork {
     allwit,
-    stateteller = makeStateteller (x, y) settings meshes
+    stateteller = makeStateteller allwit (x, y) settings meshes
   }
 
 live :: StateT Frogwork IO (SDL.GLContext, SDL.Window, Loudness)

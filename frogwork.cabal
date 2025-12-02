@@ -66,7 +66,7 @@ executable frogwork
     FastenFrame
 
     Mean
-    Random
+    Weird
     Rime
     Time
     Matrix
@@ -122,6 +122,7 @@ executable frogwork
     TupleSections
     DuplicateRecordFields
     OverloadedRecordDot
+    FunctionalDependencies
 
   -- Other library packages from which modules are imported.
   build-depends:

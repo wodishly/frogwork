@@ -1,6 +1,5 @@
 module PauseState where
 
-import Allwit
 import Blee
 import Mean
 import Rime
@@ -17,12 +16,11 @@ instance Stately PauseState where
   name _ = PauseName
 
   render allwit = do
-    pausewit <- get
     bg black
-    renderFeather allwit
-    ws <- stavewriteAll allwit (_writings pausewit)
-    put pausewit { _writings = ws }
+    stave writings allwit
     return allwit
 
 makePauseState :: Point -> PauseState
-makePauseState window = PauseState { _writings = [makeWriting ((1/2) *^ window) "pɔz"] }
+makePauseState window = PauseState {
+  _writings = [makeWriting ((1/2) *^ window) "pɔz"]
+  }

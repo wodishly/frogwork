@@ -5,10 +5,9 @@ module Allwit (
 
 import Prelude hiding (lookup)
 
-import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT (runStateT), evalStateT, execStateT)
+import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT (runStateT), evalStateT, execStateT, runState, execState, State)
 import Data.Map (Map, adjust, fromList, (!))
 
-import Graphics.GL -- glDisable, CULL_FACE
 import qualified SDL
   ( Event,
     GLContext,
@@ -30,6 +29,7 @@ import Skeleton
 import Spell
 import Stavemake
 import Time
+import Weird
 
 
 data Setting = ShowTicks | ShowKeys | ShowSpeech | RunTests | BeLoud deriving (Show, Eq, Ord)
@@ -44,6 +44,7 @@ toggle = adjust not
 
 data Allwit = Allwit {
   settings :: Settings,
+  seed :: FrogSeed,
   events :: [SDL.Event],
   keyset :: Keyset,
   mouse :: Mousewit,
@@ -58,6 +59,7 @@ data Allwit = Allwit {
 makeAllwit :: Float -> SDL.Window -> SDL.GLContext -> Staveware -> RenderView -> Loudness -> Allwit
 makeAllwit t = Allwit
   makeSettings
+  formseed
   []
   unkeys
   (Mousewit (Vertex2 0 0) (Vertex2 0 0))
@@ -69,33 +71,34 @@ begetMeshes now = do
   let mothFile = unwrappingly mothify cocoon
   bun <- makeAssetMesh $ makeAsset "bunny"
   let bunAnimation = (play now . evermore) (makeAnimation mothFile) BUNNY_IDLE
-  froggy <- setMeshTransform (fromAffine (thrice 1) (thrice 0)) $
-    bun { meshAnimation = Just bunAnimation }
+  frogset <- makeMeshset $ setMeshTransform (fromAffine (thrice 1) (thrice 0)) bun { meshAnimation = Just bunAnimation }
   earth <- makeSimpleMesh defaultSimpleMeshProfile
-  -- frogFrame <- makeSimpleMesh frameMeshProfile
   heaven <- setMeshTransform (fromAffine (thrice 80) (thrice -40))
-    =<< makeSimpleMesh (frameMeshProfileOf "heaven")
+    <$> makeSimpleMesh (frameMeshProfileOf "heaven")
 
-  glDisable GL_CULL_FACE
+  uncull
 
-  farsee <- setMeshTransform (fromTranslation [-2, 1, 2])
-    =<< makeAssetMesh (makeAsset "tv")
+  farseeset <- makeMeshset =<< makeAssetMesh (makeAsset "tv")
 
-  x <- makeFeather "noto-sans"
+  feather <- makeFeather "noto-sans"
   hack <- makeSimpleMesh staveMeshProfile
   speech <- makeSimpleMesh speechMeshProfile
 
-  frogset <- makeMeshset froggy
-  farseeset <- makeMeshset farsee
-
-  return ((x, hack), Meshlist {
+  return ((feather, hack), Meshlist {
       bodies = [frogset, farseeset],
-      grimes = [speech],
+      grimes = (speech, []),
       worldlies = [heaven, earth, hack]
     })
 
 makeMeshset :: Mesh -> IO Meshset
 makeMeshset m = Meshset m <$> makeSimpleMesh frameMeshProfile
+
+weird :: Allwit -> (Float, Allwit)
+weird = first only . weirds 1
+
+weirds :: Int -> Allwit -> ([Float], Allwit)
+weirds n allwit@Allwit { seed } = (ws, allwit { seed = seed' })
+  where (ws, seed') = repeatState n next seed
 
 updateAllSettings :: StateT Allwit IO ()
 updateAllSettings = do

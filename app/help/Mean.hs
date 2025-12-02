@@ -13,7 +13,7 @@ module Mean
   )
 where
 
-import Control.Lens (Lens', makeLenses, (%~), (.~), (^.))
+import Control.Lens (Lens', makeLenses, (%~), (.~), (^.), view, over, set)
 import Control.Monad (forM, forM_, void, when)
 import Control.Monad.State (MonadTrans (lift), StateT)
 import Data.Bifunctor (Bifunctor (bimap, first, second))
@@ -74,6 +74,9 @@ preent = lift . print
 samely :: Eq a => a -> a -> a
 samely = ($ id) .  sSs . (assert .) . (==)
 
+only :: [a] -> a
+only [x] = x
+only _ = error "not only"
 -- @endregion
 
 -- @region For working with twains.

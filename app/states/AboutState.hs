@@ -1,13 +1,12 @@
 module AboutState where
 
-import Allwit
 import Blee
-import FastenMain
 import Mean
-import Random
 import Rime
 import State
 import Stavework
+import Allwit
+import FastenMain
 
 
 newtype AboutState = AboutState {
@@ -19,21 +18,22 @@ instance Stately AboutState where
   name _ = AboutName
 
   update allwit = do
-    doAtEach 0.5 (timewit allwit) flutter
-    return allwit
+    let (ws, allwit') = weirds 2 allwit
+    doAtEach 1 (timewit allwit) (flutter ws)
+    return allwit'
 
   render allwit = do
     bg darkwhelk
-    stavewrite writings allwit
+    stave writings allwit
     return allwit
 
 makeAboutState :: Point -> AboutState
 makeAboutState wind = AboutState [makeWriting wind "rɪbɪt"]
 
-flutter :: StateT AboutState IO ()
-flutter = do
+flutter :: [Float] -> StateT AboutState IO ()
+flutter ws = do
   aboutwit@AboutState { _writings } <- get
-  rx <- lift rand
-  ry <- lift rand
-  preent "hi"
-  put aboutwit { _writings = [(head _writings) { stead = Vertex2 (rx*orwidth) (ry*orheight) }] }
+  let x = head _writings
+      z = Vertex2 (head ws*orwidth) (head (tail ws)*orheight)
+  put aboutwit { _writings = [flush $ x { stead = z }] }
+  preent $ aboutwit^.writings

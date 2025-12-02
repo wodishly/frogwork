@@ -31,18 +31,24 @@ import Spell
 import Time
 
 import MothSpell as MOTH
+import Graphics.GL
 
 
 data Meshlist = Meshlist {
   bodies :: [Meshset],
-  grimes :: [Mesh],
+  grimes :: Grimes,
   worldlies :: [Mesh]
 }
+
+type Grimes = (Mesh, [Mesh])
 
 data Meshset = Meshset {
   main :: Mesh,
   hitframe :: Mesh
 }
+
+uncull :: IO ()
+uncull = glDisable GL_CULL_FACE
 
 drawFaces :: Int32 -> IO ()
 drawFaces count = drawElements Triangles count UnsignedInt (bufferOffset 0)
@@ -84,8 +90,8 @@ data Concoction = Concoction {
 makeAsset :: String -> AssetMeshProfile
 makeAsset = AssetMeshProfile
 
-setMeshTransform :: FrogMatrix -> Mesh -> IO Mesh
-setMeshTransform t m = return m { transform = t }
+setMeshTransform :: FrogMatrix -> Mesh -> Mesh
+setMeshTransform t m = m { transform = t }
 
 -- | Compiles ("kneads") the given kind of shader from the given path.
 knead :: ShaderType -> FilePath -> IO Shader
@@ -156,6 +162,9 @@ whenJust Nothing _ = pure ()
 
 uniformMatrix :: GLint -> Ptr GLfloat -> IO ()
 uniformMatrix loc = GLRaw.glUniformMatrix4fv loc 1 1
+
+becwethe :: Uniform p => Mesh -> String -> p -> IO ()
+becwethe meshful s value = uniformMap meshful ! s >>= ($= value) . uniform
 
 drawMesh :: FrogMatrix -> FrogMatrix -> Timewit -> FrogMatrix -> Mesh -> IO ()
 drawMesh projectionMatrix orthographicMatrix Timewit { lifetime } viewMatrix mesh@Mesh { uniformMap, meshAnimation } = do

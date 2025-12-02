@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 module WillState where
 
 import Allwit
@@ -11,8 +12,8 @@ import Stavework
 
 
 data WillState = WillState {
-  hand :: [Maybe Setting],
-  finger :: Int,
+  _hand :: [Maybe Setting],
+  _finger :: Int,
   settings :: Settings,
   _writings :: [Writing]
 }
@@ -26,21 +27,34 @@ instance Stately WillState where
 
   update allwit = do
     _ <- get
-    choosefare allwit
+    updateHand allwit
 
   render allwit = do
     bg darkwhelk
-    stavewrite writings allwit
+    stave writings allwit
     return allwit
+
+instance Choosing WillState (Maybe Setting) where
+  chosen wit = _hand wit !! _finger wit
+
+  updateHand allwit@Allwit { keyset } = do
+    willwit <- get
+
+    nudgeFinger allwit finger hand
+    showFinger writings finger
+
+    if keyBegun keyset ScancodeReturn && isJust (chosen willwit)
+    then lift $ execStateT (updateOnlyOneSetting $ fromJust $ chosen willwit) allwit
+    else return allwit
 
 makeWillState :: Point -> Settings -> WillState
 makeWillState (Vertex2 w h) settings = WillState {
-  hand = [
+  _hand = [
     Just ShowKeys,
     Just ShowTicks,
     Nothing
   ],
-  finger = 0,
+  _finger = 0,
   settings,
   _writings = [
     makeWriting (Vertex2 (w/2) (h*3/4)) "WꞮLZ",
@@ -49,34 +63,3 @@ makeWillState (Vertex2 w h) settings = WillState {
     makeWriting (Vertex2 (w/2) (h  /7)) "bæk"
   ]
 }
-
-chosen :: WillState -> Maybe Setting
-chosen WillState { hand, finger } = hand!!finger
-
-choosefare :: Allwit -> StateT WillState IO Allwit
-choosefare allwit@Allwit { keyset } = do
-  willwit <- get
-
-  nudgeFinger allwit
-  showFinger
-
-  if keyBegun keyset ScancodeReturn && isJust (chosen willwit)
-  then lift $ execStateT (updateOnlyOneSetting $ fromJust $ chosen willwit) allwit
-  else return allwit
-
-nudgeFinger :: Allwit -> StateT WillState IO ()
-nudgeFinger Allwit { keyset } = do
-  willwit@WillState { hand, finger } <- get
-  let nudge
-        | keyBegun keyset ScancodeUp = pred
-        | keyBegun keyset ScancodeDown = succ
-        | otherwise = id
-  put willwit { finger = mod (nudge finger) (length hand) }
-
-showFinger :: StateT WillState IO ()
-showFinger = do
-  willwit@WillState { finger, _writings } <- get
-  put willwit {
-    _writings = hit (blee.~red) (succ finger)
-      $ map (blee.~lightwhelk) _writings
-  }

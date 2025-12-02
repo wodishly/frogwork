@@ -4,7 +4,8 @@ module Telly where
 import Allwit
 import Rime
 import Shade
-import Strike hiding (spit)
+import Strike
+import Matrix
 
 
 data Tellywit = Tellywit {
@@ -14,14 +15,17 @@ data Tellywit = Tellywit {
 }
 
 updateTelly :: Allwit -> StateT Tellywit IO ()
-updateTelly _ = do
-  tellywit@Tellywit { spit, meshset = meshset@Meshset { hitframe } } <- get
-  hitframe' <- lift $ setMeshTransform (shapeshiftFrame spit) hitframe
-  put tellywit { meshset = meshset { hitframe = hitframe' } }
+updateTelly _ = do return ()
+  -- tellywit@Tellywit { spit, meshset = meshset@Meshset { hitframe } } <- get
+  -- hitframe' <- lift $ setMeshTransform (shapeshiftFrame spit) hitframe
+  -- put tellywit { meshset = meshset { hitframe = hitframe' } }
 
-makeTelly :: Meshset -> Tellywit
-makeTelly meshset = Tellywit {
-  position = Vertex3 -2 0 2,
-  spit = (Vertex3 -2 0 2, Vertex3 0 2 4),
-  meshset
+makeTelly :: Point3 -> Spit -> Meshset -> Tellywit
+makeTelly position@(Vertex3 x y z) spit@(Vertex3 lx ly lz, _) Meshset { main, hitframe } = Tellywit {
+  position,
+  spit,
+  meshset = Meshset {
+    main = setMeshTransform (fromTranslation [x+lx, y+ly+1, z+lz]) main,
+    hitframe = setMeshTransform (shapeshiftFrame spit position) hitframe
+  }
 }

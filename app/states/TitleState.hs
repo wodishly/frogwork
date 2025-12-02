@@ -3,7 +3,6 @@ module TitleState where
 import Allwit
 import Blee
 import FastenMain
-import Key
 import Mean
 import Rime
 import State
@@ -11,8 +10,8 @@ import Stavework
 
 
 data TitleState = TitleState {
-  hand :: [StateName],
-  finger :: Int,
+  _hand :: [StateName],
+  _finger :: Int,
   _writings :: [Writing]
 }
 makeLenses ''TitleState
@@ -22,18 +21,26 @@ instance Stately TitleState where
 
   update allwit = do
     _ <- get
-    choosefare allwit
+    void $ updateHand allwit
     return allwit
 
   render allwit = do
     bg darkwhelk
-    stavewrite writings allwit
+    stave writings allwit
+    return allwit
+
+instance Choosing TitleState StateName where
+  chosen wit = _hand wit !! _finger wit
+
+  updateHand allwit = do
+    nudgeFinger allwit finger hand
+    showFinger writings finger
     return allwit
 
 makeTitleState :: Point -> TitleState
 makeTitleState (Vertex2 w h) = TitleState {
-  hand = [PlayName, WillName, AboutName, EndName],
-  finger = 0,
+  _hand = [PlayName, WillName, AboutName, EndName],
+  _finger = 0,
   _writings = [
     makeWriting (Vertex2 (w/2) (h*3/4)) "WƐLKƏM TU FRⱰGFƆRD!",
     Writing (Middle, Middle) ((3/4) *^ onehood) lightwhelk Nothing (Vertex2 (w/2) (h*4/9)) "plej",
@@ -42,28 +49,3 @@ makeTitleState (Vertex2 w h) = TitleState {
     Writing (Middle, Middle) ((3/4) *^ onehood) lightwhelk Nothing (Vertex2 (w/2) (h  /9)) "ɛnd"
   ]
 }
-
-chosen :: TitleState -> StateName
-chosen (TitleState { hand, finger }) = hand!!finger
-
-choosefare :: Allwit -> StateT TitleState IO ()
-choosefare allwit = do
-  nudgeFinger allwit
-  showFinger
-
-nudgeFinger :: Allwit -> StateT TitleState IO ()
-nudgeFinger (Allwit { keyset }) = do
-  titlewit@TitleState { hand, finger } <- get
-  let nudge
-        | keyBegun keyset ScancodeUp = pred
-        | keyBegun keyset ScancodeDown = succ
-        | otherwise = id
-  put titlewit { finger = mod (nudge finger) (length hand) }
-
-showFinger :: StateT TitleState IO ()
-showFinger = do
-  titlewit@TitleState { finger, _writings } <- get
-  put titlewit {
-    _writings = hit (blee.~red) (succ finger)
-      $ map (blee.~lightwhelk) _writings
-  }

@@ -15,8 +15,8 @@ import State
 import Stateteller
 import Time
 
-import qualified TitleState as Title (chosen)
-import qualified WillState as Will (chosen)
+-- import qualified TitleState as Title (chosen)
+-- import qualified WillState as Will (chosen)
 
 
 data Frogwork = Frogwork {
@@ -57,11 +57,11 @@ choose = do
 
       | nowState == TitleName
         && keyBegun keyset ScancodeReturn
-        = Title.chosen (stateteller^.titleState)
+        = chosen (stateteller^.titleState)
 
       | nowState == WillName
         && keyBegun keyset ScancodeReturn
-        && isNothing (Will.chosen $ stateteller^.willState)
+        && isNothing (chosen $ stateteller^.willState)
         = TitleName
 
       | nowState == AboutName

@@ -1,7 +1,20 @@
 {-|
 @Stavemake@ is for anything to do with writing the stave.
 -}
-module Stavework where
+module Stavework
+  ( Scale,
+    Writing (..),
+    Speechframe (..),
+    makeWriting,
+    blee,
+    flush,
+    throoks,
+    makeSpeechframe,
+    carve,
+    flayLines,
+    allreckon,
+  )
+where
 
 import Data.HashMap.Lazy ((!))
 
@@ -24,7 +37,7 @@ data Writing = Writing {
   _throoks :: Maybe [Polyhedron],
   stead :: Point,
   writ :: String
-}
+} deriving (Eq, Show)
 makeLenses ''Writing
 
 -- | Twimiddle, truescale, lightwhelk, unwone.
@@ -32,12 +45,15 @@ makeLenses ''Writing
 makeWriting :: Point -> String -> Writing
 makeWriting = Writing (Middle, Middle) onehood lightwhelk Nothing
 
+flush :: Writing -> Writing
+flush writing = writing { _throoks = Nothing }
+
 data Speechframe = Speechframe {
   rim :: GLfloat,
   scale :: Scale,
   writtens :: Maybe [Writing],
   nooks :: Fournook,
-  meesh :: Mesh,
+  mesh :: Mesh,
   string :: String
 }
 makeLenses ''Speechframe
@@ -48,17 +64,14 @@ makeSpeechframe = Speechframe 22.5 ((1/3) *^ onehood) Nothing
 
 -- | Carves the staves into being.
 carve :: Stave -> Polyhedron -> Mesh -> Blee -> IO ()
-carve (Stave { texture }) vertices mish@(Mesh { vbo, elementCount }) bl = do
+carve (Stave { texture }) vertices mesh@(Mesh { vbo, elementCount }) bl = do
   activeTexture $= TextureUnit 0
   textureBinding Texture2D $= Just texture
   bindBuffer ArrayBuffer $= Just vbo
-  becwethe mish "u_blee" (bleeToGLVector4 bl)
+  becwethe mesh "u_blee" (bleeToGLVector4 bl)
   withArray vertices (bufferSubData ArrayBuffer WriteToBuffer 0 $ bufferSize vertices)
   bindBuffer ArrayBuffer $= Nothing
   drawFaces elementCount
-
-becwethe :: Uniform p => Mesh -> String -> p -> IO ()
-becwethe meshful s value = uniformMap meshful ! s >>= ($= value) . uniform
 
 allreckon :: Allwit -> Writing -> [Polyhedron]
 allreckon allwit@(Allwit { staveware = (book, _) }) (Writing stk scl' _ _ std' wr) =
