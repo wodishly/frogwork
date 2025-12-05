@@ -3,8 +3,7 @@ module Frogwork where
 
 import Prelude hiding (lookup)
 
-import qualified SDL (glSwapWindow, pollEvents)
-import qualified SDL.Time as SDL (ticks)
+import qualified SDL (glSwapWindow, pollEvents, ticks)
 
 import Allwit
 import Happen
@@ -14,9 +13,6 @@ import Rime
 import State
 import Stateteller
 import Time
-
--- import qualified TitleState as Title (chosen)
--- import qualified WillState as Will (chosen)
 
 
 data Frogwork = Frogwork {
@@ -33,7 +29,7 @@ didEnd = do
   return $ nowState == EndName || anyKeysBegun keyset [ScancodeQ, ScancodeEscape]
 
 become :: StateT Frogwork IO ()
-become = get >>= SDL.glSwapWindow . window . allwit
+become = get >>= SDL.glSwapWindow . window . otherworld . allwit
 
 choose :: StateT Frogwork IO ()
 choose = do
@@ -121,7 +117,7 @@ listenMouse = do
 
 listenWindow :: StateT Frogwork IO ()
 listenWindow = do
-  frogwork@Frogwork { allwit = allwit@Allwit { events, window }, stateteller } <- get
+  frogwork@Frogwork { allwit = allwit@Allwit { events, otherworld = Otherworld { window } }, stateteller } <- get
   when (or $ unwrapHappenWindow events) $ do
     dis <- lift $ waxwane window
     teller' <- lift $ execStateT flushWritings stateteller

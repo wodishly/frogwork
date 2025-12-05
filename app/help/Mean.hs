@@ -1,5 +1,6 @@
 module Mean
   ( module Mean,
+    module Control.Arrow,
     module Control.Lens,
     module Control.Monad,
     module Data.Bifunctor,
@@ -13,8 +14,9 @@ module Mean
   )
 where
 
+import Control.Arrow ((>>>))
 import Control.Lens (Lens', makeLenses, (%~), (.~), (^.), view, over, set)
-import Control.Monad (forM, forM_, void, when)
+import Control.Monad (forM, forM_, unless, void, when, (>=>))
 import Control.Monad.State (MonadTrans (lift), StateT)
 import Data.Bifunctor (Bifunctor (bimap, first, second))
 import Data.Function (applyWhen, (&))
@@ -313,3 +315,7 @@ dimensionError = error . ("need dimension " ++) . show
 
 between :: Ord a => (a, a) -> a -> Bool
 between (low, high) thing = low <= thing && thing < high
+
+whenJust :: Applicative f => Maybe a -> (a -> f ()) -> f ()
+whenJust (Just x) f = f x
+whenJust Nothing _ = pure ()

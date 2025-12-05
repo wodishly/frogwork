@@ -65,19 +65,19 @@ doOnceAt :: Stately a => Float -> Timewit -> StateT a IO () -> StateT a IO ()
 doOnceAt t Timewit { lifetime, delta } = when (between (lifetime, lifetime+delta) t)
 
 doAtEach :: Stately a => Float -> Timewit -> StateT a IO () -> StateT a IO ()
-doAtEach t Timewit { lifetime, delta } = when (mod' lifetime t > mod' (lifetime + delta) t)
+doAtEach t Timewit { lifetime, delta } = when (mod' lifetime t > mod' (lifetime+delta) t)
 
 -- | The greater work.
 stavewriteAll :: Stately a => Allwit -> [Writing] -> StateT a IO [Writing]
-stavewriteAll allwit@Allwit { staveware = (_, m) } = (lift (useMesh m) >>) . mapM (stavewrite' allwit)
+stavewriteAll allwit@Allwit { meshhoard = Meshhoard { stavemesh } } = (lift (useMesh stavemesh) >>) . mapM (stavewrite' allwit)
 
 -- | The great work.
 stavewrite' :: Stately a => Allwit -> Writing -> StateT a IO Writing
-stavewrite' allwit@(Allwit { staveware = (book, mish) }) writing@Writing { _throoks, _blee, writ } = do
+stavewrite' allwit@(Allwit { stavebook, meshhoard = Meshhoard { stavemesh } }) writing@Writing { _throoks, _blee, writ } = do
   let newrooks = Just (fromMaybe (allreckon allwit writing) _throoks)
   forM_ (zip [0..] writ) $ \(i, char) ->
-    if member char book
-    then lift $ carve (book!char) (fromJust newrooks!!i) mish _blee
+    if member char stavebook
+    then lift $ carve (stavebook!char) (fromJust newrooks!!i) stavemesh _blee
     else error $ show char ++ " is not in the book"
 
   return writing { _throoks = newrooks }
@@ -89,4 +89,4 @@ drawWith Allwit { display, timewit } = drawMesh
   timewit
 
 renderFeather :: Stately a => Allwit -> StateT a IO ()
-renderFeather allwit@Allwit { staveware } = lift $ drawWith allwit (ident 4) (snd staveware)
+renderFeather allwit@Allwit { meshhoard = Meshhoard { stavemesh } } = lift $ drawWith allwit (ident 4) stavemesh

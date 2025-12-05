@@ -1,68 +1,67 @@
 module Main (main) where
 
-import qualified Graphics.Rendering.OpenGL as GL
+import qualified Graphics.Rendering.OpenGL as GL (finish)
 import qualified SDL
+  ( V2 (V2),
+    createWindow,
+    destroyWindow,
+    get,
+    glCreateContext,
+    glDeleteContext,
+    initializeAll,
+    quit,
+    ticks,
+    windowSize,
+  )
 
 import Allwit
 import FastenMain
 import Frogwork
 import Happen
-
 import Key
-import Matrix
 import Mean
 import Snailheart
 import Stateteller
--- import Tung
+import Weird
 
 
 main :: IO ()
 main = do
   SDL.initializeAll
+
   window <- SDL.createWindow "frogwork" openGLWindow
   context <- SDL.glCreateContext window
-  display <- waxwane window
   loudness <- spoken
-
   unlockKeys
 
-  -- orcroak
-
   SDL.ticks
-    >>= birth window context display loudness . fromIntegral
+    >>= birth (Otherworld window context loudness) . fromIntegral
     >>= evalStateT live
     >>= die
 
-birth :: SDL.Window -> SDL.GLContext -> RenderView -> Loudness -> Float -> IO Frogwork
-birth window ctx display loudness ticks = do
-  (staveware, meshes) <- begetMeshes ticks
+birth :: Otherworld -> Float -> IO Frogwork
+birth otherworld@(Otherworld window _ _) ticks = do
   SDL.V2 x y <- (fromIntegral <$>) <$> SDL.get (SDL.windowSize window)
+  display <- waxwane window
 
-  allwit@Allwit { settings } <- fand $ makeAllwit ticks window ctx staveware display loudness
+  (stavebook, meshes) <- begetMeshes ticks
+  seed <- formseed
 
-  return Frogwork {
-    allwit,
-    stateteller = makeStateteller allwit (x, y) settings meshes
-  }
+  allwit <- fand $ makeAllwit seed ticks otherworld stavebook display meshes
+  return $ uncurry Frogwork (makeStateteller (x, y) allwit)
 
-live :: StateT Frogwork IO (SDL.GLContext, SDL.Window, Loudness)
+live :: StateT Frogwork IO Otherworld
 live = do
-  Frogwork {
-    allwit = Allwit {
-      context,
-      window,
-      loudness
-    }
-  } <- get
+  frogwork <- get
   listen
   choose
   become
   didEnd >>= mif
-    (return (context, window, loudness))
+    (return frogwork.allwit.otherworld)
     live
 
-die :: (SDL.GLContext, SDL.Window, Loudness) -> IO ()
-die (context, window, loudness) = do
+die :: Otherworld -> IO ()
+die (Otherworld window context loudness) = do
   GL.finish
   SDL.glDeleteContext context
   SDL.destroyWindow window

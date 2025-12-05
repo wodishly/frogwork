@@ -12,6 +12,7 @@ import Shade
 import Skeleton
 import Strike
 import Time
+import Telly
 
 
 data Frogwit = Frogwit {
@@ -26,6 +27,7 @@ data Frogwit = Frogwit {
   meshset :: Meshset,
   didLeap :: Bool,
   didWalk :: Bool,
+  isStricken :: Bool,
   isRunning :: Bool
 }
 
@@ -45,6 +47,7 @@ makeFrog Meshset { main, hitframe } = Frogwit {
   },
   didLeap = False,
   didWalk = False,
+  isStricken = False,
   isRunning =  False
 }
 
@@ -108,11 +111,17 @@ walk Allwit { keyset, timewit } forward = do
     then put frogwit { position = position', didWalk = True }
     else put frogwit { didWalk = False }
 
-updateFrog :: Allwit -> FrogVector -> StateT Frogwit IO ()
-updateFrog allwit forward = do
+updateFrog :: Allwit -> [Tellywit] -> FrogVector -> StateT Frogwit IO ()
+updateFrog allwit spitfuls forward = do
   frogwit <- get
   moveFrog allwit forward
   when (didMove frogwit) (moveMesh forward)
+  let tellywit = head spitfuls
+  lift $ feed frogwit.meshset.hitframe "u_stricken" $
+    if striketh (twimap (frogwit.position <+>) frogwit.spit) (twimap (tellywit.position <+>) tellywit.spit)
+      then (0.0::Float)
+      else (1.0::Float)
+  --put frogwit { isStricken = True })
   animateMesh allwit
 
 moveFrog :: Allwit -> FrogVector -> StateT Frogwit IO ()
@@ -139,23 +148,14 @@ moveMesh forward = do
   frogwit@Frogwit { position = position@(Vertex3 x y z), spit, meshset = Meshset { main, hitframe } } <- get
 
   let frogPosition = fromList [x, y, z]
-      frogTarget = frogPosition + fromList [forward!0, 0, forward!2]
-      transform = frogLookAt frogPosition frogTarget
-      columns = toColumns transform
-      -- awesome lol
-      transform' = fromColumns [
-          columns !! 0
-        , columns !! 1
-        , columns !! 2
-        , fromList [x, y, z, 1]
-        ]
-
-  let frogFrame = setMeshTransform (shapeshiftFrame spit position) $ setMeshTransform transform' hitframe
+      transform' = stirshift frogPosition forward
+      frogFrame = setMeshTransform (shapeshiftFrame spit position) $ setMeshTransform transform' hitframe
       newFrogMesh = setMeshTransform transform' main
-  put frogwit { meshset = Meshset { main = newFrogMesh, hitframe = frogFrame } }
+
+  put frogwit { Frog.meshset = Meshset { main = newFrogMesh, hitframe = frogFrame } }
 
 animateMesh :: Allwit -> StateT Frogwit IO ()
-animateMesh (Allwit { timewit = Timewit { lifetime } }) = do
+animateMesh Allwit { timewit = Timewit { lifetime } } = do
   frogwit@Frogwit { meshset = meshset@Meshset { main }, didLeap, isRunning } <- get
 
   let athem = meshAnimation main
@@ -164,11 +164,17 @@ animateMesh (Allwit { timewit = Timewit { lifetime } }) = do
     let
     what
       | didLeap = BUNNY_JUMP
-      | didMove frogwit && isRunning  = BUNNY_RUN
-      | didMove frogwit  = BUNNY_WALK
+      | didMove frogwit && isRunning = BUNNY_RUN
+      | didMove frogwit = BUNNY_WALK
       | otherwise = BUNNY_IDLE
     how
       | didLeap = once
       | otherwise = evermore
     newAnimation = play lifetime (how (fromJust athem)) what
-    in put frogwit { meshset = meshset { main = main { meshAnimation = Just newAnimation } } }
+    in put frogwit {
+      Frog.meshset = meshset {
+        main = main {
+          meshAnimation = Just newAnimation
+        }
+      }
+    }

@@ -28,24 +28,18 @@ synopsis: frogwork
 -- A longer description of the package.
 description: frogwork
 
--- The license under which the package is released.
 license: BSD-3-Clause
-
--- The file containing the license text.
 license-file: LICENSE
 
--- The package author(s).
 author: wodishly, laura-a-n-n
+maintainer:
+copyright:
 
--- A copyright notice.
--- copyright:
 build-type: Simple
 
--- Extra doc files to be distributed with the package, such as a CHANGELOG or a README.
-extra-doc-files: CHANGELOG.md
-
--- Extra source files to be distributed with the package, such as examples, or a tutorial module.
--- extra-source-files:
+extra-doc-files:
+  README.md
+  CHANGELOG.md
 
 common warnings
   ghc-options:
@@ -53,13 +47,10 @@ common warnings
     -Wno-type-defaults
 
 executable frogwork
-  -- Import common warning flags.
   import: warnings
 
-  -- .hs or .lhs file containing the Main module.
   main-is: Main.hs
 
-  -- Modules included in this executable, other than Main.
   other-modules:
     FastenShade
     FastenMain
@@ -109,22 +100,21 @@ executable frogwork
     Stateteller
     Frogwork
 
-  -- LANGUAGE extensions used by modules in this package.
   default-extensions:
+    DuplicateRecordFields
+    FlexibleInstances
+    FunctionalDependencies
     LambdaCase
     LexicalNegation
     MultiParamTypeClasses
     NamedFieldPuns
+    OverloadedRecordDot
     OverloadedStrings
     PatternSynonyms
     RankNTypes
     TemplateHaskell
     TupleSections
-    DuplicateRecordFields
-    OverloadedRecordDot
-    FunctionalDependencies
 
-  -- Other library packages from which modules are imported.
   build-depends:
     base ^>=4.18.3.0,
     hmatrix ^>=0.20.2,
@@ -140,9 +130,9 @@ executable frogwork
     random,
     vector,
     freetype2,
-    split
+    split,
+    time
 
-  -- Directories containing source files.
   hs-source-dirs: app
     app/fasten
     app/help
@@ -152,5 +142,4 @@ executable frogwork
     app/spellbook
     app/states
 
-  -- Base language which the package is written in.
   default-language: Haskell2010

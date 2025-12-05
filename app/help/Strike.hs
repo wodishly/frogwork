@@ -26,18 +26,11 @@ frame' (l@(Vertex3 x0 y0 z0), Vertex3 x1 y1 z1)
         Vertex3 x0 y1 z0
       ]
 
-spitteth :: Spit -> Spit -> Bool
-spitteth struck striking = and (spittethAlong <$> [X, Y, Z] <*> replicate 3 struck <*> replicate 3 striking)
-
-spittethAlong :: Axle -> Spit -> Spit -> Bool
-spittethAlong axle spitted spitting
-  = betweenAlong axle spitted (snd spitting)
-  && betweenAlong axle spitting (fst spitted)
-
-betweenAlong ::  Axle -> Spit -> Point3 -> Bool
-betweenAlong X (Vertex3 x0 _ _, Vertex3 x1 _ _) (Vertex3 x _ _) = between (x0, x1) x
-betweenAlong Y (Vertex3 _ y0 _, Vertex3 _ y1 _) (Vertex3 _ y _) = between (y0, y1) y
-betweenAlong Z (Vertex3 _ _ z0, Vertex3 _ _ z1) (Vertex3 _ _ z) = between (z0, z1) z
+striketh :: Spit -> Spit -> Bool
+striketh (Vertex3 x0 y0 z0, Vertex3 x1 y1 z1) (Vertex3 a0 b0 c0, Vertex3 a1 b1 c1) =
+    x0 <= a1 && x1 >= a0
+ && y0 <= b1 && y1 >= b0
+ && z0 <= c1 && z1 >= c0
 
 shapeshiftFrame :: Spit -> Point3 -> FrogMatrix
 shapeshiftFrame (left@(Vertex3 a b c), right) (Vertex3 x y z) =

@@ -3,11 +3,19 @@ module Weird where
 import Control.Monad.State (MonadState (get, put), State, runState)
 import System.Random (Random (randoms), mkStdGen)
 
+import Mean
+import Time
 
-type FrogSeed = ([Float], [Float])
 
-formseed :: FrogSeed
-formseed = ([], randoms (mkStdGen 0))
+type FrogSeed = Twain [Float]
+
+formseed :: IO FrogSeed
+formseed = ([], ) . randoms . mkStdGen <$> seedtide
+  where
+    seedtide = tenny . utctDayTime <$> getCurrentTime
+    tenny x
+      | abs (x - fromIntegral (round x)) < 1e-12 = round x
+      | otherwise = tenny (10*x)
 
 next :: State FrogSeed Float
 next = do

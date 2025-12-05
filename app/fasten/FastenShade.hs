@@ -110,7 +110,9 @@ frameMeshProfileOf s = SimpleMeshProfile {
     vbuffer = frame' onespit,
     ibuffer = eightnookBuffer,
     uvbuffer = Nothing,
-    meshShaderProfile = ShaderProfile ("vertex_frame", "fragment_" ++ s) (uniforms defaultSimpleShaderProfile),
+    meshShaderProfile = ShaderProfile
+      ("vertex_frame", "fragment_" ++ s)
+      ("u_stricken" : uniforms defaultSimpleShaderProfile),
     texObject = Nothing
 }
 
@@ -143,8 +145,6 @@ eightnookBuffer = [
   -- top
   3, 2, 6,
   6, 7, 3
-  -- spit
-  -- 4, 5, 0
   ]
 
 pattern BUNNY_WALK

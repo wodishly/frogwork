@@ -19,26 +19,27 @@ import WillState as Will
 
 
 data Stateteller = Stateteller {
+  nowState :: StateName,
   _titleState :: TitleState,
   _willState :: WillState,
   _playState :: PlayState,
   _pauseState :: PauseState,
   _aboutState :: AboutState,
-  _endState :: EndState,
-  nowState :: StateName
+  _endState :: EndState
 }
 makeLenses ''Stateteller
 
-makeStateteller :: Allwit -> (Int, Int) -> Settings -> Meshlist -> Stateteller
-makeStateteller allwit (w, h) settings meshes = Stateteller
-  (makeTitleState wind)
-  (makeWillState  wind settings)
-  (snd $ makePlayState allwit wind meshes)
-  (makePauseState wind)
-  (makeAboutState wind)
-  makeEndState
-  TitleName
-  where wind = fromIntegral <$> Vertex2 w h
+makeStateteller :: (Int, Int) -> Allwit -> (Allwit, Stateteller)
+makeStateteller (w, h) allwit =
+  let window = fromIntegral <$> Vertex2 w h
+      (allwit', madePlayState) = makePlayState allwit
+  in (allwit', Stateteller TitleName
+    (makeTitleState window)
+    (makeWillState  window allwit)
+    madePlayState
+    (makePauseState window)
+    (makeAboutState window)
+    makeEndState)
 
 goto :: Stately a => Lens' Stateteller a -> Allwit -> StateT Stateteller IO Allwit
 goto oldState oldWit = do
@@ -66,7 +67,7 @@ flushWritings = do
   put teller {
     _titleState = floosh Title.writings (teller^.titleState),
     _willState = floosh Will.writings (teller^.willState),
-    _playState = (teller^.playState) { speechframe = (teller^.playState).speechframe { writtens = Nothing } },
+    _playState = (teller^.playState) { Play.speechframe = (teller^.playState).speechframe { writtens = Nothing } },
     _pauseState = floosh Pause.writings (teller^.pauseState),
     _aboutState = floosh About.writings (teller^.aboutState)
   } where floosh = (%~ map flush)

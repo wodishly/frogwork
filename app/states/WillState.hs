@@ -1,4 +1,3 @@
-{-# LANGUAGE FlexibleInstances #-}
 module WillState where
 
 import Allwit
@@ -47,8 +46,8 @@ instance Choosing WillState (Maybe Setting) where
     then lift $ execStateT (updateOnlyOneSetting $ fromJust $ chosen willwit) allwit
     else return allwit
 
-makeWillState :: Point -> Settings -> WillState
-makeWillState (Vertex2 w h) settings = WillState {
+makeWillState :: Point -> Allwit -> WillState
+makeWillState (Vertex2 w h) Allwit { settings } = WillState {
   _hand = [
     Just ShowKeys,
     Just ShowTicks,

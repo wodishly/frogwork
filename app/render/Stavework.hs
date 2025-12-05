@@ -68,17 +68,17 @@ carve (Stave { texture }) vertices mesh@(Mesh { vbo, elementCount }) bl = do
   activeTexture $= TextureUnit 0
   textureBinding Texture2D $= Just texture
   bindBuffer ArrayBuffer $= Just vbo
-  becwethe mesh "u_blee" (bleeToGLVector4 bl)
+  feed mesh "u_blee" (bleeToGLVector4 bl)
   withArray vertices (bufferSubData ArrayBuffer WriteToBuffer 0 $ bufferSize vertices)
   bindBuffer ArrayBuffer $= Nothing
   drawFaces elementCount
 
 allreckon :: Allwit -> Writing -> [Polyhedron]
-allreckon allwit@(Allwit { staveware = (book, _) }) (Writing stk scl' _ _ std' wr) =
-  let advances = scanl (+) 0 (map (advance . (book!)) wr)
+allreckon allwit@(Allwit { stavebook }) (Writing stk scl' _ _ std' wr) =
+  let advances = scanl (+) 0 (map (advance . (stavebook!)) wr)
       (scl, std) = twimap (scaleToScreen allwit) (scl', std')
-      offset = reckonStakes book stk scl wr
-  in zipWith (\i char -> stavenook (offset <+> std) scl (advances!!i) (book!char)) [0..] wr
+      offset = reckonStakes stavebook stk scl wr
+  in zipWith (\i char -> stavenook (offset <+> std) scl (advances!!i) (stavebook!char)) [0..] wr
 
 scaleToScreen :: Allwit -> Point -> Point
 scaleToScreen (Allwit { display = RenderView { size = (w, h) } }) = (^*^) (Vertex2 (w/orwidth) (h/orheight))

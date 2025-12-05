@@ -5,14 +5,12 @@ module Allwit (
 
 import Prelude hiding (lookup)
 
-import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT (runStateT), evalStateT, execStateT, runState, execState, State)
+import Control.Monad.State (MonadState (get, put), MonadTrans (lift), State, StateT (runStateT), evalStateT, execState, execStateT, runState)
 import Data.Map (Map, adjust, fromList, (!))
 
 import qualified SDL
   ( Event,
-    GLContext,
     LocationMode (AbsoluteLocation, RelativeLocation),
-    Window,
     setMouseLocationMode,
     windowGrab,
   )
@@ -32,7 +30,13 @@ import Time
 import Weird
 
 
-data Setting = ShowTicks | ShowKeys | ShowSpeech | RunTests | BeLoud deriving (Show, Eq, Ord)
+data Setting
+  = ShowTicks
+  | ShowKeys
+  | ShowSpeech
+  | RunTests
+  | BeLoud
+  deriving (Show, Eq, Ord)
 
 type Settings = Map Setting Bool
 
@@ -49,46 +53,47 @@ data Allwit = Allwit {
   keyset :: Keyset,
   mouse :: Mousewit,
   timewit :: Timewit,
-  window :: SDL.Window,
-  context :: SDL.GLContext,
-  staveware :: Staveware,
+  otherworld :: Otherworld,
+  stavebook :: Stavebook,
   display :: RenderView,
-  loudness :: Loudness
+  meshhoard :: Meshhoard
 }
 
-makeAllwit :: Float -> SDL.Window -> SDL.GLContext -> Staveware -> RenderView -> Loudness -> Allwit
-makeAllwit t = Allwit
+makeAllwit :: FrogSeed -> Float -> Otherworld -> Stavebook -> RenderView -> Meshhoard -> Allwit
+makeAllwit seed t = Allwit
   makeSettings
-  formseed
+  seed
   []
   unkeys
   (Mousewit (Vertex2 0 0) (Vertex2 0 0))
   (beginTime t)
 
-begetMeshes :: Float -> IO (Staveware, Meshlist)
+begetMeshes :: Float -> IO (Stavebook, Meshhoard)
 begetMeshes now = do
   cocoon <- summon "assets/bunny.moth"
   let mothFile = unwrappingly mothify cocoon
+
   bun <- makeAssetMesh $ makeAsset "bunny"
   let bunAnimation = (play now . evermore) (makeAnimation mothFile) BUNNY_IDLE
   frogset <- makeMeshset $ setMeshTransform (fromAffine (thrice 1) (thrice 0)) bun { meshAnimation = Just bunAnimation }
+  farseeset <- makeMeshset =<< makeAssetMesh (makeAsset "tv")
+
   earth <- makeSimpleMesh defaultSimpleMeshProfile
   heaven <- setMeshTransform (fromAffine (thrice 80) (thrice -40))
     <$> makeSimpleMesh (frameMeshProfileOf "heaven")
 
   uncull
 
-  farseeset <- makeMeshset =<< makeAssetMesh (makeAsset "tv")
-
   feather <- makeFeather "noto-sans"
-  hack <- makeSimpleMesh staveMeshProfile
+  stavemesh <- makeSimpleMesh staveMeshProfile
   speech <- makeSimpleMesh speechMeshProfile
 
-  return ((feather, hack), Meshlist {
-      bodies = [frogset, farseeset],
-      grimes = (speech, []),
-      worldlies = [heaven, earth, hack]
-    })
+  return (feather, Meshhoard {
+    spitfuls = [frogset, farseeset],
+    spitlesses = [heaven, earth],
+    stavemesh,
+    grimes = Grimes speech []
+  })
 
 makeMeshset :: Mesh -> IO Meshset
 makeMeshset m = Meshset m <$> makeSimpleMesh frameMeshProfile
@@ -99,6 +104,12 @@ weird = first only . weirds 1
 weirds :: Int -> Allwit -> ([Float], Allwit)
 weirds n allwit@Allwit { seed } = (ws, allwit { seed = seed' })
   where (ws, seed') = repeatState n next seed
+
+weirdwheel :: Allwit -> ((Float, Float), Allwit)
+weirdwheel a = let
+  (f, a') = weird a
+  winkle = 2*pi*f
+  in ((cos winkle, sin winkle), a')
 
 updateAllSettings :: StateT Allwit IO ()
 updateAllSettings = do
@@ -112,7 +123,7 @@ updateAllSettings = do
 
 updateOnlyOneSetting :: Setting -> StateT Allwit IO ()
 updateOnlyOneSetting setting = do
-  allwit@(Allwit { settings, loudness = (wile, _) }) <- get
+  allwit@(Allwit { settings, otherworld = Otherworld { loudness = (wile, _) } }) <- get
   lift $ when (setting == BeLoud) $ (if settings!setting then rest else unrest) wile
   put allwit { settings = toggle setting settings }
 
@@ -129,7 +140,7 @@ fand wit@Allwit { settings } = when (fromMaybe False (lookup RunTests settings))
 
 setWindowGrabbed :: Bool -> StateT Allwit IO ()
 setWindowGrabbed setting = do
-  Allwit { window } <- get
+  Allwit { otherworld = Otherworld { window } } <- get
 
   SDL.windowGrab window $= setting
   void $ SDL.setMouseLocationMode $ if setting then SDL.RelativeLocation else SDL.AbsoluteLocation

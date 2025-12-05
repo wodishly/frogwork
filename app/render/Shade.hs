@@ -4,18 +4,14 @@ module Shade (
   module Foreign,
 ) where
 
-import Control.Monad
-import Data.Bifunctor
 import Data.Binary.Get
 import Data.HashMap.Lazy hiding (map)
-import Data.Maybe
-import Text.Printf
 
 import Foreign (Int32, Ptr, Storable (sizeOf), Word8, new, nullPtr, peek, peekArray, plusPtr, withArray, (.>>.))
-import Numeric.LinearAlgebra hiding ((!), format)
-import Graphics.Rendering.OpenGL as GL hiding (get, position, scale, texture, bitmap, flush)
-import qualified Graphics.Rendering.OpenGL as GL (get)
+import Numeric.LinearAlgebra hiding (format, (!))
+import Graphics.Rendering.OpenGL as GL hiding (bitmap, flush, get, position, scale, texture)
 
+import qualified Graphics.Rendering.OpenGL as GL (get)
 import qualified Data.ByteString as BS
 import qualified Data.HashMap.Lazy as HM hiding (map)
 import qualified Data.Vector.Storable as S
@@ -31,24 +27,27 @@ import Spell
 import Time
 
 import MothSpell as MOTH
-import Graphics.GL
 
 
-data Meshlist = Meshlist {
-  bodies :: [Meshset],
-  grimes :: Grimes,
-  worldlies :: [Mesh]
+data Meshhoard = Meshhoard {
+  spitfuls :: [Meshset],
+  spitlesses :: [Mesh],
+  stavemesh :: Mesh,
+  grimes :: Grimes
 }
-
-type Grimes = (Mesh, [Mesh])
 
 data Meshset = Meshset {
   main :: Mesh,
   hitframe :: Mesh
 }
 
+data Grimes = Grimes {
+  speechframe :: Mesh,
+  others :: [Mesh]
+}
+
 uncull :: IO ()
-uncull = glDisable GL_CULL_FACE
+uncull = GLRaw.glDisable GLRaw.GL_CULL_FACE
 
 drawFaces :: Int32 -> IO ()
 drawFaces count = drawElements Triangles count UnsignedInt (bufferOffset 0)
@@ -82,9 +81,9 @@ instance Show Mesh where
   show (Mesh a b c d e _ _ h i _) = show a ++ show b ++ show c ++ show d ++ show e ++ show h ++ show i
 
 data Concoction = Concoction {
-  _program :: Program,
-  _uniformMap :: UniformMap,
-  _road :: Maybe String
+  program :: Program,
+  uniformMap :: UniformMap,
+  road :: Maybe String
 }
 
 makeAsset :: String -> AssetMeshProfile
@@ -97,12 +96,12 @@ setMeshTransform t m = m { transform = t }
 knead :: ShaderType -> FilePath -> IO Shader
 knead kind path = do
   shader <- createShader kind
-  BS.readFile path >>= (shaderSourceBS shader $=)
+  (shaderSourceBS shader $=) =<< BS.readFile path
 
   compileShader shader
 
   status <- GL.get (compileStatus shader)
-  GL.get (shaderInfoLog shader) >>= print
+  print =<< GL.get (shaderInfoLog shader)
   unless status (error $ (case kind of
       VertexShader -> "vertex"
       FragmentShader -> "fragment"
@@ -126,8 +125,8 @@ brew (vsPath, fsPath) = do
   bindFragDataLocation p "color" $= 0
   linkProgram p
 
-  GL.get (shaderInfoLog vertexShader) >>= print
-  GL.get (shaderInfoLog fragmentShader) >>= print
+  print =<< GL.get (shaderInfoLog vertexShader)
+  print =<< GL.get (shaderInfoLog fragmentShader)
 
   GL.get (linkStatus p) >>= flip unless (error "fuck")
   return p
@@ -156,15 +155,13 @@ allocVector Mesh { uniformMap } prop uniformKey callback =
   whenJust (HM.lookup uniformKey uniformMap) $
     GL.get >=> \(UniformLocation location) -> S.unsafeWith prop (callback location)
 
-whenJust :: Applicative f => Maybe a -> (a -> f ()) -> f ()
-whenJust (Just x) f = f x
-whenJust Nothing _ = pure ()
-
 uniformMatrix :: GLint -> Ptr GLfloat -> IO ()
 uniformMatrix loc = GLRaw.glUniformMatrix4fv loc 1 1
 
-becwethe :: Uniform p => Mesh -> String -> p -> IO ()
-becwethe meshful s value = uniformMap meshful ! s >>= ($= value) . uniform
+feed :: Uniform u => Mesh -> String -> u -> IO ()
+feed mesh name worth = do
+  u <- mesh.uniformMap ! name
+  uniform u $= worth
 
 drawMesh :: FrogMatrix -> FrogMatrix -> Timewit -> FrogMatrix -> Mesh -> IO ()
 drawMesh projectionMatrix orthographicMatrix Timewit { lifetime } viewMatrix mesh@Mesh { uniformMap, meshAnimation } = do
@@ -186,9 +183,11 @@ drawMesh projectionMatrix orthographicMatrix Timewit { lifetime } viewMatrix mes
         withArray skellington $
           GLRaw.glUniformMatrix4fv bonesLocation (fromIntegral $ boneCount $ aMoth animation) 1
 
-  whenJust (HM.lookup "u_time" uniformMap) $ \_ -> do
-    timeLocation <- uniformMap ! "u_time"
-    uniform timeLocation $= now
+  whenJust (HM.lookup "u_time" uniformMap)
+    (\_ -> feed mesh "u_time" now)
+
+  -- whenJust (HM.lookup "u_stricken" uniformMap)
+  --   (\_ -> feed mesh "u_stricken" (1::Float))
 
   whenJust (HM.lookup "u_texture" uniformMap) $ \uLoc -> do
     activeTexture $= TextureUnit 0

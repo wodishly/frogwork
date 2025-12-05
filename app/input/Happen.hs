@@ -4,6 +4,7 @@ import qualified Graphics.Rendering.OpenGL as GL (blend, blendFunc, depthFunc, v
 import qualified SDL
   ( Event (eventPayload),
     EventPayload (KeyboardEvent, MouseMotionEvent, MouseWheelEvent, WindowResizedEvent),
+    GLContext,
     InputMotion (..),
     KeyboardEventData (keyboardEventKeyMotion, keyboardEventKeysym),
     Keysym (keysymScancode),
@@ -20,7 +21,14 @@ import Mean
 import Rime
 import Matrix
 import Shade
+import Snailheart
 
+
+data Otherworld = Otherworld {
+  window :: SDL.Window,
+  context :: SDL.GLContext,
+  loudness :: Loudness
+}
 
 type Keywit = (SDL.Scancode, SDL.InputMotion)
 

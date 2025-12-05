@@ -1,4 +1,9 @@
-module Time where
+module Time (
+  module Time,
+  module Data.Time,
+) where
+
+import Data.Time (getCurrentTime, UTCTime (utctDayTime))
 
 
 data Timewit = Timewit {
@@ -11,10 +16,11 @@ beginTime = Timewit 0
 
 keepTime :: Timewit -> Float -> Timewit
 keepTime Timewit { lifetime } ticks =
-  Timewit {
-    lifetime = now,
-    delta = now - lifetime
-  } where now = ticks / 1000
+  let t = ticks / 1000
+  in Timewit {
+    lifetime = t,
+    delta = t - lifetime
+  }
 
 throttle :: Timewit -> Float -> Float
 throttle Timewit { delta } = (delta *)
