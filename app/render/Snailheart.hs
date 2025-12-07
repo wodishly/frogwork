@@ -19,7 +19,7 @@ rest :: AudioDevice -> IO ()
 rest wile = print "i rest" >> setAudioDevicePlaybackState wile Pause
 
 unrest :: AudioDevice -> IO ()
-unrest _wile = return () -- print "i unrest" >> setAudioDevicePlaybackState wile Play
+unrest wile = print "i unrest" >> setAudioDevicePlaybackState wile Play
 
 ordeal :: Loudness -> IO Loudness
 ordeal loudness@(_, AudioSpec {

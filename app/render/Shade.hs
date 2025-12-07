@@ -186,9 +186,6 @@ drawMesh projectionMatrix orthographicMatrix Timewit { lifetime } viewMatrix mes
   whenJust (HM.lookup "u_time" uniformMap)
     (\_ -> feed mesh "u_time" now)
 
-  -- whenJust (HM.lookup "u_stricken" uniformMap)
-  --   (\_ -> feed mesh "u_stricken" (1::Float))
-
   whenJust (HM.lookup "u_texture" uniformMap) $ \uLoc -> do
     activeTexture $= TextureUnit 0
     tex0Pointer <- new (TextureUnit 0)
